@@ -1,6 +1,6 @@
 package main
 
-//Status represents the Red, Silver or Gold tier level of a FrequentFlierAccount
+// Status represents the Red, Silver or Gold tier level of a FrequentFlierAccount
 type Status int
 
 const (
@@ -9,7 +9,7 @@ const (
 	StatusGold   Status = iota
 )
 
-//go:generate stringer -type=Status
+// go:generate stringer -type=Status
 
 type FrequentFlierAccountCreated struct {
 	AccountId         string
