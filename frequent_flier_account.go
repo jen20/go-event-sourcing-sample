@@ -46,26 +46,18 @@ func (state *FrequentFlierAccount) trackChange(event interface{}) {
 	state.transition(event)
 }
 
+type Applier interface  {
+    Apply(state *FrequentFlierAccount)
+}
+
 // transition imnplements the pattern match against event types used both as part
 // of the fold when loading from history and when tracking an individual change.
 func (state *FrequentFlierAccount) transition(event interface{}) {
 	switch e := event.(type) {
-
-	case FrequentFlierAccountCreated:
-		state.id = e.AccountId
-		state.miles = e.OpeningMiles
-		state.tierPoints = e.OpeningTierPoints
-		state.status = StatusRed
-
-	case StatusMatched:
-		state.status = e.NewStatus
-
-	case FlightTaken:
-		state.miles = state.miles + e.MilesAdded
-		state.tierPoints = state.tierPoints + e.TierPointsAdded
-
-	case PromotedToGoldStatus:
-		state.status = StatusGold
+    case Applier:
+        e.Apply(state)
+    default:
+        panic("UNKNOWN EVENT!")
 	}
 }
 

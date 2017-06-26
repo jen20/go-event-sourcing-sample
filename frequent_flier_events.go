@@ -17,8 +17,19 @@ type FrequentFlierAccountCreated struct {
 	OpeningTierPoints int
 }
 
+func (e FrequentFlierAccountCreated) Apply(state *FrequentFlierAccount) {
+    state.id = e.AccountId
+    state.miles = e.OpeningMiles
+    state.tierPoints = e.OpeningTierPoints
+    state.status = StatusRed
+}
+
 type StatusMatched struct {
 	NewStatus Status
+}
+
+func (e StatusMatched) Apply(state *FrequentFlierAccount) {
+    state.status = e.NewStatus
 }
 
 type FlightTaken struct {
@@ -26,4 +37,13 @@ type FlightTaken struct {
 	TierPointsAdded int
 }
 
+func (e FlightTaken) Apply(state *FrequentFlierAccount) {
+    state.miles = state.miles + e.MilesAdded
+    state.tierPoints = state.tierPoints + e.TierPointsAdded
+}
+
 type PromotedToGoldStatus struct{}
+
+func (e PromotedToGoldStatus) Apply(state *FrequentFlierAccount) {
+    state.status = StatusGold
+}
