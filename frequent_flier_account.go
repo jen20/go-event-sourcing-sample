@@ -1,11 +1,14 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"go-event-sourcing-sample/pkg/eventsourcing"
+)
 
 // FrequentFlierAccount represents the state of an instance of the frequent flier
 // account aggregate. It tracks changes on itself in the form of domain events.
 type FrequentFlierAccount struct {
-	aggregateRoot AggregateRoot
+	aggregateRoot eventsourcing.AggregateRoot
 	miles         int
 	tierPoints    int
 	status        Status
@@ -43,15 +46,15 @@ type PromotedToGoldStatus struct {
 // CreateFrequentFlierAccount constructor
 func CreateFrequentFlierAccount(id string) *FrequentFlierAccount {
 	self := &FrequentFlierAccount{}
-	self.aggregateRoot.trackChange(*self, FrequentFlierAccountCreated{OpeningMiles: 0, OpeningTierPoints: 0}, self.transition)
+	self.aggregateRoot.TrackChange(*self, FrequentFlierAccountCreated{OpeningMiles: 0, OpeningTierPoints: 0}, self.transition)
 	return self
 }
 
 // NewFrequentFlierAccountFromHistory creates a FrequentFlierAccount given a history
 // of the changes which have occurred for that account.
-func NewFrequentFlierAccountFromHistory(events []Event) *FrequentFlierAccount {
+func NewFrequentFlierAccountFromHistory(events []eventsourcing.Event) *FrequentFlierAccount {
 	state := &FrequentFlierAccount{}
-	state.aggregateRoot.buildFromHistory(events, state.transition)
+	state.aggregateRoot.BuildFromHistory(events, state.transition)
 	return state
 }
 
@@ -62,22 +65,22 @@ func NewFrequentFlierAccountFromHistory(events []Event) *FrequentFlierAccount {
 // If recording this flight takes the account over a status boundary, it will
 // automatically upgrade the account to the new status level.
 func (self *FrequentFlierAccount) RecordFlightTaken(miles int, tierPoints int) {
-	self.aggregateRoot.trackChange(*self, FlightTaken{MilesAdded: miles, TierPointsAdded: tierPoints}, self.transition)
+	self.aggregateRoot.TrackChange(*self, FlightTaken{MilesAdded: miles, TierPointsAdded: tierPoints}, self.transition)
 
 	if self.tierPoints > 10 && self.status != StatusSilver {
-		self.aggregateRoot.trackChange(*self, StatusMatched{NewStatus: StatusSilver}, self.transition)
+		self.aggregateRoot.TrackChange(*self, StatusMatched{NewStatus: StatusSilver}, self.transition)
 	}
 
 	if self.tierPoints > 20 && self.status != StatusGold {
-		self.aggregateRoot.trackChange(*self, PromotedToGoldStatus{}, self.transition)
+		self.aggregateRoot.TrackChange(*self, PromotedToGoldStatus{}, self.transition)
 	}
 }
 
 // transition imnplements the pattern match against event types used both as part
 // of the fold when loading from history and when tracking an individual change.
-func (state *FrequentFlierAccount) transition(event Event) {
+func (state *FrequentFlierAccount) transition(event eventsourcing.Event) {
 
-	switch e := event.data.(type) {
+	switch e := event.Data.(type) {
 
 	case FrequentFlierAccountCreated:
 		state.miles = e.OpeningMiles
@@ -102,9 +105,9 @@ func (a FrequentFlierAccount) String() string {
 	var reason string
 	var aggregateType string
 
-	if len(a.aggregateRoot.changes) > 0 {
-		reason = a.aggregateRoot.changes[0].reason
-		aggregateType = a.aggregateRoot.changes[0].aggregateType
+	if len(a.aggregateRoot.Changes) > 0 {
+		reason = a.aggregateRoot.Changes[0].Reason
+		aggregateType = a.aggregateRoot.Changes[0].AggregateType
 	} else {
 		reason = "No reason"
 		aggregateType = "No aggregateType"
@@ -121,5 +124,5 @@ func (a FrequentFlierAccount) String() string {
 	(Saved Version: %d)
 
 `
-	return fmt.Sprintf(format, a.aggregateRoot.id, a.miles, a.tierPoints, a.status, reason, aggregateType, len(a.aggregateRoot.changes), a.aggregateRoot.currentVersion(), a.aggregateRoot.version)
+	return fmt.Sprintf(format, a.aggregateRoot.ID, a.miles, a.tierPoints, a.status, reason, aggregateType, len(a.aggregateRoot.Changes), a.aggregateRoot.CurrentVersion(), a.aggregateRoot.Version)
 }
