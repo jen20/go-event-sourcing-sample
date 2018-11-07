@@ -5,12 +5,54 @@ import "fmt"
 // FrequentFlierAccount represents the state of an instance of the frequent flier
 // account aggregate. It tracks changes on itself in the form of domain events.
 type FrequentFlierAccount struct {
-	id              string
-	miles           int
-	tierPoints      int
-	status          Status
-	expectedVersion int
-	changes         []interface{}
+	aggregateRoot AggregateRoot
+	miles         int
+	tierPoints    int
+	status        Status
+}
+
+// Status represents the Red, Silver or Gold tier level of a FrequentFlierAccount
+type Status int
+
+const (
+	StatusRed    Status = iota
+	StatusSilver Status = iota
+	StatusGold   Status = iota
+)
+
+// go:generate stringer -type=Status
+
+type FrequentFlierAccountCreated struct {
+	AccountId         string
+	OpeningMiles      int
+	OpeningTierPoints int
+}
+
+type StatusMatched struct {
+	NewStatus Status
+}
+
+type FlightTaken struct {
+	MilesAdded      int
+	TierPointsAdded int
+}
+
+type PromotedToGoldStatus struct {
+}
+
+// CreateFrequentFlierAccount constructor
+func CreateFrequentFlierAccount(id string) *FrequentFlierAccount {
+	self := &FrequentFlierAccount{}
+	self.aggregateRoot.trackChange(*self, FrequentFlierAccountCreated{OpeningMiles: 0, OpeningTierPoints: 0}, self.transition)
+	return self
+}
+
+// NewFrequentFlierAccountFromHistory creates a FrequentFlierAccount given a history
+// of the changes which have occurred for that account.
+func NewFrequentFlierAccountFromHistory(events []Event) *FrequentFlierAccount {
+	state := &FrequentFlierAccount{}
+	state.aggregateRoot.buildFromHistory(events, state.transition)
+	return state
 }
 
 // RecordFlightTaken is used to record the fact that a customer has taken a flight
@@ -20,39 +62,24 @@ type FrequentFlierAccount struct {
 // If recording this flight takes the account over a status boundary, it will
 // automatically upgrade the account to the new status level.
 func (self *FrequentFlierAccount) RecordFlightTaken(miles int, tierPoints int) {
-	self.trackChange(FlightTaken{MilesAdded: miles, TierPointsAdded: tierPoints})
+	self.aggregateRoot.trackChange(*self, FlightTaken{MilesAdded: miles, TierPointsAdded: tierPoints}, self.transition)
+
+	if self.tierPoints > 10 && self.status != StatusSilver {
+		self.aggregateRoot.trackChange(*self, StatusMatched{NewStatus: StatusSilver}, self.transition)
+	}
 
 	if self.tierPoints > 20 && self.status != StatusGold {
-		self.trackChange(PromotedToGoldStatus{})
+		self.aggregateRoot.trackChange(*self, PromotedToGoldStatus{}, self.transition)
 	}
-}
-
-// String implements Stringer for FrequentFlierAccount instances.
-func (a FrequentFlierAccount) String() string {
-	format := `FrequentFlierAccount: %s
-	Miles: %d
-	TierPoints: %d
-	Status: %s
-	(Expected Version: %d)
-	(Pending Changes: %d)
-`
-	return fmt.Sprintf(format, a.id, a.miles, a.tierPoints, a.status, a.expectedVersion, len(a.changes))
-}
-
-// trackChange is used internally by bevhavious methods to apply a state change to
-// the current instance and also track it in order that it can be persisted later.
-func (state *FrequentFlierAccount) trackChange(event interface{}) {
-	state.changes = append(state.changes, event)
-	state.transition(event)
 }
 
 // transition imnplements the pattern match against event types used both as part
 // of the fold when loading from history and when tracking an individual change.
-func (state *FrequentFlierAccount) transition(event interface{}) {
-	switch e := event.(type) {
+func (state *FrequentFlierAccount) transition(event Event) {
+
+	switch e := event.data.(type) {
 
 	case FrequentFlierAccountCreated:
-		state.id = e.AccountId
 		state.miles = e.OpeningMiles
 		state.tierPoints = e.OpeningTierPoints
 		state.status = StatusRed
@@ -69,13 +96,30 @@ func (state *FrequentFlierAccount) transition(event interface{}) {
 	}
 }
 
-// NewFrequentFlierAccountFromHistory creates a FrequentFlierAccount given a history
-// of the changes which have occurred for that account.
-func NewFrequentFlierAccountFromHistory(events []interface{}) *FrequentFlierAccount {
-	state := &FrequentFlierAccount{}
-	for _, event := range events {
-		state.transition(event)
-		state.expectedVersion++
+// String implements Stringer for FrequentFlierAccount instances.
+func (a FrequentFlierAccount) String() string {
+
+	var reason string
+	var aggregateType string
+
+	if len(a.aggregateRoot.changes) > 0 {
+		reason = a.aggregateRoot.changes[0].reason
+		aggregateType = a.aggregateRoot.changes[0].aggregateType
+	} else {
+		reason = "No reason"
+		aggregateType = "No aggregateType"
 	}
-	return state
+
+	format := `FrequentFlierAccount: %s
+	Miles: %d
+	TierPoints: %d
+	Status: %s
+	(First Reason: %s)
+	(First AggregateType %s)
+	(Pending Changes: %d)
+	(UnSaved Version: %d)
+	(Saved Version: %d)
+
+`
+	return fmt.Sprintf(format, a.aggregateRoot.id, a.miles, a.tierPoints, a.status, reason, aggregateType, len(a.aggregateRoot.changes), a.aggregateRoot.currentVersion(), a.aggregateRoot.version)
 }
