@@ -7,7 +7,7 @@ import (
 
 func main() {
 
-	aggregateID := "123"
+	aggregateID := eventsourcing.AggregateRootID("123")
 
 	history := []eventsourcing.Event{
 		eventsourcing.Event{AggregateRootID: aggregateID, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: "FrequentFlierAccount", Data: FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}},
@@ -30,11 +30,11 @@ func main() {
 	newAggregate.RecordFlightTaken(20, 1233)
 	fmt.Println(newAggregate)
 
-	fmt.Println(newAggregate.aggregateRoot.Changes)
+	fmt.Println(newAggregate.aggregateRoot.Changes())
 	fmt.Println("-----")
 
-	copyAggregate := NewFrequentFlierAccountFromHistory(newAggregate.aggregateRoot.Changes)
+	copyAggregate := NewFrequentFlierAccountFromHistory(newAggregate.aggregateRoot.Changes())
 	fmt.Println(copyAggregate.status)
-	fmt.Println(copyAggregate.aggregateRoot.Changes)
+	fmt.Println(copyAggregate.aggregateRoot.Changes())
 
 }

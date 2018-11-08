@@ -46,6 +46,7 @@ type PromotedToGoldStatus struct {
 // CreateFrequentFlierAccount constructor
 func CreateFrequentFlierAccount(id string) *FrequentFlierAccount {
 	self := &FrequentFlierAccount{}
+	//self.aggregateRoot.SetID(id)
 	self.aggregateRoot.TrackChange(*self, FrequentFlierAccountCreated{OpeningMiles: 0, OpeningTierPoints: 0}, self.transition)
 	return self
 }
@@ -105,9 +106,9 @@ func (a FrequentFlierAccount) String() string {
 	var reason string
 	var aggregateType string
 
-	if len(a.aggregateRoot.Changes) > 0 {
-		reason = a.aggregateRoot.Changes[0].Reason
-		aggregateType = a.aggregateRoot.Changes[0].AggregateType
+	if len(a.aggregateRoot.Changes()) > 0 {
+		reason = a.aggregateRoot.Changes()[0].Reason
+		aggregateType = a.aggregateRoot.Changes()[0].AggregateType
 	} else {
 		reason = "No reason"
 		aggregateType = "No aggregateType"
@@ -120,9 +121,7 @@ func (a FrequentFlierAccount) String() string {
 	(First Reason: %s)
 	(First AggregateType %s)
 	(Pending Changes: %d)
-	(UnSaved Version: %d)
-	(Saved Version: %d)
-
+	(Version: %d)
 `
-	return fmt.Sprintf(format, a.aggregateRoot.ID, a.miles, a.tierPoints, a.status, reason, aggregateType, len(a.aggregateRoot.Changes), a.aggregateRoot.CurrentVersion(), a.aggregateRoot.Version)
+	return fmt.Sprintf(format, a.aggregateRoot.ID(), a.miles, a.tierPoints, a.status, reason, aggregateType, len(a.aggregateRoot.Changes()), a.aggregateRoot.Version())
 }
