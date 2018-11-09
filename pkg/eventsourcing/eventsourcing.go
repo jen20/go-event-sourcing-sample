@@ -34,9 +34,10 @@ type Event struct {
 type transition func(Event)
 
 // AggregateRepository the repository interface to get and save events
+// TODO: iterate on this interface
 type AggregateRepository interface {
-	Save(events []Event) error
-	Get(id AggregateRootID) ([]Event, error)
+	Save(aggregate AggregateRoot) error
+	Get(id AggregateRootID, fromVersion, toVersion Version) ([]Event, error)
 }
 
 var emptyAggregateID = AggregateRootID("")
