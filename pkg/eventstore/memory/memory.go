@@ -1,4 +1,4 @@
-package eventstore
+package memory
 
 import (
 	"fmt"
@@ -11,8 +11,8 @@ type Memory struct {
 	eventsInOrder   []eventsourcing.Event
 }
 
-// CreateMemory in memory event store
-func CreateMemory() *Memory {
+// Create in memory event store
+func Create() *Memory {
 	return &Memory{
 		aggregateEvents: make(map[string][]eventsourcing.Event),
 		eventsInOrder:   make([]eventsourcing.Event, 0),

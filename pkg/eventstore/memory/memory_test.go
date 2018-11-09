@@ -1,8 +1,8 @@
-package eventstore_test
+package memory_test
 
 import (
 	"go-event-sourcing-sample/pkg/eventsourcing"
-	"go-event-sourcing-sample/pkg/eventstore"
+	"go-event-sourcing-sample/pkg/eventstore/memory"
 
 	"testing"
 )
@@ -65,7 +65,7 @@ func testEventOtherAggregate() eventsourcing.Event {
 }
 
 func TestSaveAndGetEvents(t *testing.T) {
-	eventstore := eventstore.CreateMemory()
+	eventstore := memory.Create()
 	defer eventstore.Close()
 	err := eventstore.Save(testEvents())
 	if err != nil {
@@ -101,7 +101,7 @@ func TestSaveAndGetEvents(t *testing.T) {
 }
 
 func TestSaveEventsFromMoreThanOneAggregate(t *testing.T) {
-	eventstore := eventstore.CreateMemory()
+	eventstore := memory.Create()
 	defer eventstore.Close()
 
 	invalidEvent := append(testEvents(), testEventOtherAggregate())
@@ -113,7 +113,7 @@ func TestSaveEventsFromMoreThanOneAggregate(t *testing.T) {
 }
 
 func TestSaveEventsFromMoreThanOneAggregateType(t *testing.T) {
-	eventstore := eventstore.CreateMemory()
+	eventstore := memory.Create()
 	defer eventstore.Close()
 
 	events := testEvents()
@@ -126,7 +126,7 @@ func TestSaveEventsFromMoreThanOneAggregateType(t *testing.T) {
 }
 
 func TestSaveEventsInWrongOrder(t *testing.T) {
-	eventstore := eventstore.CreateMemory()
+	eventstore := memory.Create()
 	defer eventstore.Close()
 
 	events := append(testEvents(), testEvents()[0])
@@ -138,7 +138,7 @@ func TestSaveEventsInWrongOrder(t *testing.T) {
 }
 
 func TestSaveEventsInWrongVersion(t *testing.T) {
-	eventstore := eventstore.CreateMemory()
+	eventstore := memory.Create()
 	defer eventstore.Close()
 
 	events := testEventsPartTwo()
@@ -150,7 +150,7 @@ func TestSaveEventsInWrongVersion(t *testing.T) {
 }
 
 func TestSaveEventsWithEmptyReason(t *testing.T) {
-	eventstore := eventstore.CreateMemory()
+	eventstore := memory.Create()
 	defer eventstore.Close()
 
 	events := testEvents()
@@ -163,7 +163,7 @@ func TestSaveEventsWithEmptyReason(t *testing.T) {
 }
 
 func TestGetGlobalEvents(t *testing.T) {
-	eventstore := eventstore.CreateMemory()
+	eventstore := memory.Create()
 	defer eventstore.Close()
 
 	events := testEvents()
@@ -182,7 +182,7 @@ func TestGetGlobalEvents(t *testing.T) {
 }
 
 func TestGetGlobalEventsNotExisting(t *testing.T) {
-	eventstore := eventstore.CreateMemory()
+	eventstore := memory.Create()
 	defer eventstore.Close()
 
 	events := testEvents()
