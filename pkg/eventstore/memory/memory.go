@@ -1,8 +1,8 @@
 package memory
 
 import (
-	"fmt"
 	"go-event-sourcing-sample/pkg/eventsourcing"
+	"go-event-sourcing-sample/pkg/eventstore"
 )
 
 // Memory is a handler for event streaming
@@ -29,7 +29,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	// get bucket name from first event
 	aggregateType := events[0].AggregateType
 	aggregateID := events[0].AggregateRootID
-	bucketName := bucketName(aggregateType, string(aggregateID))
+	bucketName := eventstore.BucketName(aggregateType, string(aggregateID))
 
 	evBucket := e.aggregateEvents[bucketName]
 	currentVersion := eventsourcing.Version(0)
@@ -40,7 +40,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	}
 
 	//Validate events
-	ok, err := e.validateEvents(aggregateID, currentVersion, events)
+	ok, err := eventstore.ValidateEvents(aggregateID, currentVersion, events)
 	if !ok {
 		//TODO created describing errors
 		return err
@@ -61,7 +61,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 
 // Get aggregate events
 func (e *Memory) Get(id string, aggregateType string) []eventsourcing.Event {
-	return e.aggregateEvents[bucketName(aggregateType, id)]
+	return e.aggregateEvents[eventstore.BucketName(aggregateType, id)]
 }
 
 // GlobalGet returns events from the global order
@@ -85,33 +85,4 @@ func (e *Memory) GlobalGet(start int, count int) []eventsourcing.Event {
 // Close does nothing
 func (e *Memory) Close() {
 
-}
-
-func bucketName(aggregateType, aggregateID string) string {
-	return aggregateType + "_" + aggregateID
-}
-
-func (e *Memory) validateEvents(aggregateID eventsourcing.AggregateRootID, currentVersion eventsourcing.Version, events []eventsourcing.Event) (bool, error) {
-	aggregateType := events[0].AggregateType
-
-	for _, event := range events {
-		if event.AggregateRootID != aggregateID {
-			return false, fmt.Errorf("events holds events for more than one aggregate")
-		}
-
-		if event.AggregateType != aggregateType {
-			return false, fmt.Errorf("events holds events for more than one aggregate type")
-		}
-
-		if currentVersion+1 != event.Version {
-			return false, fmt.Errorf("concurrency error")
-		}
-
-		if event.Reason == "" {
-			return false, fmt.Errorf("event holds no reason")
-		}
-
-		currentVersion = event.Version
-	}
-	return true, nil
 }

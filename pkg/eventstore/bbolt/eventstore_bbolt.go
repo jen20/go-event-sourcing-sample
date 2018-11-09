@@ -67,7 +67,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 	// get bucket name from first event
 	aggregateType := events[0].AggregateType
 	aggregateID := events[0].AggregateRootID
-	bucketName := bucketName(aggregateType, string(aggregateID))
+	bucketName := eventstore.BucketName(aggregateType, string(aggregateID))
 
 	tx, err := e.db.Begin(true)
 	if err != nil {
@@ -80,7 +80,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 		// Ensure that we have a bucket named events_aggregateType_aggregateID for the given aggregate
 		err = e.createBucket([]byte(bucketName), tx)
 		if err != nil {
-			return fmt.Errorf("EXIT SAVE")
+			return fmt.Errorf("Could not create aggregate events bucket")
 		}
 		evBucket = tx.Bucket([]byte(bucketName))
 	}
@@ -101,7 +101,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 	}
 
 	//Validate events
-	ok, err := e.validateEvents(aggregateID, currentVersion, events)
+	ok, err := eventstore.ValidateEvents(aggregateID, currentVersion, events)
 	if !ok {
 		//TODO created describing errors
 		return err
@@ -153,8 +153,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 
 // Get aggregate events
 func (e *BBolt) Get(id string, aggregateType string) ([]eventsourcing.Event, error) {
-	fmt.Println("GET")
-	bucketName := bucketName(aggregateType, id)
+	bucketName := eventstore.BucketName(aggregateType, id)
 
 	tx, err := e.db.Begin(false)
 	if err != nil {
@@ -193,33 +192,4 @@ func (e *BBolt) createBucket(bucketName []byte, tx *bbolt.Tx) error {
 // Close closes the event stream and the underlying database
 func (e *BBolt) Close() error {
 	return e.db.Close()
-}
-
-func bucketName(aggregateType, aggregateID string) string {
-	return aggregateType + "_" + aggregateID
-}
-
-func (e *BBolt) validateEvents(aggregateID eventsourcing.AggregateRootID, currentVersion eventsourcing.Version, events []eventsourcing.Event) (bool, error) {
-	aggregateType := events[0].AggregateType
-
-	for _, event := range events {
-		if event.AggregateRootID != aggregateID {
-			return false, fmt.Errorf("events holds events for more than one aggregate")
-		}
-
-		if event.AggregateType != aggregateType {
-			return false, fmt.Errorf("events holds events for more than one aggregate type")
-		}
-
-		if currentVersion+1 != event.Version {
-			return false, fmt.Errorf("concurrency error")
-		}
-
-		if event.Reason == "" {
-			return false, fmt.Errorf("event holds no reason")
-		}
-
-		currentVersion = event.Version
-	}
-	return true, nil
 }
