@@ -161,3 +161,37 @@ func TestSaveEventsWithEmptyReason(t *testing.T) {
 		t.Error("Should not be able to save events with empty reason")
 	}
 }
+
+func TestGetGlobalEvents(t *testing.T) {
+	eventstore := eventstore.CreateMemory()
+	defer eventstore.Close()
+
+	events := testEvents()
+	eventstore.Save(events)
+
+	fetchedEvents := eventstore.GlobalGet(2, 2)
+
+	if len(fetchedEvents) != 2 {
+		t.Error("Fetched the wrong amount of events")
+	}
+
+	if fetchedEvents[0].Version != events[2].Version {
+		t.Errorf("Fetched the wrong events %v %v", fetchedEvents, events[2].Version)
+	}
+
+}
+
+func TestGetGlobalEventsNotExisting(t *testing.T) {
+	eventstore := eventstore.CreateMemory()
+	defer eventstore.Close()
+
+	events := testEvents()
+	eventstore.Save(events)
+
+	fetchedEvents := eventstore.GlobalGet(100, 2)
+
+	if len(fetchedEvents) != 0 {
+		t.Error("Fetched none existing events")
+	}
+
+}

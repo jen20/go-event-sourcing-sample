@@ -64,6 +64,24 @@ func (e *Memory) Get(id string, aggregateType string) []eventsourcing.Event {
 	return e.aggregateEvents[bucketName(aggregateType, id)]
 }
 
+// GlobalGet returns events from the global order
+func (e *Memory) GlobalGet(start int, count int) []eventsourcing.Event {
+
+	events := make([]eventsourcing.Event, 0)
+
+	for i, event := range e.eventsInOrder {
+		if i >= start+count {
+			break
+		}
+		if i >= start {
+			events = append(events, event)
+		}
+
+	}
+
+	return events
+}
+
 // Close does nothing
 func (e *Memory) Close() {
 
