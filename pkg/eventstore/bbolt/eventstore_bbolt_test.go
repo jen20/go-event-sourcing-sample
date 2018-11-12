@@ -239,6 +239,7 @@ func (person *Person) transition(event eventsourcing.Event) {
 	case AgedOneYear:
 		person.age += 1
 	}
+
 }
 
 // CreatePersonWithID constructor for the Person that sets the aggregate id from the outside
@@ -265,7 +266,6 @@ func CreatePersonFromHistory(events []eventsourcing.Event) *Person {
 // GrowOlder command
 func (person *Person) GrowOlder() {
 	person.aggregateRoot.TrackChange(*person, AgedOneYear{}, person.transition)
-
 }
 
 // Benchmark the time it takes to retrieve a list of keys for an entity type
@@ -291,6 +291,9 @@ func BenchmarkFetch101Events(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		events, _ := eventstore.Get("123", person.aggregateRoot.Changes()[0].AggregateType)
-		CreatePersonFromHistory(events)
+		p := CreatePersonFromHistory(events)
+		if p.age != 100 {
+			b.Error("person holds the wrong age")
+		}
 	}
 }
