@@ -2,13 +2,13 @@ package bbolt
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"go-event-sourcing-sample/pkg/eventsourcing"
 	"go-event-sourcing-sample/pkg/eventstore"
 	"strconv"
 	"time"
+	"unsafe"
 
 	"github.com/etcd-io/bbolt"
 )
@@ -89,14 +89,18 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 	cursor := evBucket.Cursor()
 	k, obj := cursor.Last()
 	if k != nil {
-		jsonObj := eventstore.MustDecompress(obj)
+
+		event := (*eventsourcing.Event)(unsafe.Pointer(&obj[0]))
+
+		/*jsonObj := eventstore.MustDecompress(obj)
 		// UnMarshal the json object
 		var event = eventsourcing.Event{}
 		err := json.Unmarshal(jsonObj, &event)
 		if err != nil {
 			return err
-		}
+		}*/
 		// Last version in the list
+
 		currentVersion = event.Version
 	}
 
@@ -113,18 +117,30 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 	}
 
 	for _, event := range events {
-		// Marshal the event object for saving to the database
-		obj, err := json.Marshal(event)
-		if err != nil {
-			return fmt.Errorf("could not marshal delta object for %#v", obj)
-		}
 
 		sequence, err := evBucket.NextSequence()
 		if err != nil {
 			return fmt.Errorf("could not get sequence for %#v", bucketName)
 		}
 
-		err = evBucket.Put(itob(int(sequence)), eventstore.MustCompress(obj))
+		value := make([]byte, unsafe.Sizeof(eventsourcing.Event{}))
+		t := (*eventsourcing.Event)(unsafe.Pointer(&value[0]))
+		/*
+			// Marshal the event object for saving to the database
+			obj, err := json.Marshal(event)
+			if err != nil {
+				return fmt.Errorf("could not marshal delta object for %#v", obj)
+			}*/
+
+		// Sets the properties on the event
+		t.AggregateRootID = event.AggregateRootID
+		t.AggregateType = event.AggregateType
+		t.Data = event.Data
+		t.MetaData = event.MetaData
+		t.Reason = event.Reason
+		t.Version = event.Version
+
+		err = evBucket.Put(itob(int(sequence)), value)
 		if err != nil {
 			return fmt.Errorf("could not save event %#v in bucket", event)
 		}
@@ -165,20 +181,41 @@ func (e *BBolt) Get(id string, aggregateType string) ([]eventsourcing.Event, err
 
 	cursor := evBucket.Cursor()
 	events := []eventsourcing.Event{}
-	var event = eventsourcing.Event{}
+	var event = &eventsourcing.Event{}
 
 	for k, obj := cursor.First(); k != nil; k, obj = cursor.Next() {
-		jsonObj := eventstore.MustDecompress(obj)
+		/*jsonObj := eventstore.MustDecompress(obj)
 		// UnMarshal the json object
 		err := json.Unmarshal(jsonObj, &event)
 		if err != nil {
 			return nil, fmt.Errorf("could not unmarshal json object for %#v", obj)
-		}
-		events = append(events, eventsourcing.Event(event))
+		}*/
+
+		event = (*eventsourcing.Event)(unsafe.Pointer(&obj[0]))
+		events = append(events, *event)
 	}
 	return events, nil
 }
 
+/*
+// GlobalGet returns events from the global order
+func (e *BBolt) GlobalGet(start int, count int) []eventsourcing.Event {
+
+	events := make([]eventsourcing.Event, 0)
+
+	for i, event := range e.eventsInOrder {
+		if i >= start+count {
+			break
+		}
+		if i >= start {
+			events = append(events, event)
+		}
+
+	}
+
+	return events
+}
+*/
 // CreateBucket creates a bucket
 func (e *BBolt) createBucket(bucketName []byte, tx *bbolt.Tx) error {
 	// Ensure that we have a bucket named event_type for the given type
