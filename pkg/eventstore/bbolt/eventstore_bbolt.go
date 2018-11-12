@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"go-event-sourcing-sample/pkg/eventsourcing"
 	"go-event-sourcing-sample/pkg/eventstore"
-	"strconv"
 	"time"
 	"unsafe"
 
@@ -134,8 +133,8 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 		if err != nil {
 			return fmt.Errorf("could not get next sequence for global bucket")
 		}
-		globalSequenceValue := bucketName + ":" + strconv.FormatUint(sequence, 10)
-		err = globalBucket.Put(itob(int(globalSequence)), []byte(globalSequenceValue))
+		//globalSequenceValue := bucketName + ":" + strconv.FormatUint(sequence, 10)
+		err = globalBucket.Put(itob(int(globalSequence)), value)
 		if err != nil {
 			return fmt.Errorf("could not save global sequence pointer for %#v", bucketName)
 		}
@@ -173,25 +172,33 @@ func (e *BBolt) Get(id string, aggregateType string) ([]eventsourcing.Event, err
 	return events, nil
 }
 
-/*
 // GlobalGet returns events from the global order
 func (e *BBolt) GlobalGet(start int, count int) []eventsourcing.Event {
+	tx, err := e.db.Begin(false)
+	if err != nil {
+		return nil
+	}
+	defer tx.Rollback()
 
-	events := make([]eventsourcing.Event, 0)
+	evBucket := tx.Bucket([]byte(globalEventOrderBucketName))
+	cursor := evBucket.Cursor()
+	events := []eventsourcing.Event{}
+	var event = &eventsourcing.Event{}
+	counter := 0
 
-	for i, event := range e.eventsInOrder {
-		if i >= start+count {
+	for k, obj := cursor.Seek([]byte(itob(int(start)))); k != nil; k, obj = cursor.Next() {
+		event = (*eventsourcing.Event)(unsafe.Pointer(&obj[0]))
+		events = append(events, *event)
+		counter++
+
+		if counter >= count {
 			break
 		}
-		if i >= start {
-			events = append(events, event)
-		}
-
 	}
 
 	return events
 }
-*/
+
 // CreateBucket creates a bucket
 func (e *BBolt) createBucket(bucketName []byte, tx *bbolt.Tx) error {
 	// Ensure that we have a bucket named event_type for the given type

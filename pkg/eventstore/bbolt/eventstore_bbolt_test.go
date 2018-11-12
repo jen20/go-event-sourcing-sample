@@ -175,7 +175,6 @@ func TestSaveEventsWithEmptyReason(t *testing.T) {
 	}
 }
 
-/*
 func TestGetGlobalEvents(t *testing.T) {
 	eventstore := bbolt.MustOpenBBolt(dbFile)
 	defer eventstore.Close()
@@ -189,8 +188,8 @@ func TestGetGlobalEvents(t *testing.T) {
 		t.Error("Fetched the wrong amount of events")
 	}
 
-	if fetchedEvents[0].Version != events[2].Version {
-		t.Errorf("Fetched the wrong events %v %v", fetchedEvents, events[2].Version)
+	if fetchedEvents[0].Version != events[1].Version {
+		t.Errorf("Fetched the wrong events %v %v", fetchedEvents[0].Version, events[2].Version)
 	}
 
 }
@@ -209,4 +208,3 @@ func TestGetGlobalEventsNotExisting(t *testing.T) {
 	}
 
 }
-*/
