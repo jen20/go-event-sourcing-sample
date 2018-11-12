@@ -17,8 +17,8 @@ const (
 	globalEventOrderBucketName = "global_event_order"
 )
 
-// NotFoundError is returned when a given entity cannot be found in the event stream
-var NotFoundError = errors.New("NotFoundError")
+// ErrorNotFound is returned when a given entity cannot be found in the event stream
+var ErrorNotFound = errors.New("NotFoundError")
 
 // itob returns an 8-byte big endian representation of v.
 func itob(v int) []byte {
@@ -89,18 +89,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 	cursor := evBucket.Cursor()
 	k, obj := cursor.Last()
 	if k != nil {
-
 		event := (*eventsourcing.Event)(unsafe.Pointer(&obj[0]))
-
-		/*jsonObj := eventstore.MustDecompress(obj)
-		// UnMarshal the json object
-		var event = eventsourcing.Event{}
-		err := json.Unmarshal(jsonObj, &event)
-		if err != nil {
-			return err
-		}*/
-		// Last version in the list
-
 		currentVersion = event.Version
 	}
 
@@ -125,12 +114,6 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 
 		value := make([]byte, unsafe.Sizeof(eventsourcing.Event{}))
 		t := (*eventsourcing.Event)(unsafe.Pointer(&value[0]))
-		/*
-			// Marshal the event object for saving to the database
-			obj, err := json.Marshal(event)
-			if err != nil {
-				return fmt.Errorf("could not marshal delta object for %#v", obj)
-			}*/
 
 		// Sets the properties on the event
 		t.AggregateRootID = event.AggregateRootID
@@ -184,13 +167,6 @@ func (e *BBolt) Get(id string, aggregateType string) ([]eventsourcing.Event, err
 	var event = &eventsourcing.Event{}
 
 	for k, obj := cursor.First(); k != nil; k, obj = cursor.Next() {
-		/*jsonObj := eventstore.MustDecompress(obj)
-		// UnMarshal the json object
-		err := json.Unmarshal(jsonObj, &event)
-		if err != nil {
-			return nil, fmt.Errorf("could not unmarshal json object for %#v", obj)
-		}*/
-
 		event = (*eventsourcing.Event)(unsafe.Pointer(&obj[0]))
 		events = append(events, *event)
 	}
