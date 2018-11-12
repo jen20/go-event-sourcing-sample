@@ -36,7 +36,7 @@ var dbFile = "test.db"
 var aggregateID = eventsourcing.AggregateRootID("123")
 var aggregateType = "FrequentFlierAccount"
 
-func testEvents() []eventsourcing.Event {
+func testEventsWithID(aggregateID eventsourcing.AggregateRootID) []eventsourcing.Event {
 
 	history := []eventsourcing.Event{
 		eventsourcing.Event{AggregateRootID: aggregateID, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Data: FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}},
@@ -48,6 +48,10 @@ func testEvents() []eventsourcing.Event {
 	}
 
 	return history
+}
+
+func testEvents() []eventsourcing.Event {
+	return testEventsWithID(aggregateID)
 }
 
 func testEventsPartTwo() []eventsourcing.Event {
@@ -206,3 +210,20 @@ func TestGetGlobalEventsNotExisting(t *testing.T) {
 
 }
 */
+
+// Benchmark the time it takes to retrieve a list of keys for an entity type
+func BenchmarkFetch6Event(b *testing.B) {
+	os.Remove(dbFile)
+	eventstore := bbolt.MustOpenBBolt(dbFile)
+	defer eventstore.Close()
+
+	err := eventstore.Save(testEventsWithID("123"))
+	if err != nil {
+		b.Error(err)
+	}
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		eventstore.Get("123", aggregateType)
+	}
+}
