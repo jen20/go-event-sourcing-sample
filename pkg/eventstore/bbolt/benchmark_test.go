@@ -39,15 +39,14 @@ func (person *Person) transition(event eventsourcing.Event) {
 
 }
 
-// CreatePersonWithID constructor for the Person that sets the aggregate id from the outside
-func CreatePersonWithID(id, name string) (*Person, error) {
+// CreatePerson constructor for the Person that sets the aggregate id from the outside
+func CreatePerson(name string) (*Person, error) {
 
 	if name == "" {
 		return nil, fmt.Errorf("name can't be blank")
 	}
 
 	person := &Person{}
-	person.aggregateRoot.SetID(id)
 	person.aggregateRoot.TrackChange(*person, PersonCreated{name: name, initialAge: 0}, person.transition)
 	return person, nil
 }
@@ -65,13 +64,13 @@ func (person *Person) GrowOlder() {
 	person.aggregateRoot.TrackChange(*person, AgedOneYear{}, person.transition)
 }
 
-// Benchmark the time it takes to retrieve a list of keys for an entity type
+// Benchmark the time it takes to retrieve aggregate events and build the aggregate
 func BenchmarkFetchAndApply101Events(b *testing.B) {
 	os.Remove(dbFile)
 	eventstore := bbolt.MustOpenBBolt(dbFile)
 	defer eventstore.Close()
 
-	person, err := CreatePersonWithID("123", "kalle")
+	person, err := CreatePerson("kalle")
 	if err != nil {
 		b.Error(err)
 	}
@@ -87,10 +86,34 @@ func BenchmarkFetchAndApply101Events(b *testing.B) {
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		events, _ := eventstore.Get("123", person.aggregateRoot.Changes()[0].AggregateType)
+		events, _ := eventstore.Get(person.aggregateRoot.ID(), person.aggregateRoot.Changes()[0].AggregateType)
 		p := CreatePersonFromHistory(events)
 		if p.age != 100 {
 			b.Error("person holds the wrong age")
+		}
+	}
+}
+
+// Benchmark the time it takes to save 101 events
+func BenchmarkSave101Events(b *testing.B) {
+	os.Remove(dbFile)
+	eventstore := bbolt.MustOpenBBolt(dbFile)
+	defer eventstore.Close()
+
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		person, err := CreatePerson("kalle")
+		if err != nil {
+			b.Error(err)
+		}
+
+		for i := 0; i < 100; i++ {
+			person.GrowOlder()
+		}
+
+		err = eventstore.Save(person.aggregateRoot.Changes())
+		if err != nil {
+			b.Error(err)
 		}
 	}
 }
