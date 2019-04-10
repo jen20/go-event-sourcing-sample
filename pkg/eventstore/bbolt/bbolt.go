@@ -66,7 +66,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 	// get bucket name from first event
 	aggregateType := events[0].AggregateType
 	aggregateID := events[0].AggregateRootID
-	bucketName := eventstore.BucketName(aggregateType, string(aggregateID))
+	bucketName := aggregateKey(aggregateType, string(aggregateID))
 
 	tx, err := e.db.Begin(true)
 	if err != nil {
@@ -79,7 +79,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 		// Ensure that we have a bucket named events_aggregateType_aggregateID for the given aggregate
 		err = e.createBucket([]byte(bucketName), tx)
 		if err != nil {
-			return fmt.Errorf("Could not create aggregate events bucket")
+			return fmt.Errorf("could not create aggregate events bucket")
 		}
 		evBucket = tx.Bucket([]byte(bucketName))
 	}
@@ -151,7 +151,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 
 // Get aggregate events
 func (e *BBolt) Get(id string, aggregateType string) ([]eventsourcing.Event, error) {
-	bucketName := eventstore.BucketName(aggregateType, id)
+	bucketName := aggregateKey(aggregateType, id)
 
 	tx, err := e.db.Begin(false)
 	if err != nil {
@@ -162,8 +162,8 @@ func (e *BBolt) Get(id string, aggregateType string) ([]eventsourcing.Event, err
 	evBucket := tx.Bucket([]byte(bucketName))
 
 	cursor := evBucket.Cursor()
-	events := []eventsourcing.Event{}
-	var event = &eventsourcing.Event{}
+	events := make([]eventsourcing.Event,0)
+	event  := &eventsourcing.Event{}
 
 	for k, obj := cursor.First(); k != nil; k, obj = cursor.Next() {
 		event = (*eventsourcing.Event)(unsafe.Pointer(&obj[0]))
@@ -182,8 +182,8 @@ func (e *BBolt) GlobalGet(start int, count int) []eventsourcing.Event {
 
 	evBucket := tx.Bucket([]byte(globalEventOrderBucketName))
 	cursor := evBucket.Cursor()
-	events := []eventsourcing.Event{}
-	var event = &eventsourcing.Event{}
+	events := make([]eventsourcing.Event, 0)
+	event := &eventsourcing.Event{}
 	counter := 0
 
 	for k, obj := cursor.Seek([]byte(itob(int(start)))); k != nil; k, obj = cursor.Next() {
@@ -198,6 +198,10 @@ func (e *BBolt) GlobalGet(start int, count int) []eventsourcing.Event {
 
 	return events
 }
+// Close closes the event stream and the underlying database
+func (e *BBolt) Close() error {
+	return e.db.Close()
+}
 
 // CreateBucket creates a bucket
 func (e *BBolt) createBucket(bucketName []byte, tx *bbolt.Tx) error {
@@ -209,7 +213,7 @@ func (e *BBolt) createBucket(bucketName []byte, tx *bbolt.Tx) error {
 
 }
 
-// Close closes the event stream and the underlying database
-func (e *BBolt) Close() error {
-	return e.db.Close()
+// aggregateKey generate a aggregate key to store events against from aggregateType and aggregateID
+func aggregateKey(aggregateType, aggregateID string) string {
+	return aggregateType + "_" + aggregateID
 }

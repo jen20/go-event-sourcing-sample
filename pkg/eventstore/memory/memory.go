@@ -8,7 +8,7 @@ import (
 // Memory is a handler for event streaming
 type Memory struct {
 	aggregateEvents map[string][]eventsourcing.Event // The memory structure where we store aggregate events
-	eventsInOrder   []eventsourcing.Event
+	eventsInOrder   []eventsourcing.Event // The global event order
 }
 
 // Create in memory event store
@@ -29,7 +29,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	// get bucket name from first event
 	aggregateType := events[0].AggregateType
 	aggregateID := events[0].AggregateRootID
-	bucketName := eventstore.BucketName(aggregateType, string(aggregateID))
+	bucketName := aggregateKey(aggregateType, string(aggregateID))
 
 	evBucket := e.aggregateEvents[bucketName]
 	currentVersion := eventsourcing.Version(0)
@@ -61,12 +61,11 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 
 // Get aggregate events
 func (e *Memory) Get(id string, aggregateType string) []eventsourcing.Event {
-	return e.aggregateEvents[eventstore.BucketName(aggregateType, id)]
+	return e.aggregateEvents[aggregateKey(aggregateType, id)]
 }
 
 // GlobalGet returns events from the global order
 func (e *Memory) GlobalGet(start int, count int) []eventsourcing.Event {
-
 	events := make([]eventsourcing.Event, 0)
 
 	for i, event := range e.eventsInOrder {
@@ -78,11 +77,15 @@ func (e *Memory) GlobalGet(start int, count int) []eventsourcing.Event {
 		}
 
 	}
-
 	return events
 }
 
 // Close does nothing
 func (e *Memory) Close() {
 
+}
+
+// aggregateKey generate a aggregate key to store events against from aggregateType and aggregateID
+func aggregateKey(aggregateType, aggregateID string) string {
+	return aggregateType + "_" + aggregateID
 }

@@ -5,11 +5,6 @@ import (
 	"go-event-sourcing-sample/pkg/eventsourcing"
 )
 
-// BucketName generate a bucketname from aggregateType and aggregateID
-func BucketName(aggregateType, aggregateID string) string {
-	return aggregateType + "_" + aggregateID
-}
-
 // ValidateEvents make sure the incoming events are valid
 func ValidateEvents(aggregateID eventsourcing.AggregateRootID, currentVersion eventsourcing.Version, events []eventsourcing.Event) (bool, error) {
 	aggregateType := events[0].AggregateType
