@@ -2,7 +2,7 @@ package eventsourcing_test
 
 import (
 	"fmt"
-	"go-event-sourcing-sample/pkg/eventsourcing"
+	eventsourcing "go-event-sourcing-sample"
 	"testing"
 )
 
@@ -11,12 +11,12 @@ type Person struct {
 	aggregateRoot eventsourcing.AggregateRoot
 	name          string
 	age           int
+	dead		  int
 }
 
-// PersonCreated event
-type PersonCreated struct {
+// Born event
+type Born struct {
 	name       string
-	initialAge int
 }
 
 // AgedOneYear event
@@ -25,26 +25,29 @@ type AgedOneYear struct {
 
 // CreatePerson constructor for the Person
 func CreatePerson(name string) (*Person, error) {
-
 	if name == "" {
 		return nil, fmt.Errorf("name can't be blank")
 	}
 
 	person := &Person{}
-	person.aggregateRoot.TrackChange(*person, PersonCreated{name: name, initialAge: 0}, person.transition)
+	person.aggregateRoot.TrackChange(*person, Born{name: name}, person.transition)
 	return person, nil
 }
 
 // CreatePersonWithID constructor for the Person that sets the aggregate id from the outside
 func CreatePersonWithID(id, name string) (*Person, error) {
-
 	if name == "" {
 		return nil, fmt.Errorf("name can't be blank")
 	}
 
 	person := &Person{}
-	person.aggregateRoot.SetID(id)
-	person.aggregateRoot.TrackChange(*person, PersonCreated{name: name, initialAge: 0}, person.transition)
+	err := person.aggregateRoot.SetID(id)
+	if err == eventsourcing.ErrAggregateAlreadyExists {
+		return nil, err
+	} else if err != nil {
+		panic(err)
+	}
+	person.aggregateRoot.TrackChange(*person, Born{name: name}, person.transition)
 	return person, nil
 }
 
@@ -58,8 +61,8 @@ func (person *Person) GrowOlder() {
 func (person *Person) transition(event eventsourcing.Event) {
 	switch e := event.Data.(type) {
 
-	case PersonCreated:
-		person.age = e.initialAge
+	case Born:
+		person.age = 0
 		person.name = e.name
 
 	case AgedOneYear:
@@ -68,7 +71,6 @@ func (person *Person) transition(event eventsourcing.Event) {
 }
 
 func TestCreateNewPerson(t *testing.T) {
-
 	person, err := CreatePerson("kalle")
 	if err != nil {
 		t.Fatal("Error when creating person", err.Error())
@@ -105,9 +107,21 @@ func TestCreateNewPersonWithIDFromOutside(t *testing.T) {
 
 func TestBlankName(t *testing.T) {
 	_, err := CreatePerson("")
-
 	if err == nil {
 		t.Fatal("The constructor should return error on blank name")
+	}
+
+}
+
+func TestSetIDOnExistingPerson(t *testing.T) {
+	person, err := CreatePerson("Kalle")
+	if err != nil {
+		t.Fatal("The constructor returned error")
+	}
+
+	err = person.aggregateRoot.SetID("new_id")
+	if err == nil {
+		t.Fatal("Should not be possible to set id on already existing person")
 	}
 
 }

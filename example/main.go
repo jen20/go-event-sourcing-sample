@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"go-event-sourcing-sample/pkg/eventsourcing"
+	eventsourcing "go-event-sourcing-sample"
 )
 
 func main() {
@@ -30,12 +30,12 @@ func main() {
 	newAggregate.RecordFlightTaken(20, 1233)
 	fmt.Println(newAggregate)
 
-	fmt.Println(newAggregate.aggregateRoot.Changes())
+	fmt.Println(newAggregate.Changes())
 	fmt.Println("-----")
 
-	copyAggregate := NewFrequentFlierAccountFromHistory(newAggregate.aggregateRoot.Changes())
+	copyAggregate := NewFrequentFlierAccountFromHistory(newAggregate.Changes())
 	fmt.Println(copyAggregate.status)
-	fmt.Println(copyAggregate.aggregateRoot.Changes())
+	fmt.Println(copyAggregate.Changes())
 
 
 

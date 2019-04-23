@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"go-event-sourcing-sample/pkg/eventsourcing"
-	"go-event-sourcing-sample/pkg/eventstore"
+	"go-event-sourcing-sample"
+	"go-event-sourcing-sample/eventstore"
 	"time"
 	"unsafe"
 

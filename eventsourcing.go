@@ -1,7 +1,7 @@
 package eventsourcing
 
 import (
-	"fmt"
+	"errors"
 	"reflect"
 
 	uuid "github.com/satori/go.uuid"
@@ -33,6 +33,9 @@ type Event struct {
 // transition function to apply events on aggregates to build its current state
 type transition func(Event)
 
+// ErrAggregateAlreadyExists returned if the ID is set more than one time
+var ErrAggregateAlreadyExists = errors.New("its not possible to set id on already existing aggregate")
+
 // AggregateRepository the repository interface to get and save events
 // TODO: iterate on this interface
 type AggregateRepository interface {
@@ -42,7 +45,7 @@ type AggregateRepository interface {
 
 var emptyAggregateID = AggregateRootID("")
 
-// TrackChange is used internally by bevhavious methods to apply a state change to
+// TrackChange is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
 func (state *AggregateRoot) TrackChange(aggregate interface{}, eventData interface{}, fn transition) {
 
@@ -53,8 +56,13 @@ func (state *AggregateRoot) TrackChange(aggregate interface{}, eventData interfa
 
 	reason := reflect.TypeOf(eventData).Name()
 	aggregateType := reflect.TypeOf(aggregate).Name()
-
-	event := Event{AggregateRootID: state.id, Version: state.nextVersion(), Reason: reason, AggregateType: aggregateType, Data: eventData}
+	event := Event{
+		AggregateRootID: state.id,
+		Version: state.nextVersion(),
+		Reason: reason,
+		AggregateType: aggregateType,
+		Data: eventData,
+	}
 	state.changes = append(state.changes, event)
 
 	fn(event)
@@ -92,13 +100,12 @@ func (state *AggregateRoot) setID(id string) {
 
 // Setters
 
-// SetID opens up the possability to set manual aggregate id from the outside
+// SetID opens up the possibility to set manual aggregate id from the outside
 func (state *AggregateRoot) SetID(id string) error {
 	//TODO: Validate id structure
 
 	if state.id != emptyAggregateID {
-		//TODO create a better error
-		return fmt.Errorf("Its not possible to set id on already existing aggregate")
+		return ErrAggregateAlreadyExists
 	}
 
 	state.setID(id)
@@ -117,7 +124,7 @@ func (state *AggregateRoot) Changes() []Event {
 	return state.changes
 }
 
-// Version get the current version including the pending changes ()
+// Version get the current version including the pending changes
 func (state *AggregateRoot) Version() int {
 	return int(state.currentVersion())
 }

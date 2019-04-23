@@ -1,14 +1,14 @@
 package memory
 
 import (
-	"go-event-sourcing-sample/pkg/eventsourcing"
-	"go-event-sourcing-sample/pkg/eventstore"
+	eventsourcing "go-event-sourcing-sample"
+	"go-event-sourcing-sample/eventstore"
 )
 
 // Memory is a handler for event streaming
 type Memory struct {
 	aggregateEvents map[string][]eventsourcing.Event // The memory structure where we store aggregate events
-	eventsInOrder   []eventsourcing.Event // The global event order
+	eventsInOrder   []eventsourcing.Event            // The global event order
 }
 
 // Create in memory event store

@@ -2,8 +2,8 @@ package bbolt_test
 
 import (
 	"fmt"
-	"go-event-sourcing-sample/pkg/eventsourcing"
-	"go-event-sourcing-sample/pkg/eventstore/bbolt"
+	eventsourcing "go-event-sourcing-sample"
+	"go-event-sourcing-sample/eventstore/bbolt"
 	"os"
 	"testing"
 )
@@ -67,8 +67,8 @@ func (person *Person) GrowOlder() {
 // Benchmark the time it takes to retrieve aggregate events and build the aggregate
 func BenchmarkFetchAndApply101Events(b *testing.B) {
 	os.Remove(dbFile)
-	eventstore := bbolt.MustOpenBBolt(dbFile)
-	defer eventstore.Close()
+	eventStore := bbolt.MustOpenBBolt(dbFile)
+	defer eventStore.Close()
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -79,14 +79,14 @@ func BenchmarkFetchAndApply101Events(b *testing.B) {
 		person.GrowOlder()
 	}
 
-	err = eventstore.Save(person.aggregateRoot.Changes())
+	err = eventStore.Save(person.aggregateRoot.Changes())
 	if err != nil {
 		b.Error(err)
 	}
 
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		events, _ := eventstore.Get(person.aggregateRoot.ID(), person.aggregateRoot.Changes()[0].AggregateType)
+		events, _ := eventStore.Get(person.aggregateRoot.ID(), person.aggregateRoot.Changes()[0].AggregateType)
 		p := CreatePersonFromHistory(events)
 		if p.age != 100 {
 			b.Error("person holds the wrong age")

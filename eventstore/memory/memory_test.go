@@ -1,10 +1,8 @@
-package bbolt_test
+package memory_test
 
 import (
-	"go-event-sourcing-sample/pkg/eventsourcing"
-	"go-event-sourcing-sample/pkg/eventstore/bbolt"
-	"os"
-
+	"go-event-sourcing-sample"
+	"go-event-sourcing-sample/eventstore/memory"
 	"testing"
 )
 
@@ -32,11 +30,10 @@ type FlightTaken struct {
 	TierPointsAdded int
 }
 
-var dbFile = "test.db"
 var aggregateID = eventsourcing.AggregateRootID("123")
 var aggregateType = "FrequentFlierAccount"
 
-func testEventsWithID(aggregateID eventsourcing.AggregateRootID) []eventsourcing.Event {
+func testEvents() []eventsourcing.Event {
 
 	history := []eventsourcing.Event{
 		{AggregateRootID: aggregateID, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Data: FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}},
@@ -48,10 +45,6 @@ func testEventsWithID(aggregateID eventsourcing.AggregateRootID) []eventsourcing
 	}
 
 	return history
-}
-
-func testEvents() []eventsourcing.Event {
-	return testEventsWithID(aggregateID)
 }
 
 func testEventsPartTwo() []eventsourcing.Event {
@@ -70,22 +63,15 @@ func testEventOtherAggregate() eventsourcing.Event {
 	return eventsourcing.Event{AggregateRootID: aggregateIDOther, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Data: FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}}
 }
 
-func TestMain(m *testing.M) {
-	_ = os.Remove(dbFile)
-	errLevel := m.Run()
-	os.Remove(dbFile)
-	os.Exit(errLevel)
-}
-
 func TestSaveAndGetEvents(t *testing.T) {
-	bolt := bbolt.MustOpenBBolt(dbFile)
-	defer bolt.Close()
-	err := bolt.Save(testEvents())
+	eventStore := memory.Create()
+	defer eventStore.Close()
+	err := eventStore.Save(testEvents())
 	if err != nil {
 		t.Error(err)
 	}
 
-	fetchedEvents, err := bolt.Get(string(aggregateID), aggregateType)
+	fetchedEvents := eventStore.Get(string(aggregateID), aggregateType)
 
 	if len(fetchedEvents) != len(testEvents()) {
 		t.Error("Wrong number of events returned")
@@ -96,12 +82,12 @@ func TestSaveAndGetEvents(t *testing.T) {
 	}
 
 	// Add more events to the same aggregate event stream
-	err = bolt.Save(testEventsPartTwo())
+	err = eventStore.Save(testEventsPartTwo())
 	if err != nil {
 		t.Error(err)
 	}
 
-	fetchedEventsIncludingPartTwo, err := bolt.Get(string(aggregateID), aggregateType)
+	fetchedEventsIncludingPartTwo := eventStore.Get(string(aggregateID), aggregateType)
 
 	if len(fetchedEventsIncludingPartTwo) != len(append(testEvents(), testEventsPartTwo()...)) {
 		t.Error("Wrong number of events returned")
@@ -114,94 +100,94 @@ func TestSaveAndGetEvents(t *testing.T) {
 }
 
 func TestSaveEventsFromMoreThanOneAggregate(t *testing.T) {
-	eventstore := bbolt.MustOpenBBolt(dbFile)
-	defer eventstore.Close()
+	eventStore := memory.Create()
+	defer eventStore.Close()
 
 	invalidEvent := append(testEvents(), testEventOtherAggregate())
 
-	err := eventstore.Save(invalidEvent)
+	err := eventStore.Save(invalidEvent)
 	if err == nil {
 		t.Error("Should not be able to save events that belongs to more than one aggregate")
 	}
 }
 
 func TestSaveEventsFromMoreThanOneAggregateType(t *testing.T) {
-	eventstore := bbolt.MustOpenBBolt(dbFile)
-	defer eventstore.Close()
+	eventStore := memory.Create()
+	defer eventStore.Close()
 
 	events := testEvents()
 	events[1].AggregateType = "OtherAggregateType"
 
-	err := eventstore.Save(events)
+	err := eventStore.Save(events)
 	if err == nil {
 		t.Error("Should not be able to save events that belongs to other aggregate type")
 	}
 }
 
 func TestSaveEventsInWrongOrder(t *testing.T) {
-	eventstore := bbolt.MustOpenBBolt(dbFile)
-	defer eventstore.Close()
+	eventStore := memory.Create()
+	defer eventStore.Close()
 
 	events := append(testEvents(), testEvents()[0])
 
-	err := eventstore.Save(events)
+	err := eventStore.Save(events)
 	if err == nil {
 		t.Error("Should not be able to save events that are in wrong version order")
 	}
 }
 
 func TestSaveEventsInWrongVersion(t *testing.T) {
-	eventstore := bbolt.MustOpenBBolt(dbFile)
-	defer eventstore.Close()
+	eventStore := memory.Create()
+	defer eventStore.Close()
 
 	events := testEventsPartTwo()
 
-	err := eventstore.Save(events)
+	err := eventStore.Save(events)
 	if err == nil {
 		t.Error("Should not be able to save events that are out of sync compared to the storage order")
 	}
 }
 
 func TestSaveEventsWithEmptyReason(t *testing.T) {
-	eventstore := bbolt.MustOpenBBolt(dbFile)
-	defer eventstore.Close()
+	eventStore := memory.Create()
+	defer eventStore.Close()
 
 	events := testEvents()
 	events[2].Reason = ""
 
-	err := eventstore.Save(events)
+	err := eventStore.Save(events)
 	if err == nil {
 		t.Error("Should not be able to save events with empty reason")
 	}
 }
 
 func TestGetGlobalEvents(t *testing.T) {
-	eventstore := bbolt.MustOpenBBolt(dbFile)
-	defer eventstore.Close()
+	eventStore := memory.Create()
+	defer eventStore.Close()
 
 	events := testEvents()
-	eventstore.Save(events)
+	eventStore.Save(events)
 
-	fetchedEvents := eventstore.GlobalGet(2, 2)
+	fetchedEvents := eventStore.GlobalGet(2, 2)
 
 	if len(fetchedEvents) != 2 {
 		t.Error("Fetched the wrong amount of events")
 	}
 
-	if fetchedEvents[0].Version != events[1].Version {
-		t.Errorf("Fetched the wrong events %v %v", fetchedEvents[0].Version, events[2].Version)
+	if fetchedEvents[0].Version != events[2].Version {
+		t.Errorf("Fetched the wrong events %v %v", fetchedEvents, events[2].Version)
 	}
 
 }
 
 func TestGetGlobalEventsNotExisting(t *testing.T) {
-	eventstore := bbolt.MustOpenBBolt(dbFile)
-	defer eventstore.Close()
+	eventStore := memory.Create()
+	defer eventStore.Close()
 
 	events := testEvents()
-	eventstore.Save(events)
+	eventStore.Save(events)
 
-	fetchedEvents := eventstore.GlobalGet(100, 2)
+	fetchedEvents := eventStore.GlobalGet(100, 2)
 
 	if len(fetchedEvents) != 0 {
 		t.Error("Fetched none existing events")
