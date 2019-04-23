@@ -3,9 +3,9 @@ package bbolt
 import (
 	"encoding/binary"
 	"errors"
+	"eventsourcing"
+	"eventsourcing/eventstore"
 	"fmt"
-	"go-event-sourcing-sample"
-	"go-event-sourcing-sample/eventstore"
 	"time"
 	"unsafe"
 
@@ -162,8 +162,8 @@ func (e *BBolt) Get(id string, aggregateType string) ([]eventsourcing.Event, err
 	evBucket := tx.Bucket([]byte(bucketName))
 
 	cursor := evBucket.Cursor()
-	events := make([]eventsourcing.Event,0)
-	event  := &eventsourcing.Event{}
+	events := make([]eventsourcing.Event, 0)
+	event := &eventsourcing.Event{}
 
 	for k, obj := cursor.First(); k != nil; k, obj = cursor.Next() {
 		event = (*eventsourcing.Event)(unsafe.Pointer(&obj[0]))
@@ -198,6 +198,7 @@ func (e *BBolt) GlobalGet(start int, count int) []eventsourcing.Event {
 
 	return events
 }
+
 // Close closes the event stream and the underlying database
 func (e *BBolt) Close() error {
 	return e.db.Close()

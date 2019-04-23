@@ -1,8 +1,8 @@
 package main
 
 import (
+	"eventsourcing"
 	"fmt"
-	eventsourcing "go-event-sourcing-sample"
 )
 
 func main() {
@@ -36,8 +36,5 @@ func main() {
 	copyAggregate := NewFrequentFlierAccountFromHistory(newAggregate.Changes())
 	fmt.Println(copyAggregate.status)
 	fmt.Println(copyAggregate.Changes())
-
-
-
 
 }

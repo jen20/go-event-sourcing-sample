@@ -1,16 +1,16 @@
 package main
 
 import (
+	"eventsourcing"
 	"fmt"
-	eventsourcing "go-event-sourcing-sample"
 )
 
 // FrequentFlierAccount represents the state of an instance of the frequent flier
 // account aggregate. It tracks changes on itself in the form of domain events.
 type FrequentFlierAccount struct {
-	miles         int
-	tierPoints    int
-	status        Status
+	miles      int
+	tierPoints int
+	status     Status
 }
 
 type FrequentFlierAccountAggregate struct {

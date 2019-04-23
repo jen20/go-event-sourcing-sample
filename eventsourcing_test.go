@@ -1,8 +1,8 @@
 package eventsourcing_test
 
 import (
+	"eventsourcing"
 	"fmt"
-	eventsourcing "go-event-sourcing-sample"
 	"testing"
 )
 
@@ -11,12 +11,12 @@ type Person struct {
 	aggregateRoot eventsourcing.AggregateRoot
 	name          string
 	age           int
-	dead		  int
+	dead          int
 }
 
 // Born event
 type Born struct {
-	name       string
+	name string
 }
 
 // AgedOneYear event

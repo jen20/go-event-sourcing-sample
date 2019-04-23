@@ -1,8 +1,8 @@
 package memory_test
 
 import (
-	"go-event-sourcing-sample"
-	"go-event-sourcing-sample/eventstore/memory"
+	"eventsourcing"
+	"eventsourcing/eventstore/memory"
 	"testing"
 )
 

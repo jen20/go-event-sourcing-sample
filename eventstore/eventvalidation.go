@@ -1,8 +1,8 @@
 package eventstore
 
 import (
+	"eventsourcing"
 	"fmt"
-	"go-event-sourcing-sample"
 )
 
 // ValidateEvents make sure the incoming events are valid

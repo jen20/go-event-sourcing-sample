@@ -1,8 +1,8 @@
 package memory
 
 import (
-	eventsourcing "go-event-sourcing-sample"
-	"go-event-sourcing-sample/eventstore"
+	"eventsourcing"
+	"eventsourcing/eventstore"
 )
 
 // Memory is a handler for event streaming

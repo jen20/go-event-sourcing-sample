@@ -1,10 +1,9 @@
 package bbolt_test
 
 import (
-	"go-event-sourcing-sample"
-	"go-event-sourcing-sample/eventstore/bbolt"
+	"eventsourcing"
+	"eventsourcing/eventstore/bbolt"
 	"os"
-
 	"testing"
 )
 
