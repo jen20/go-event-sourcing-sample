@@ -1,8 +1,8 @@
 package bbolt_test
 
 import (
-	eventsourcing "gitlab.se.axis.com/morganh/go-event-sourcing-sample"
-	"gitlab.se.axis.com/morganh/go-event-sourcing-sample/eventstore/bbolt"
+	"gitlab.se.axis.com/morganh/eventsourcing"
+	"gitlab.se.axis.com/morganh/eventsourcing/eventstore/bbolt"
 	"os"
 	"testing"
 )

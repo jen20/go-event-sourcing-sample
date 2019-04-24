@@ -2,7 +2,7 @@ package eventstore
 
 import (
 	"errors"
-	eventsourcing "gitlab.se.axis.com/morganh/go-event-sourcing-sample"
+	"gitlab.se.axis.com/morganh/eventsourcing"
 )
 
 // ErrEventMultipleAggregates when events holds different id

@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
-	eventsourcing "gitlab.se.axis.com/morganh/go-event-sourcing-sample"
-	"gitlab.se.axis.com/morganh/go-event-sourcing-sample/eventstore/memory"
+	"gitlab.se.axis.com/morganh/eventsourcing"
+	"gitlab.se.axis.com/morganh/eventsourcing/eventstore/memory"
 )
 
 func main() {

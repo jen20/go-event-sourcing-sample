@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	eventsourcing "gitlab.se.axis.com/morganh/go-event-sourcing-sample"
-	"gitlab.se.axis.com/morganh/go-event-sourcing-sample/eventstore"
+	"gitlab.se.axis.com/morganh/eventsourcing"
+	"gitlab.se.axis.com/morganh/eventsourcing/eventstore"
 	"time"
 	"unsafe"
 
