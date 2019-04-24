@@ -2,7 +2,9 @@ package main
 
 import (
 	"eventsourcing"
+	"eventsourcing/eventstore/memory"
 	"fmt"
+	"github.com/davecgh/go-spew/spew"
 )
 
 func main() {
@@ -21,6 +23,17 @@ func main() {
 	aggregate := NewFrequentFlierAccountFromHistory(history)
 	fmt.Println("Before RecordFlightTaken")
 	fmt.Println(aggregate)
+
+	aggregate = CreateFrequentFlierAccount("morgan")
+	aggregate.RecordFlightTaken(10, 5)
+
+	eventStore := memory.Create()
+	repo := eventsourcing.NewRepository(eventStore)
+	repo.Save(aggregate)
+
+	a := FrequentFlierAccountAggregate{}
+	repo.Get(aggregate.ID(), &a)
+	spew.Dump(a)
 
 	aggregate.RecordFlightTaken(1000, 3)
 	fmt.Println("After RecordFlightTaken")

@@ -30,18 +30,11 @@ type Event struct {
 	MetaData        map[string]interface{}
 }
 
-// transition function to apply events on aggregates to build its current state
+// Transition function to apply events on aggregates to build its current state
 type transition func(Event)
 
 // ErrAggregateAlreadyExists returned if the ID is set more than one time
 var ErrAggregateAlreadyExists = errors.New("its not possible to set id on already existing aggregate")
-
-// AggregateRepository the repository interface to get and save events
-// TODO: iterate on this interface
-type AggregateRepository interface {
-	Save(aggregate AggregateRoot) error
-	Get(id AggregateRootID, fromVersion, toVersion Version) ([]Event, error)
-}
 
 var emptyAggregateID = AggregateRootID("")
 
@@ -55,13 +48,13 @@ func (state *AggregateRoot) TrackChange(aggregate interface{}, eventData interfa
 	}
 
 	reason := reflect.TypeOf(eventData).Name()
-	aggregateType := reflect.TypeOf(aggregate).Name()
+	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
 	event := Event{
 		AggregateRootID: state.id,
-		Version: state.nextVersion(),
-		Reason: reason,
-		AggregateType: aggregateType,
-		Data: eventData,
+		Version:         state.nextVersion(),
+		Reason:          reason,
+		AggregateType:   aggregateType,
+		Data:            eventData,
 	}
 	state.changes = append(state.changes, event)
 

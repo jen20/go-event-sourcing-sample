@@ -29,9 +29,9 @@ func CreatePerson(name string) (*Person, error) {
 		return nil, fmt.Errorf("name can't be blank")
 	}
 
-	person := &Person{}
-	person.aggregateRoot.TrackChange(*person, Born{name: name}, person.transition)
-	return person, nil
+	person := Person{}
+	person.aggregateRoot.TrackChange(&person, Born{name: name}, person.Transition)
+	return &person, nil
 }
 
 // CreatePersonWithID constructor for the Person that sets the aggregate id from the outside
@@ -40,25 +40,25 @@ func CreatePersonWithID(id, name string) (*Person, error) {
 		return nil, fmt.Errorf("name can't be blank")
 	}
 
-	person := &Person{}
+	person := Person{}
 	err := person.aggregateRoot.SetID(id)
 	if err == eventsourcing.ErrAggregateAlreadyExists {
 		return nil, err
 	} else if err != nil {
 		panic(err)
 	}
-	person.aggregateRoot.TrackChange(*person, Born{name: name}, person.transition)
-	return person, nil
+	person.aggregateRoot.TrackChange(&person, Born{name: name}, person.Transition)
+	return &person, nil
 }
 
 // GrowOlder command
 func (person *Person) GrowOlder() {
-	person.aggregateRoot.TrackChange(*person, AgedOneYear{}, person.transition)
+	person.aggregateRoot.TrackChange(person, AgedOneYear{}, person.Transition)
 
 }
 
-// transition the person state dependent on the events
-func (person *Person) transition(event eventsourcing.Event) {
+// Transition the person state dependent on the events
+func (person *Person) Transition(event eventsourcing.Event) {
 	switch e := event.Data.(type) {
 
 	case Born:

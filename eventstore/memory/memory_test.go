@@ -71,7 +71,7 @@ func TestSaveAndGetEvents(t *testing.T) {
 		t.Error(err)
 	}
 
-	fetchedEvents := eventStore.Get(string(aggregateID), aggregateType)
+	fetchedEvents, _ := eventStore.Get(string(aggregateID), aggregateType)
 
 	if len(fetchedEvents) != len(testEvents()) {
 		t.Error("Wrong number of events returned")
@@ -87,7 +87,7 @@ func TestSaveAndGetEvents(t *testing.T) {
 		t.Error(err)
 	}
 
-	fetchedEventsIncludingPartTwo := eventStore.Get(string(aggregateID), aggregateType)
+	fetchedEventsIncludingPartTwo, _ := eventStore.Get(string(aggregateID), aggregateType)
 
 	if len(fetchedEventsIncludingPartTwo) != len(append(testEvents(), testEventsPartTwo()...)) {
 		t.Error("Wrong number of events returned")

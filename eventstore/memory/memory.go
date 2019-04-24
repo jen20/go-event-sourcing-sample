@@ -60,8 +60,8 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 }
 
 // Get aggregate events
-func (e *Memory) Get(id string, aggregateType string) []eventsourcing.Event {
-	return e.aggregateEvents[aggregateKey(aggregateType, id)]
+func (e *Memory) Get(id string, aggregateType string) ([]eventsourcing.Event, error) {
+	return e.aggregateEvents[aggregateKey(aggregateType, id)], nil
 }
 
 // GlobalGet returns events from the global order

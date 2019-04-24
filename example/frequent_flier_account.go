@@ -14,8 +14,8 @@ type FrequentFlierAccount struct {
 }
 
 type FrequentFlierAccountAggregate struct {
-	FrequentFlierAccount
 	eventsourcing.AggregateRoot
+	FrequentFlierAccount
 }
 
 // Status represents the Red, Silver or Gold tier level of a FrequentFlierAccount
@@ -49,18 +49,18 @@ type PromotedToGoldStatus struct {
 
 // CreateFrequentFlierAccount constructor
 func CreateFrequentFlierAccount(id string) *FrequentFlierAccountAggregate {
-	self := &FrequentFlierAccountAggregate{}
+	self := FrequentFlierAccountAggregate{}
 	//self.aggregateRoot.SetID(id)
-	self.TrackChange(*self, FrequentFlierAccountCreated{OpeningMiles: 0, OpeningTierPoints: 0}, self.transition)
-	return self
+	self.TrackChange(&self, FrequentFlierAccountCreated{OpeningMiles: 0, OpeningTierPoints: 0}, self.Transition)
+	return &self
 }
 
 // NewFrequentFlierAccountFromHistory creates a FrequentFlierAccount given a history
 // of the changes which have occurred for that account.
 func NewFrequentFlierAccountFromHistory(events []eventsourcing.Event) *FrequentFlierAccountAggregate {
-	state := &FrequentFlierAccountAggregate{}
-	state.BuildFromHistory(events, state.transition)
-	return state
+	state := FrequentFlierAccountAggregate{}
+	state.BuildFromHistory(events, state.Transition)
+	return &state
 }
 
 // RecordFlightTaken is used to record the fact that a customer has taken a flight
@@ -70,20 +70,20 @@ func NewFrequentFlierAccountFromHistory(events []eventsourcing.Event) *FrequentF
 // If recording this flight takes the account over a status boundary, it will
 // automatically upgrade the account to the new status level.
 func (self *FrequentFlierAccountAggregate) RecordFlightTaken(miles int, tierPoints int) {
-	self.TrackChange(*self, FlightTaken{MilesAdded: miles, TierPointsAdded: tierPoints}, self.transition)
+	self.TrackChange(self, FlightTaken{MilesAdded: miles, TierPointsAdded: tierPoints}, self.Transition)
 
 	if self.tierPoints > 10 && self.status != StatusSilver {
-		self.TrackChange(*self, StatusMatched{NewStatus: StatusSilver}, self.transition)
+		self.TrackChange(self, StatusMatched{NewStatus: StatusSilver}, self.Transition)
 	}
 
 	if self.tierPoints > 20 && self.status != StatusGold {
-		self.TrackChange(*self, PromotedToGoldStatus{}, self.transition)
+		self.TrackChange(self, PromotedToGoldStatus{}, self.Transition)
 	}
 }
 
-// transition implements the pattern match against event types used both as part
+// Transition implements the pattern match against event types used both as part
 // of the fold when loading from history and when tracking an individual change.
-func (state *FrequentFlierAccountAggregate) transition(event eventsourcing.Event) {
+func (state *FrequentFlierAccountAggregate) Transition(event eventsourcing.Event) {
 
 	switch e := event.Data.(type) {
 
