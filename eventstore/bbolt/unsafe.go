@@ -3,7 +3,6 @@
 package bbolt
 
 import (
-	"go-event-sourcing-sample"
 	"unsafe"
 )
 

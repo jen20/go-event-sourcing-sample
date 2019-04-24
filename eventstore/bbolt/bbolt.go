@@ -3,9 +3,9 @@ package bbolt
 import (
 	"encoding/binary"
 	"errors"
-	"eventsourcing"
-	"eventsourcing/eventstore"
 	"fmt"
+	eventsourcing "gitlab.se.axis.com/morganh/go-event-sourcing-sample"
+	"gitlab.se.axis.com/morganh/go-event-sourcing-sample/eventstore"
 	"time"
 	"unsafe"
 

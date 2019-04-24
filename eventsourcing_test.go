@@ -1,8 +1,8 @@
 package eventsourcing_test
 
 import (
-	"eventsourcing"
 	"fmt"
+	eventsourcing "gitlab.se.axis.com/morganh/go-event-sourcing-sample"
 	"testing"
 )
 

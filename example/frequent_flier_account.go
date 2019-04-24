@@ -1,8 +1,8 @@
 package main
 
 import (
-	"eventsourcing"
 	"fmt"
+	eventsourcing "gitlab.se.axis.com/morganh/go-event-sourcing-sample"
 )
 
 // FrequentFlierAccount represents the state of an instance of the frequent flier

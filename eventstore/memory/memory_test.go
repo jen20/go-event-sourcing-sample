@@ -1,8 +1,8 @@
 package memory_test
 
 import (
-	"eventsourcing"
-	"eventsourcing/eventstore/memory"
+	eventsourcing "gitlab.se.axis.com/morganh/go-event-sourcing-sample"
+	"gitlab.se.axis.com/morganh/go-event-sourcing-sample/eventstore/memory"
 	"testing"
 )
 
