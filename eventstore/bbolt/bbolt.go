@@ -93,9 +93,8 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 	}
 
 	//Validate events
-	ok, err := eventstore.ValidateEvents(aggregateID, currentVersion, events)
-	if !ok {
-		//TODO created describing errors
+	err = eventstore.ValidateEvents(aggregateID, currentVersion, events)
+	if err != nil {
 		return err
 	}
 
