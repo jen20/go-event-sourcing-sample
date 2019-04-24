@@ -4,8 +4,9 @@ This is the repository for the code which accompanies my post on Event Sourcing 
 
 Remade by @hallgren
 
-To build and run:
+To build and run the example:
 
+- `cd example`
 - `go build`
-- `./go-event-sourcing-sample`
+- `./example`
 
