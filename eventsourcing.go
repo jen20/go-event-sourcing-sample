@@ -41,7 +41,6 @@ var emptyAggregateID = AggregateRootID("")
 // TrackChange is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
 func (state *AggregateRoot) TrackChange(aggregate interface{}, eventData interface{}, fn transition) {
-
 	// This can be overwritten in the constructor of the aggregate
 	if state.id == emptyAggregateID {
 		state.setID(uuid.Must(uuid.NewV4()).String())
@@ -57,7 +56,6 @@ func (state *AggregateRoot) TrackChange(aggregate interface{}, eventData interfa
 		Data:            eventData,
 	}
 	state.changes = append(state.changes, event)
-
 	fn(event)
 }
 
@@ -78,8 +76,7 @@ func (state *AggregateRoot) nextVersion() Version {
 
 func (state *AggregateRoot) currentVersion() Version {
 	if len(state.changes) > 0 {
-		lastEvent := state.changes[len(state.changes)-1]
-		return lastEvent.Version
+		return state.changes[len(state.changes)-1].Version
 	}
 	return state.version
 }
