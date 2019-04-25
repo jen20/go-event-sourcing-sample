@@ -5,49 +5,49 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"gitlab.se.axis.com/morganh/eventsourcing"
 	"gitlab.se.axis.com/morganh/eventsourcing/eventstore/memory"
+	"time"
 )
 
 func main() {
 
-	aggregateID := eventsourcing.AggregateRootID("123")
-
-	history := []eventsourcing.Event{
-		{AggregateRootID: aggregateID, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: "FrequentFlierAccount", Data: FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}},
-		{AggregateRootID: aggregateID, Version: 2, Reason: "StatusMatched", AggregateType: "FrequentFlierAccount", Data: StatusMatched{NewStatus: StatusSilver}},
-		{AggregateRootID: aggregateID, Version: 3, Reason: "FlightTaken", AggregateType: "FrequentFlierAccount", Data: FlightTaken{MilesAdded: 2525, TierPointsAdded: 5}},
-		{AggregateRootID: aggregateID, Version: 4, Reason: "FlightTaken", AggregateType: "FrequentFlierAccount", Data: FlightTaken{MilesAdded: 2512, TierPointsAdded: 5}},
-		{AggregateRootID: aggregateID, Version: 5, Reason: "FlightTaken", AggregateType: "FrequentFlierAccount", Data: FlightTaken{MilesAdded: 5600, TierPointsAdded: 5}},
-		{AggregateRootID: aggregateID, Version: 6, Reason: "FlightTaken", AggregateType: "FrequentFlierAccount", Data: FlightTaken{MilesAdded: 3000, TierPointsAdded: 3}},
-	}
-	fmt.Println(history)
-	aggregate := NewFrequentFlierAccountFromHistory(history)
-	fmt.Println("Before RecordFlightTaken")
-	fmt.Println(aggregate)
-
-	aggregate = CreateFrequentFlierAccount("morgan")
-	aggregate.RecordFlightTaken(10, 5)
-
+	// Setup a memory based event store
 	eventStore := memory.Create()
 	repo := eventsourcing.NewRepository(eventStore)
-	repo.Save(aggregate)
+	stream := repo.EventStream()
 
-	a := FrequentFlierAccountAggregate{}
-	repo.Get(aggregate.ID(), &a)
-	spew.Dump(a)
+	// Read the event stream async
+	go func(){
+		for {
+			<-stream.Changes()
+			// advance to next value
+			stream.Next()
+			event := stream.Value().(eventsourcing.Event)
+			fmt.Println("STREAM EVENT")
+			spew.Dump(event)
+		}
+	}()
 
-	aggregate.RecordFlightTaken(1000, 3)
-	fmt.Println("After RecordFlightTaken")
-	fmt.Println(aggregate)
+	// Creates the aggregate and adds a second event
+	aggregate := CreateFrequentFlierAccount("morgan")
+	aggregate.RecordFlightTaken(10, 5)
 
-	newAggregate := CreateFrequentFlierAccount("666")
-	newAggregate.RecordFlightTaken(20, 1233)
-	fmt.Println(newAggregate)
 
-	fmt.Println(newAggregate.Changes())
-	fmt.Println("-----")
+	err := repo.Save(aggregate)
+	if err != nil {
+		panic("Could not save the aggregate")
+	}
 
-	copyAggregate := NewFrequentFlierAccountFromHistory(newAggregate.Changes())
-	fmt.Println(copyAggregate.status)
-	fmt.Println(copyAggregate.Changes())
+	// Load the saved aggregate
+	copy := FrequentFlierAccountAggregate{}
+	err = repo.Get(aggregate.ID(), &copy)
+	if err != nil {
+		panic("Could not get aggregate")
+	}
+
+	// Sleep to make sure the events are delivered from the stream
+	time.Sleep(time.Millisecond*100)
+	fmt.Println("AGGREGATE")
+	spew.Dump(copy)
+
 
 }
