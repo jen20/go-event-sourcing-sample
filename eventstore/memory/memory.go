@@ -79,11 +79,11 @@ func (e *Memory) GlobalGet(start int, count int) []eventsourcing.Event {
 		if i >= start {
 			events = append(events, event)
 		}
-
 	}
 	return events
 }
 
+// EventStream returns a stream with all saved events
 func (e *Memory) EventStream() observer.Stream {
 	return e.eventsProperty.Observe()
 }

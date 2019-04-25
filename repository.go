@@ -48,6 +48,7 @@ func (r *Repository) Get(id string, aggregate AggregateRooter) error {
 	return nil
 }
 
+// EventStream returns a stream with all saved events
 func (r *Repository) EventStream() observer.Stream {
 	return r.eventStore.EventStream()
 }

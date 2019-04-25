@@ -203,6 +203,7 @@ func (e *BBolt) GlobalGet(start int, count int) []eventsourcing.Event {
 	return events
 }
 
+// EventStream returns a stream with all saved events
 func (e *BBolt) EventStream() observer.Stream {
 	return e.eventsProperty.Observe()
 }
