@@ -1,6 +1,7 @@
 package eventsourcing
 
 import (
+	"github.com/imkira/go-observer"
 	"reflect"
 )
 
@@ -8,6 +9,7 @@ import (
 type EventStore interface {
 	Save(events []Event) error
 	Get(id string, aggregateType string) ([]Event, error)
+	EventStream() observer.Stream
 }
 
 // AggregateRooter interface to use the aggregate root specific methods
@@ -44,4 +46,8 @@ func (r *Repository) Get(id string, aggregate AggregateRooter) error {
 	}
 	aggregate.BuildFromHistory(events, aggregate.Transition)
 	return nil
+}
+
+func (r *Repository) EventStream() observer.Stream {
+	return r.eventStore.EventStream()
 }

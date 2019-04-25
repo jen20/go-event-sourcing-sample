@@ -5,6 +5,7 @@ import (
 	"gitlab.se.axis.com/morganh/eventsourcing/eventstore/bbolt"
 	"os"
 	"testing"
+	"time"
 )
 
 // Status represents the Red, Silver or Gold tier level of a FrequentFlierAccount
@@ -77,8 +78,11 @@ func TestMain(m *testing.M) {
 }
 
 func TestSaveAndGetEvents(t *testing.T) {
+	os.Remove(dbFile)
 	bolt := bbolt.MustOpenBBolt(dbFile)
 	defer bolt.Close()
+	defer os.Remove(dbFile)
+	
 	err := bolt.Save(testEvents())
 	if err != nil {
 		t.Error(err)
@@ -113,8 +117,10 @@ func TestSaveAndGetEvents(t *testing.T) {
 }
 
 func TestSaveEventsFromMoreThanOneAggregate(t *testing.T) {
+	os.Remove(dbFile)
 	eventStore := bbolt.MustOpenBBolt(dbFile)
 	defer eventStore.Close()
+	defer os.Remove(dbFile)
 
 	invalidEvent := append(testEvents(), testEventOtherAggregate())
 
@@ -125,8 +131,10 @@ func TestSaveEventsFromMoreThanOneAggregate(t *testing.T) {
 }
 
 func TestSaveEventsFromMoreThanOneAggregateType(t *testing.T) {
+	os.Remove(dbFile)
 	eventStore := bbolt.MustOpenBBolt(dbFile)
 	defer eventStore.Close()
+	defer os.Remove(dbFile)
 
 	events := testEvents()
 	events[1].AggregateType = "OtherAggregateType"
@@ -138,8 +146,10 @@ func TestSaveEventsFromMoreThanOneAggregateType(t *testing.T) {
 }
 
 func TestSaveEventsInWrongOrder(t *testing.T) {
+	os.Remove(dbFile)
 	eventStore := bbolt.MustOpenBBolt(dbFile)
 	defer eventStore.Close()
+	defer os.Remove(dbFile)
 
 	events := append(testEvents(), testEvents()[0])
 
@@ -150,8 +160,10 @@ func TestSaveEventsInWrongOrder(t *testing.T) {
 }
 
 func TestSaveEventsInWrongVersion(t *testing.T) {
+	os.Remove(dbFile)
 	eventStore := bbolt.MustOpenBBolt(dbFile)
 	defer eventStore.Close()
+	defer os.Remove(dbFile)
 
 	events := testEventsPartTwo()
 
@@ -162,8 +174,10 @@ func TestSaveEventsInWrongVersion(t *testing.T) {
 }
 
 func TestSaveEventsWithEmptyReason(t *testing.T) {
+	os.Remove(dbFile)
 	eventStore := bbolt.MustOpenBBolt(dbFile)
 	defer eventStore.Close()
+	defer os.Remove(dbFile)
 
 	events := testEvents()
 	events[2].Reason = ""
@@ -175,11 +189,16 @@ func TestSaveEventsWithEmptyReason(t *testing.T) {
 }
 
 func TestGetGlobalEvents(t *testing.T) {
+	os.Remove(dbFile)
 	eventStore := bbolt.MustOpenBBolt(dbFile)
 	defer eventStore.Close()
+	defer os.Remove(dbFile)
 
 	events := testEvents()
-	eventStore.Save(events)
+	err := eventStore.Save(events)
+	if err != nil {
+		t.Error("Could not save the events")
+	}
 
 	fetchedEvents := eventStore.GlobalGet(2, 2)
 
@@ -194,11 +213,16 @@ func TestGetGlobalEvents(t *testing.T) {
 }
 
 func TestGetGlobalEventsNotExisting(t *testing.T) {
+	os.Remove(dbFile)
 	eventStore := bbolt.MustOpenBBolt(dbFile)
 	defer eventStore.Close()
+	defer os.Remove(dbFile)
 
 	events := testEvents()
-	eventStore.Save(events)
+	err := eventStore.Save(events)
+	if err != nil {
+		t.Error("Could not save the events")
+	}
 
 	fetchedEvents := eventStore.GlobalGet(100, 2)
 
@@ -206,4 +230,37 @@ func TestGetGlobalEventsNotExisting(t *testing.T) {
 		t.Error("Fetched none existing events")
 	}
 
+}
+
+func TestEventStream(t *testing.T) {
+	os.Remove(dbFile)
+	eventStore := bbolt.MustOpenBBolt(dbFile)
+	defer eventStore.Close()
+	defer os.Remove(dbFile)
+	stream := eventStore.EventStream()
+
+	events := testEvents()
+	err := eventStore.Save(events)
+	if err != nil {
+		t.Error("Could not save the events")
+	}
+
+	counter := 0
+outer:
+	for {
+		select {
+		// wait for changes
+		case <-stream.Changes():
+			// advance to next value
+			stream.Next()
+			counter++
+		case <-time.After(10*time.Millisecond):
+			// The stream has 10 milliseconds to deliver the events
+			break outer
+		}
+	}
+
+	if counter != 6 {
+		t.Errorf("Not all events was received from the stream, got %q", counter)
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"gitlab.se.axis.com/morganh/eventsourcing"
 	"gitlab.se.axis.com/morganh/eventsourcing/eventstore/memory"
 	"testing"
+	"time"
 )
 
 // Status represents the Red, Silver or Gold tier level of a FrequentFlierAccount
@@ -193,4 +194,35 @@ func TestGetGlobalEventsNotExisting(t *testing.T) {
 		t.Error("Fetched none existing events")
 	}
 
+}
+
+func TestEventStream(t *testing.T) {
+	eventStore := memory.Create()
+	defer eventStore.Close()
+	stream := eventStore.EventStream()
+
+	events := testEvents()
+	err := eventStore.Save(events)
+	if err != nil {
+		t.Error("Could not save the events")
+	}
+
+	counter := 0
+outer:
+	for {
+		select {
+			// wait for changes
+			case <-stream.Changes():
+				// advance to next value
+				stream.Next()
+				counter++
+			case <-time.After(10*time.Millisecond):
+				// The stream has 10 milli seconds to deliver the events
+				break outer
+		}
+	}
+
+	if counter != 6 {
+		t.Errorf("Not all events was received from the stream, got %q", counter)
+	}
 }

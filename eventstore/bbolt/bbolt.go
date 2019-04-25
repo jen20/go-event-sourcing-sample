@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/imkira/go-observer"
 	"gitlab.se.axis.com/morganh/eventsourcing"
 	"gitlab.se.axis.com/morganh/eventsourcing/eventstore"
 	"time"
@@ -28,7 +29,8 @@ func itob(v int) []byte {
 
 // BBolt is a handler for event streaming
 type BBolt struct {
-	db *bbolt.DB // The bbolt db where we store everything
+	db 				*bbolt.DB 			// The bbolt db where we store everything
+	eventsProperty  observer.Property   // A property to which all event changes for all event types are published
 }
 
 // MustOpenBBolt opens the event stream found in the given file. If the file is not found it will be created and
@@ -53,6 +55,7 @@ func MustOpenBBolt(dbFile string) *BBolt {
 	}
 	return &BBolt{
 		db: db,
+		eventsProperty: observer.NewProperty(nil),
 	}
 }
 
@@ -138,6 +141,8 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 			return fmt.Errorf("could not save global sequence pointer for %#v", bucketName)
 		}
 
+		e.eventsProperty.Update(event)
+
 	}
 
 	err = tx.Commit()
@@ -196,6 +201,10 @@ func (e *BBolt) GlobalGet(start int, count int) []eventsourcing.Event {
 	}
 
 	return events
+}
+
+func (e *BBolt) EventStream() observer.Stream {
+	return e.eventsProperty.Observe()
 }
 
 // Close closes the event stream and the underlying database

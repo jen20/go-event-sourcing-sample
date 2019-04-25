@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"github.com/imkira/go-observer"
 	"gitlab.se.axis.com/morganh/eventsourcing"
 	"gitlab.se.axis.com/morganh/eventsourcing/eventstore"
 )
@@ -9,6 +10,7 @@ import (
 type Memory struct {
 	aggregateEvents map[string][]eventsourcing.Event // The memory structure where we store aggregate events
 	eventsInOrder   []eventsourcing.Event            // The global event order
+	eventsProperty  observer.Property   			 // A property to which all event changes for all event types are published
 }
 
 // Create in memory event store
@@ -16,6 +18,7 @@ func Create() *Memory {
 	return &Memory{
 		aggregateEvents: make(map[string][]eventsourcing.Event),
 		eventsInOrder:   make([]eventsourcing.Event, 0),
+		eventsProperty:  observer.NewProperty(nil),
 	}
 }
 
@@ -50,6 +53,8 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	for _, event := range events {
 		evBucket = append(evBucket, event)
 		eventsInOrder = append(eventsInOrder, event)
+		// update the event stream
+		e.eventsProperty.Update(event)
 	}
 
 	e.aggregateEvents[bucketName] = evBucket
@@ -77,6 +82,10 @@ func (e *Memory) GlobalGet(start int, count int) []eventsourcing.Event {
 
 	}
 	return events
+}
+
+func (e *Memory) EventStream() observer.Stream {
+	return e.eventsProperty.Observe()
 }
 
 // Close does nothing
