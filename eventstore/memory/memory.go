@@ -1,9 +1,9 @@
 package memory
 
 import (
+	"github.com/hallgren/eventsourcing"
+	"github.com/hallgren/eventsourcing/eventstore"
 	"github.com/imkira/go-observer"
-	"gitlab.se.axis.com/morganh/eventsourcing"
-	"gitlab.se.axis.com/morganh/eventsourcing/eventstore"
 )
 
 // Memory is a handler for event streaming

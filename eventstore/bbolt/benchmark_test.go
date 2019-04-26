@@ -2,8 +2,8 @@ package bbolt_test
 
 import (
 	"fmt"
-	"gitlab.se.axis.com/morganh/eventsourcing"
-	"gitlab.se.axis.com/morganh/eventsourcing/eventstore/bbolt"
+	"github.com/hallgren/eventsourcing"
+	"github.com/hallgren/eventsourcing/eventstore/bbolt"
 	"os"
 	"testing"
 )

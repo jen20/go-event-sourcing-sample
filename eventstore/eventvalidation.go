@@ -2,7 +2,7 @@ package eventstore
 
 import (
 	"errors"
-	"gitlab.se.axis.com/morganh/eventsourcing"
+	"github.com/hallgren/eventsourcing"
 )
 
 // ErrEventMultipleAggregates when events holds different id

@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/davecgh/go-spew/spew"
-	"gitlab.se.axis.com/morganh/eventsourcing"
-	"gitlab.se.axis.com/morganh/eventsourcing/eventstore/memory"
+	"github.com/hallgren/eventsourcing"
+	"github.com/hallgren/eventsourcing/eventstore/memory"
 	"time"
 )
 

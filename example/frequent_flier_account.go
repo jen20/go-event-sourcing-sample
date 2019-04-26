@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"gitlab.se.axis.com/morganh/eventsourcing"
+	"github.com/hallgren/eventsourcing"
 )
 
 // FrequentFlierAccount represents the state of an instance of the frequent flier
