@@ -1,8 +1,8 @@
 package eventsourcing_test
 
 import (
-	"gitlab.se.axis.com/morganh/eventsourcing"
-	"gitlab.se.axis.com/morganh/eventsourcing/eventstore/memory"
+	"github.com/hallgren/eventsourcing"
+	"github.com/hallgren/eventsourcing/eventstore/memory"
 	"testing"
 )
 
