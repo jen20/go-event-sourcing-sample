@@ -4,13 +4,11 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/etcd-io/bbolt"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore"
 	"github.com/imkira/go-observer"
 	"time"
-	"unsafe"
-
-	"github.com/etcd-io/bbolt"
 )
 
 const (
@@ -27,15 +25,21 @@ func itob(v int) []byte {
 	return b
 }
 
+type serializer interface {
+	Serialize(event eventsourcing.Event) ([]byte, error)
+	Deserialize(v []byte) (event eventsourcing.Event, err error)
+}
+
 // BBolt is a handler for event streaming
 type BBolt struct {
 	db 				*bbolt.DB 			// The bbolt db where we store everything
+	serializer 		serializer			// The interface that serialize event
 	eventsProperty  observer.Property   // A property to which all event changes for all event types are published
 }
 
 // MustOpenBBolt opens the event stream found in the given file. If the file is not found it will be created and
 // initialized. Will panic if it has problems persisting the changes to the filesystem.
-func MustOpenBBolt(dbFile string) *BBolt {
+func MustOpenBBolt(dbFile string, s serializer) *BBolt {
 	db, err := bbolt.Open(dbFile, 0600, &bbolt.Options{
 		Timeout: 1 * time.Second,
 	})
@@ -55,6 +59,7 @@ func MustOpenBBolt(dbFile string) *BBolt {
 	}
 	return &BBolt{
 		db: db,
+		serializer: s,
 		eventsProperty: observer.NewProperty(nil),
 	}
 }
@@ -91,7 +96,10 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 	cursor := evBucket.Cursor()
 	k, obj := cursor.Last()
 	if k != nil {
-		event := (*eventsourcing.Event)(unsafe.Pointer(&obj[0]))
+		event, err := e.serializer.Deserialize(obj)
+		if err != nil {
+			return fmt.Errorf("could not serialize event, %v", err)
+		}
 		currentVersion = event.Version
 	}
 
@@ -107,22 +115,14 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 	}
 
 	for _, event := range events {
-
 		sequence, err := evBucket.NextSequence()
 		if err != nil {
 			return fmt.Errorf("could not get sequence for %#v", bucketName)
 		}
-
-		value := make([]byte, unsafe.Sizeof(eventsourcing.Event{}))
-		t := (*eventsourcing.Event)(unsafe.Pointer(&value[0]))
-
-		// Sets the properties on the event
-		t.AggregateRootID = event.AggregateRootID
-		t.AggregateType = event.AggregateType
-		t.Data = event.Data
-		t.MetaData = event.MetaData
-		t.Reason = event.Reason
-		t.Version = event.Version
+		value, err := e.serializer.Serialize(event)
+		if err != nil {
+			fmt.Errorf("could not serialize event, %v", err)
+		}
 
 		err = evBucket.Put(itob(int(sequence)), value)
 		if err != nil {
@@ -135,7 +135,6 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 		if err != nil {
 			return fmt.Errorf("could not get next sequence for global bucket")
 		}
-		//globalSequenceValue := bucketName + ":" + strconv.FormatUint(sequence, 10)
 		err = globalBucket.Put(itob(int(globalSequence)), value)
 		if err != nil {
 			return fmt.Errorf("could not save global sequence pointer for %#v", bucketName)
@@ -167,11 +166,14 @@ func (e *BBolt) Get(id string, aggregateType string) ([]eventsourcing.Event, err
 
 	cursor := evBucket.Cursor()
 	events := make([]eventsourcing.Event, 0)
-	event := &eventsourcing.Event{}
+	//event := &eventsourcing.Event{}
 
 	for k, obj := cursor.First(); k != nil; k, obj = cursor.Next() {
-		event = (*eventsourcing.Event)(unsafe.Pointer(&obj[0]))
-		events = append(events, *event)
+		event,err := e.serializer.Deserialize(obj)
+		if err != nil {
+			return nil,fmt.Errorf("Could not deserialize event, %v", err)
+		}
+		events = append(events, event)
 	}
 	return events, nil
 }
@@ -187,12 +189,15 @@ func (e *BBolt) GlobalGet(start int, count int) []eventsourcing.Event {
 	evBucket := tx.Bucket([]byte(globalEventOrderBucketName))
 	cursor := evBucket.Cursor()
 	events := make([]eventsourcing.Event, 0)
-	event := &eventsourcing.Event{}
+	//event := &eventsourcing.Event{}
 	counter := 0
 
 	for k, obj := cursor.Seek([]byte(itob(int(start)))); k != nil; k, obj = cursor.Next() {
-		event = (*eventsourcing.Event)(unsafe.Pointer(&obj[0]))
-		events = append(events, *event)
+		event,err := e.serializer.Deserialize(obj)
+		if err != nil {
+			return nil
+		}
+		events = append(events, event)
 		counter++
 
 		if counter >= count {

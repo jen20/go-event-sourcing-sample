@@ -3,6 +3,7 @@ package bbolt_test
 import (
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/bbolt"
+	"github.com/hallgren/eventsourcing/serializer/json"
 	"os"
 	"testing"
 	"time"
@@ -35,6 +36,7 @@ type FlightTaken struct {
 var dbFile = "test.db"
 var aggregateID = eventsourcing.AggregateRootID("123")
 var aggregateType = "FrequentFlierAccount"
+var jsonSerializer = json.New()
 
 func testEventsWithID(aggregateID eventsourcing.AggregateRootID) []eventsourcing.Event {
 
@@ -79,29 +81,29 @@ func TestMain(m *testing.M) {
 
 func TestSaveAndGetEvents(t *testing.T) {
 	os.Remove(dbFile)
-	bolt := bbolt.MustOpenBBolt(dbFile)
+	bolt := bbolt.MustOpenBBolt(dbFile, jsonSerializer)
 	defer bolt.Close()
 	defer os.Remove(dbFile)
 	
 	err := bolt.Save(testEvents())
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	fetchedEvents, err := bolt.Get(string(aggregateID), aggregateType)
 
 	if len(fetchedEvents) != len(testEvents()) {
-		t.Error("Wrong number of events returned")
+		t.Fatal("Wrong number of events returned")
 	}
 
 	if fetchedEvents[0].Version != testEvents()[0].Version {
-		t.Error("Wrong events returned")
+		t.Fatal("Wrong events returned")
 	}
 
 	// Add more events to the same aggregate event stream
 	err = bolt.Save(testEventsPartTwo())
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	fetchedEventsIncludingPartTwo, err := bolt.Get(string(aggregateID), aggregateType)
@@ -118,7 +120,7 @@ func TestSaveAndGetEvents(t *testing.T) {
 
 func TestSaveEventsFromMoreThanOneAggregate(t *testing.T) {
 	os.Remove(dbFile)
-	eventStore := bbolt.MustOpenBBolt(dbFile)
+	eventStore := bbolt.MustOpenBBolt(dbFile, jsonSerializer)
 	defer eventStore.Close()
 	defer os.Remove(dbFile)
 
@@ -132,7 +134,7 @@ func TestSaveEventsFromMoreThanOneAggregate(t *testing.T) {
 
 func TestSaveEventsFromMoreThanOneAggregateType(t *testing.T) {
 	os.Remove(dbFile)
-	eventStore := bbolt.MustOpenBBolt(dbFile)
+	eventStore := bbolt.MustOpenBBolt(dbFile,jsonSerializer)
 	defer eventStore.Close()
 	defer os.Remove(dbFile)
 
@@ -147,7 +149,7 @@ func TestSaveEventsFromMoreThanOneAggregateType(t *testing.T) {
 
 func TestSaveEventsInWrongOrder(t *testing.T) {
 	os.Remove(dbFile)
-	eventStore := bbolt.MustOpenBBolt(dbFile)
+	eventStore := bbolt.MustOpenBBolt(dbFile,jsonSerializer)
 	defer eventStore.Close()
 	defer os.Remove(dbFile)
 
@@ -161,7 +163,7 @@ func TestSaveEventsInWrongOrder(t *testing.T) {
 
 func TestSaveEventsInWrongVersion(t *testing.T) {
 	os.Remove(dbFile)
-	eventStore := bbolt.MustOpenBBolt(dbFile)
+	eventStore := bbolt.MustOpenBBolt(dbFile,jsonSerializer)
 	defer eventStore.Close()
 	defer os.Remove(dbFile)
 
@@ -175,7 +177,7 @@ func TestSaveEventsInWrongVersion(t *testing.T) {
 
 func TestSaveEventsWithEmptyReason(t *testing.T) {
 	os.Remove(dbFile)
-	eventStore := bbolt.MustOpenBBolt(dbFile)
+	eventStore := bbolt.MustOpenBBolt(dbFile,jsonSerializer)
 	defer eventStore.Close()
 	defer os.Remove(dbFile)
 
@@ -190,7 +192,7 @@ func TestSaveEventsWithEmptyReason(t *testing.T) {
 
 func TestGetGlobalEvents(t *testing.T) {
 	os.Remove(dbFile)
-	eventStore := bbolt.MustOpenBBolt(dbFile)
+	eventStore := bbolt.MustOpenBBolt(dbFile,jsonSerializer)
 	defer eventStore.Close()
 	defer os.Remove(dbFile)
 
@@ -214,7 +216,7 @@ func TestGetGlobalEvents(t *testing.T) {
 
 func TestGetGlobalEventsNotExisting(t *testing.T) {
 	os.Remove(dbFile)
-	eventStore := bbolt.MustOpenBBolt(dbFile)
+	eventStore := bbolt.MustOpenBBolt(dbFile,jsonSerializer)
 	defer eventStore.Close()
 	defer os.Remove(dbFile)
 
@@ -234,7 +236,7 @@ func TestGetGlobalEventsNotExisting(t *testing.T) {
 
 func TestEventStream(t *testing.T) {
 	os.Remove(dbFile)
-	eventStore := bbolt.MustOpenBBolt(dbFile)
+	eventStore := bbolt.MustOpenBBolt(dbFile,jsonSerializer)
 	defer eventStore.Close()
 	defer os.Remove(dbFile)
 	stream := eventStore.EventStream()

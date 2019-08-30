@@ -67,7 +67,7 @@ func (person *Person) GrowOlder() {
 // Benchmark the time it takes to retrieve aggregate events and build the aggregate
 func BenchmarkFetchAndApply101Events(b *testing.B) {
 	os.Remove(dbFile)
-	eventStore := bbolt.MustOpenBBolt(dbFile)
+	eventStore := bbolt.MustOpenBBolt(dbFile,jsonSerializer)
 	defer eventStore.Close()
 
 	person, err := CreatePerson("kalle")
@@ -97,7 +97,7 @@ func BenchmarkFetchAndApply101Events(b *testing.B) {
 // Benchmark the time it takes to save 101 events
 func BenchmarkSave101Events(b *testing.B) {
 	os.Remove(dbFile)
-	eventstore := bbolt.MustOpenBBolt(dbFile)
+	eventstore := bbolt.MustOpenBBolt(dbFile,jsonSerializer)
 	defer eventstore.Close()
 
 	b.ResetTimer()
