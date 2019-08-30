@@ -121,7 +121,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 		}
 		value, err := e.serializer.Serialize(event)
 		if err != nil {
-			fmt.Errorf("could not serialize event, %v", err)
+			return fmt.Errorf("could not serialize event, %v", err)
 		}
 
 		err = evBucket.Put(itob(int(sequence)), value)
