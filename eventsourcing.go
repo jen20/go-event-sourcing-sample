@@ -67,13 +67,13 @@ func (state *AggregateRoot) TrackChange(eventData interface{}) {
 		Data:            eventData,
 	}
 	state.changes = append(state.changes, event)
-	state.Parent().Transition(event)
+	state.parent.Transition(event)
 }
 
 // BuildFromHistory builds the aggregate state from events
 func (state *AggregateRoot) BuildFromHistory(events []Event) {
 	for _, event := range events {
-		state.Parent().Transition(event)
+		state.parent.Transition(event)
 		//Set the aggregate id
 		state.id = event.AggregateRootID
 		// Make sure the aggregate is in the correct version (the last event)
