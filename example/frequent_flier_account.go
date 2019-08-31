@@ -50,6 +50,7 @@ type PromotedToGoldStatus struct {
 // CreateFrequentFlierAccount constructor
 func CreateFrequentFlierAccount(id string) *FrequentFlierAccountAggregate {
 	self := FrequentFlierAccountAggregate{}
+	self.SetParent(&self)
 	//self.aggregateRoot.SetID(id)
 	self.TrackChange(FrequentFlierAccountCreated{OpeningMiles: 0, OpeningTierPoints: 0})
 	return &self

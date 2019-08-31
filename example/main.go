@@ -39,6 +39,7 @@ func main() {
 
 	// Load the saved aggregate
 	copy := FrequentFlierAccountAggregate{}
+	copy.SetParent(&copy)
 	err = repo.Get(aggregate.ID(), &copy)
 	if err != nil {
 		panic("Could not get aggregate")
