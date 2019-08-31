@@ -35,14 +35,13 @@ func TestSaveAndGetAggregate(t *testing.T) {
 	repo := eventsourcing.NewRepository(memory.Create())
 
 	device := DeviceAggregate{}
-	eventsourcing.CreateAggregate(&device)
+	repo.New(&device)
 	device.SetName("New name")
 	err := repo.Save(&device)
 	if err != nil {
 		t.Fatal("could not save device")
 	}
 	copyDevice := DeviceAggregate{}
-	eventsourcing.CreateAggregate(&copyDevice)
 	err = repo.Get(device.ID(), &copyDevice)
 	if err != nil {
 		t.Fatal("could not get aggregate")
@@ -51,4 +50,17 @@ func TestSaveAndGetAggregate(t *testing.T) {
 	if device.Version() != copyDevice.Version() {
 		t.Fatalf("Wrong version org %q copy %q", device.Version(), copyDevice.Version())
 	}
+}
+
+func TestCreateAggregate(t *testing.T) {
+	repo := eventsourcing.NewRepository(memory.Create())
+
+	device := DeviceAggregate{}
+	repo.New(&device)
+	if device.Parent() == nil {
+		t.Fatalf("Parent not set")
+	}
+	device.SetName("test")
+	repo.Save(&device)
+
 }

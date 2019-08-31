@@ -30,7 +30,7 @@ func CreatePerson(name string) (*Person, error) {
 	}
 
 	person := Person{}
-	eventsourcing.CreateAggregate(&person)
+	person.SetParent(&person)
 	person.TrackChange(Born{name: name})
 	return &person, nil
 }
