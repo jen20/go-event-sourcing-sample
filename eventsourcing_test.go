@@ -8,7 +8,7 @@ import (
 
 // Person aggregate
 type Person struct {
-	aggregateRoot eventsourcing.AggregateRoot
+	eventsourcing.AggregateRoot
 	name          string
 	age           int
 	dead          int
@@ -30,8 +30,8 @@ func CreatePerson(name string) (*Person, error) {
 	}
 
 	person := Person{}
-	person.aggregateRoot.SetParent(&person)
-	person.aggregateRoot.TrackChange(Born{name: name})
+	eventsourcing.CreateAggregate(&person)
+	person.TrackChange(Born{name: name})
 	return &person, nil
 }
 
@@ -42,20 +42,20 @@ func CreatePersonWithID(id, name string) (*Person, error) {
 	}
 
 	person := Person{}
-	person.aggregateRoot.SetParent(&person)
-	err := person.aggregateRoot.SetID(id)
+	eventsourcing.CreateAggregate(&person)
+	err := person.SetID(id)
 	if err == eventsourcing.ErrAggregateAlreadyExists {
 		return nil, err
 	} else if err != nil {
 		panic(err)
 	}
-	person.aggregateRoot.TrackChange(Born{name: name})
+	person.TrackChange(Born{name: name})
 	return &person, nil
 }
 
 // GrowOlder command
 func (person *Person) GrowOlder() {
-	person.aggregateRoot.TrackChange(AgedOneYear{})
+	person.TrackChange(AgedOneYear{})
 
 }
 
@@ -86,12 +86,12 @@ func TestCreateNewPerson(t *testing.T) {
 		t.Fatal("Wrong person age")
 	}
 
-	if len(person.aggregateRoot.Changes()) != 1 {
+	if len(person.Changes()) != 1 {
 		t.Fatal("There should be one event on the person aggregateRoot")
 	}
 
-	if person.aggregateRoot.Version() != 1 {
-		t.Fatal("Wrong version on the person aggregateRoot", person.aggregateRoot.Version())
+	if person.Version() != 1 {
+		t.Fatal("Wrong version on the person aggregateRoot", person.Version())
 	}
 }
 
@@ -102,8 +102,8 @@ func TestCreateNewPersonWithIDFromOutside(t *testing.T) {
 		t.Fatal("Error when creating person", err.Error())
 	}
 
-	if person.aggregateRoot.ID() != id {
-		t.Fatal("Wrong aggregate id on the person aggregateRoot", person.aggregateRoot.ID())
+	if person.ID() != id {
+		t.Fatal("Wrong aggregate id on the person aggregateRoot", person.ID())
 	}
 }
 
@@ -121,7 +121,7 @@ func TestSetIDOnExistingPerson(t *testing.T) {
 		t.Fatal("The constructor returned error")
 	}
 
-	err = person.aggregateRoot.SetID("new_id")
+	err = person.SetID("new_id")
 	if err == nil {
 		t.Fatal("Should not be possible to set id on already existing person")
 	}
@@ -132,12 +132,12 @@ func TestPersonAgedOneYear(t *testing.T) {
 	person, _ := CreatePerson("kalle")
 	person.GrowOlder()
 
-	if len(person.aggregateRoot.Changes()) != 2 {
-		t.Fatal("There should be two event on the person aggregateRoot", person.aggregateRoot.Changes())
+	if len(person.Changes()) != 2 {
+		t.Fatal("There should be two event on the person aggregateRoot", person.Changes())
 	}
 
-	if person.aggregateRoot.Changes()[len(person.aggregateRoot.Changes())-1].Reason != "AgedOneYear" {
-		t.Fatal("The last event reason should be AgedOneYear", person.aggregateRoot.Changes()[len(person.aggregateRoot.Changes())-1].Reason)
+	if person.Changes()[len(person.Changes())-1].Reason != "AgedOneYear" {
+		t.Fatal("The last event reason should be AgedOneYear", person.Changes()[len(person.Changes())-1].Reason)
 	}
 }
 

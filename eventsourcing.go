@@ -34,6 +34,7 @@ type Event struct {
 // The interface that include the transition behavior from the struct carrying the aggregate root
 type aggregate interface {
 	Transition(event Event)
+	setParent(a aggregate)
 }
 
 // ErrAggregateAlreadyExists returned if the ID is set more than one time
@@ -41,13 +42,18 @@ var ErrAggregateAlreadyExists = errors.New("its not possible to set id on alread
 
 var emptyAggregateID = AggregateRootID("")
 
+// CreateAggregate binds the aggregate root to the aggregate
+func CreateAggregate(a aggregate) {
+	a.setParent(a)
+}
+
 // Parent get the parent aggregate
 func (state *AggregateRoot) Parent() aggregate {
 	return state.parent
 }
 
-// SetParent sets the aggregate as parent to the aggregate root
-func (state *AggregateRoot) SetParent(a aggregate) {
+// setParent sets the aggregate as parent to the aggregate root
+func (state *AggregateRoot) setParent(a aggregate) {
 	state.parent = a
 }
 
