@@ -35,9 +35,6 @@ type aggregate interface {
 	Transition(event Event)
 }
 
-// Transition function to apply events on aggregates to build its current state
-type transition func(Event)
-
 // ErrAggregateAlreadyExists returned if the ID is set more than one time
 var ErrAggregateAlreadyExists = errors.New("its not possible to set id on already existing aggregate")
 
