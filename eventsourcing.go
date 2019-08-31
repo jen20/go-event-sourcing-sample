@@ -41,10 +41,12 @@ var ErrAggregateAlreadyExists = errors.New("its not possible to set id on alread
 
 var emptyAggregateID = AggregateRootID("")
 
+// Parent get the parent aggregate
 func (state *AggregateRoot) Parent() aggregate {
 	return state.parent
 }
 
+// SetParent sets the aggregate as parent to the aggregate root
 func (state *AggregateRoot) SetParent(a aggregate) {
 	state.parent = a
 }
