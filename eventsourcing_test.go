@@ -30,7 +30,8 @@ func CreatePerson(name string) (*Person, error) {
 	}
 
 	person := Person{}
-	person.aggregateRoot.TrackChange(&person, Born{name: name})
+	person.aggregateRoot.SetParent(&person)
+	person.aggregateRoot.TrackChange(Born{name: name})
 	return &person, nil
 }
 
@@ -41,19 +42,20 @@ func CreatePersonWithID(id, name string) (*Person, error) {
 	}
 
 	person := Person{}
+	person.aggregateRoot.SetParent(&person)
 	err := person.aggregateRoot.SetID(id)
 	if err == eventsourcing.ErrAggregateAlreadyExists {
 		return nil, err
 	} else if err != nil {
 		panic(err)
 	}
-	person.aggregateRoot.TrackChange(&person, Born{name: name})
+	person.aggregateRoot.TrackChange(Born{name: name})
 	return &person, nil
 }
 
 // GrowOlder command
 func (person *Person) GrowOlder() {
-	person.aggregateRoot.TrackChange(person, AgedOneYear{})
+	person.aggregateRoot.TrackChange(AgedOneYear{})
 
 }
 

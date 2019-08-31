@@ -18,6 +18,7 @@ type AggregateRoot struct {
 	id      AggregateRootID
 	version Version
 	changes []Event
+	parent  aggregate
 }
 
 // Event holding meta data and the application specific event in the Data property
@@ -40,16 +41,24 @@ var ErrAggregateAlreadyExists = errors.New("its not possible to set id on alread
 
 var emptyAggregateID = AggregateRootID("")
 
+func (state *AggregateRoot) Parent() aggregate {
+	return state.parent
+}
+
+func (state *AggregateRoot) SetParent(a aggregate) {
+	state.parent = a
+}
+
 // TrackChange is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
-func (state *AggregateRoot) TrackChange(a aggregate, eventData interface{}) {
+func (state *AggregateRoot) TrackChange(eventData interface{}) {
 	// This can be overwritten in the constructor of the aggregate
 	if state.id == emptyAggregateID {
 		state.setID(uuid.Must(uuid.NewV4()).String())
 	}
 
 	reason := reflect.TypeOf(eventData).Name()
-	aggregateType := reflect.TypeOf(a).Elem().Name()
+	aggregateType := reflect.TypeOf(state.parent).Elem().Name()
 	event := Event{
 		AggregateRootID: state.id,
 		Version:         state.nextVersion(),
@@ -58,13 +67,13 @@ func (state *AggregateRoot) TrackChange(a aggregate, eventData interface{}) {
 		Data:            eventData,
 	}
 	state.changes = append(state.changes, event)
-	a.Transition(event)
+	state.Parent().Transition(event)
 }
 
 // BuildFromHistory builds the aggregate state from events
-func (state *AggregateRoot) BuildFromHistory(a aggregate, events []Event) {
+func (state *AggregateRoot) BuildFromHistory(events []Event) {
 	for _, event := range events {
-		a.Transition(event)
+		state.Parent().Transition(event)
 		//Set the aggregate id
 		state.id = event.AggregateRootID
 		// Make sure the aggregate is in the correct version (the last event)

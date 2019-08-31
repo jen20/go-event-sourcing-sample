@@ -15,8 +15,8 @@ type EventStore interface {
 // AggregateRooter interface to use the aggregate root specific methods
 type AggregateRooter interface {
 	Changes() []Event
-	BuildFromHistory(a aggregate, events []Event)
-	Transition(event Event)
+	BuildFromHistory(events []Event)
+	Parent() aggregate
 }
 
 // Repository is the returned instance from the factory function
@@ -39,12 +39,12 @@ func (r *Repository) Save(aggregate AggregateRooter) error {
 // Get fetches the aggregates event and build up the aggregate
 func (r *Repository) Get(id string, aggregate AggregateRooter) error {
 	// TODO error handle the incoming aggregate to make sure its a pointer
-	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
+	aggregateType := reflect.TypeOf(aggregate.Parent()).Elem().Name()
 	events, err := r.eventStore.Get(id, aggregateType)
 	if err != nil {
 		return err
 	}
-	aggregate.BuildFromHistory(aggregate, events)
+	aggregate.BuildFromHistory(events)
 	return nil
 }
 

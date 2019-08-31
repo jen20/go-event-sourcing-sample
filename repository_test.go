@@ -11,7 +11,7 @@ type Device struct {
 }
 
 type DeviceAggregate struct {
-	eventsourcing.AggregateRoot
+	aggregateRoot eventsourcing.AggregateRoot
 	Device
 }
 
@@ -20,7 +20,7 @@ type NameSet struct {
 }
 
 func (d *DeviceAggregate) SetName(name string) {
-	d.TrackChange(d, NameSet{Name: name})
+	d.aggregateRoot.TrackChange(NameSet{Name: name})
 }
 
 // Transition the person state dependent on the events
@@ -35,18 +35,20 @@ func TestSaveAndGetAggregate(t *testing.T) {
 	repo := eventsourcing.NewRepository(memory.Create())
 
 	device := DeviceAggregate{}
+	device.aggregateRoot.SetParent(&device)
 	device.SetName("New name")
-	err := repo.Save(&device)
+	err := repo.Save(&device.aggregateRoot)
 	if err != nil {
 		t.Fatal("could not save device")
 	}
 	copyDevice := DeviceAggregate{}
-	err = repo.Get(device.ID(), &copyDevice)
+	copyDevice.aggregateRoot.SetParent(&copyDevice)
+	err = repo.Get(device.aggregateRoot.ID(), &copyDevice.aggregateRoot)
 	if err != nil {
 		t.Fatal("could not get aggregate")
 	}
 
-	if device.Version() != copyDevice.Version() {
-		t.Fatalf("Wrong version org %q copy %q", device.Version(), copyDevice.Version())
+	if device.aggregateRoot.Version() != copyDevice.aggregateRoot.Version() {
+		t.Fatalf("Wrong version org %q copy %q", device.aggregateRoot.Version(), copyDevice.aggregateRoot.Version())
 	}
 }
