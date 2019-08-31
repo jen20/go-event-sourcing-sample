@@ -17,8 +17,8 @@ type AggregateRooter interface {
 	Changes() []Event
 	BuildFromHistory(events []Event)
 	Parent() aggregate
-	SetParent(a aggregate)
 	Transition(event Event)
+	SetParent(a aggregate)
 }
 
 // Repository is the returned instance from the factory function
@@ -33,11 +33,6 @@ func NewRepository(eventStore EventStore) *Repository {
 	}
 }
 
-// New generates an empty aggregate
-func (r *Repository) New(aggregate AggregateRooter) {
-	aggregate.SetParent(aggregate)
-}
-
 // Save an aggregates events
 func (r *Repository) Save(aggregate AggregateRooter) error {
 	return r.eventStore.Save(aggregate.Changes())
@@ -45,7 +40,7 @@ func (r *Repository) Save(aggregate AggregateRooter) error {
 
 // Get fetches the aggregates event and build up the aggregate
 func (r *Repository) Get(id string, aggregate AggregateRooter) error {
-	r.New(aggregate)
+	InitAggregate(aggregate)
 	// TODO error handle the incoming aggregate to make sure its a pointer
 	aggregateType := reflect.TypeOf(aggregate.Parent()).Elem().Name()
 	events, err := r.eventStore.Get(id, aggregateType)

@@ -50,7 +50,7 @@ type PromotedToGoldStatus struct {
 // CreateFrequentFlierAccount constructor
 func CreateFrequentFlierAccount(id string) *FrequentFlierAccountAggregate {
 	self := FrequentFlierAccountAggregate{}
-	eventsourcing.CreateAggregate(&self)
+	eventsourcing.InitAggregate(&self)
 	//self.aggregateRoot.SetID(id)
 	self.TrackChange(FrequentFlierAccountCreated{OpeningMiles: 0, OpeningTierPoints: 0})
 	return &self
@@ -60,7 +60,7 @@ func CreateFrequentFlierAccount(id string) *FrequentFlierAccountAggregate {
 // of the changes which have occurred for that account.
 func NewFrequentFlierAccountFromHistory(events []eventsourcing.Event) *FrequentFlierAccountAggregate {
 	state := FrequentFlierAccountAggregate{}
-	eventsourcing.CreateAggregate(&state)
+	eventsourcing.InitAggregate(&state)
 	state.BuildFromHistory(events)
 	return &state
 }

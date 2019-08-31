@@ -39,7 +39,7 @@ func main() {
 
 	// Load the saved aggregate
 	copy := FrequentFlierAccountAggregate{}
-	eventsourcing.CreateAggregate(&copy)
+	eventsourcing.InitAggregate(&copy)
 	err = repo.Get(aggregate.ID(), &copy)
 	if err != nil {
 		panic("Could not get aggregate")

@@ -28,9 +28,8 @@ func CreatePerson(name string) (*Person, error) {
 	if name == "" {
 		return nil, fmt.Errorf("name can't be blank")
 	}
-
 	person := Person{}
-	person.SetParent(&person)
+	eventsourcing.InitAggregate(&person)
 	person.TrackChange(Born{name: name})
 	return &person, nil
 }
@@ -42,7 +41,7 @@ func CreatePersonWithID(id, name string) (*Person, error) {
 	}
 
 	person := Person{}
-	eventsourcing.CreateAggregate(&person)
+	eventsourcing.InitAggregate(&person)
 	err := person.SetID(id)
 	if err == eventsourcing.ErrAggregateAlreadyExists {
 		return nil, err

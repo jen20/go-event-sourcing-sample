@@ -42,8 +42,8 @@ var ErrAggregateAlreadyExists = errors.New("its not possible to set id on alread
 
 var emptyAggregateID = AggregateRootID("")
 
-// CreateAggregate binds the aggregate root to the aggregate
-func CreateAggregate(a aggregate) {
+// InitAggregate binds the aggregate root to the aggregate
+func InitAggregate(a aggregate) {
 	a.SetParent(a)
 }
 
