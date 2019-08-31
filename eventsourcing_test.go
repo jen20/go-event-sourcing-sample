@@ -30,7 +30,7 @@ func CreatePerson(name string) (*Person, error) {
 	}
 
 	person := Person{}
-	person.aggregateRoot.TrackChange(&person, Born{name: name}, person.Transition)
+	person.aggregateRoot.TrackChange(&person, Born{name: name})
 	return &person, nil
 }
 
@@ -47,13 +47,13 @@ func CreatePersonWithID(id, name string) (*Person, error) {
 	} else if err != nil {
 		panic(err)
 	}
-	person.aggregateRoot.TrackChange(&person, Born{name: name}, person.Transition)
+	person.aggregateRoot.TrackChange(&person, Born{name: name})
 	return &person, nil
 }
 
 // GrowOlder command
 func (person *Person) GrowOlder() {
-	person.aggregateRoot.TrackChange(person, AgedOneYear{}, person.Transition)
+	person.aggregateRoot.TrackChange(person, AgedOneYear{})
 
 }
 

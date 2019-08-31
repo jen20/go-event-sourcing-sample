@@ -20,7 +20,7 @@ type NameSet struct {
 }
 
 func (d *DeviceAggregate) SetName(name string) {
-	d.TrackChange(d, NameSet{Name: name}, d.Transition)
+	d.TrackChange(d, NameSet{Name: name})
 }
 
 // Transition the person state dependent on the events
