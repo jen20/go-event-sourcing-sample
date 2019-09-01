@@ -134,9 +134,6 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 		if err != nil {
 			return fmt.Errorf("could not save global sequence pointer for %#v", bucketName)
 		}
-
-		e.eventsProperty.Update(event)
-
 	}
 
 	err = tx.Commit()
@@ -144,6 +141,10 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 		return err
 	}
 
+	// update the stream after the events are commited
+	for _, event := range events {
+		e.eventsProperty.Update(event)
+	}
 	return nil
 }
 
