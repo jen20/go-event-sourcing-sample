@@ -15,7 +15,7 @@ type EventStore interface {
 // AggregateRooter interface to use the aggregate root specific methods
 type AggregateRooter interface {
 	Changes() []Event
-	BuildFromHistory(events []Event, fn transition)
+	BuildFromHistory(a aggregate, events []Event)
 	Transition(event Event)
 }
 
@@ -44,7 +44,7 @@ func (r *Repository) Get(id string, aggregate AggregateRooter) error {
 	if err != nil {
 		return err
 	}
-	aggregate.BuildFromHistory(events, aggregate.Transition)
+	aggregate.BuildFromHistory(aggregate, events)
 	return nil
 }
 

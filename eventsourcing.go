@@ -30,8 +30,10 @@ type Event struct {
 	MetaData        map[string]interface{}
 }
 
-// Transition function to apply events on aggregates to build its current state
-type transition func(Event)
+// The interface that include the transition behavior from the struct carrying the aggregate root
+type aggregate interface {
+	Transition(event Event)
+}
 
 // ErrAggregateAlreadyExists returned if the ID is set more than one time
 var ErrAggregateAlreadyExists = errors.New("its not possible to set id on already existing aggregate")
@@ -40,14 +42,14 @@ var emptyAggregateID = AggregateRootID("")
 
 // TrackChange is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
-func (state *AggregateRoot) TrackChange(aggregate interface{}, eventData interface{}, fn transition) {
+func (state *AggregateRoot) TrackChange(a aggregate, eventData interface{}) {
 	// This can be overwritten in the constructor of the aggregate
 	if state.id == emptyAggregateID {
 		state.setID(uuid.Must(uuid.NewV4()).String())
 	}
 
 	reason := reflect.TypeOf(eventData).Name()
-	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
+	aggregateType := reflect.TypeOf(a).Elem().Name()
 	event := Event{
 		AggregateRootID: state.id,
 		Version:         state.nextVersion(),
@@ -56,13 +58,13 @@ func (state *AggregateRoot) TrackChange(aggregate interface{}, eventData interfa
 		Data:            eventData,
 	}
 	state.changes = append(state.changes, event)
-	fn(event)
+	a.Transition(event)
 }
 
 // BuildFromHistory builds the aggregate state from events
-func (state *AggregateRoot) BuildFromHistory(events []Event, fn transition) {
+func (state *AggregateRoot) BuildFromHistory(a aggregate, events []Event) {
 	for _, event := range events {
-		fn(event)
+		a.Transition(event)
 		//Set the aggregate id
 		state.id = event.AggregateRootID
 		// Make sure the aggregate is in the correct version (the last event)
@@ -92,8 +94,6 @@ func (state *AggregateRoot) setID(id string) {
 
 // SetID opens up the possibility to set manual aggregate id from the outside
 func (state *AggregateRoot) SetID(id string) error {
-	//TODO: Validate id structure
-
 	if state.id != emptyAggregateID {
 		return ErrAggregateAlreadyExists
 	}
