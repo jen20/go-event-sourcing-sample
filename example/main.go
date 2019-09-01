@@ -31,6 +31,7 @@ func main() {
 	aggregate := CreateFrequentFlierAccount("morgan")
 	aggregate.RecordFlightTaken(10, 5)
 
+	// saves the events to the memory backed eventstore
 	err := repo.Save(aggregate)
 	if err != nil {
 		panic("Could not save the aggregate")
