@@ -211,14 +211,14 @@ func TestEventStream(t *testing.T) {
 outer:
 	for {
 		select {
-			// wait for changes
-			case <-stream.Changes():
-				// advance to next value
-				stream.Next()
-				counter++
-			case <-time.After(10*time.Millisecond):
-				// The stream has 10 milli seconds to deliver the events
-				break outer
+		// wait for changes
+		case <-stream.Changes():
+			// advance to next value
+			stream.Next()
+			counter++
+		case <-time.After(10 * time.Millisecond):
+			// The stream has 10 milli seconds to deliver the events
+			break outer
 		}
 	}
 

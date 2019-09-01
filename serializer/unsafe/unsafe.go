@@ -4,7 +4,8 @@ import (
 	"github.com/hallgren/eventsourcing"
 	"unsafe"
 )
-type Handler struct {}
+
+type Handler struct{}
 
 // New returns a json Handle
 func New() *Handler {
@@ -29,5 +30,5 @@ func (h *Handler) Serialize(event eventsourcing.Event) ([]byte, error) {
 func (h *Handler) Deserialize(obj []byte) (eventsourcing.Event, error) {
 	var event = &eventsourcing.Event{}
 	event = (*eventsourcing.Event)(unsafe.Pointer(&obj[0]))
-	return *event,nil
+	return *event, nil
 }

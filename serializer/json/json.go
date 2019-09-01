@@ -5,7 +5,7 @@ import (
 	"github.com/hallgren/eventsourcing"
 )
 
-type Handler struct {}
+type Handler struct{}
 
 // New returns a json Handle
 func New() *Handler {
@@ -18,11 +18,11 @@ func (h *Handler) Serialize(event eventsourcing.Event) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return b,nil
+	return b, nil
 }
 
 // Deserialize un marshals an byte array into an event
-func (h *Handler) Deserialize(v []byte) (event eventsourcing.Event, err error)  {
+func (h *Handler) Deserialize(v []byte) (event eventsourcing.Event, err error) {
 	err = json.Unmarshal(v, &event)
 	return
 }

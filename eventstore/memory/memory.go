@@ -10,7 +10,7 @@ import (
 type Memory struct {
 	aggregateEvents map[string][]eventsourcing.Event // The memory structure where we store aggregate events
 	eventsInOrder   []eventsourcing.Event            // The global event order
-	eventsProperty  observer.Property   			 // A property to which all event changes for all event types are published
+	eventsProperty  observer.Property                // A property to which all event changes for all event types are published
 }
 
 // Create in memory event store

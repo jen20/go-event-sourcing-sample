@@ -9,9 +9,9 @@ import (
 // Person aggregate
 type Person struct {
 	eventsourcing.AggregateRoot
-	name          string
-	age           int
-	dead          int
+	name string
+	age  int
+	dead int
 }
 
 // Born event

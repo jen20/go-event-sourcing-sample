@@ -84,7 +84,7 @@ func TestSaveAndGetEvents(t *testing.T) {
 	bolt := bbolt.MustOpenBBolt(dbFile, jsonSerializer)
 	defer bolt.Close()
 	defer os.Remove(dbFile)
-	
+
 	err := bolt.Save(testEvents())
 	if err != nil {
 		t.Fatal(err)
@@ -134,7 +134,7 @@ func TestSaveEventsFromMoreThanOneAggregate(t *testing.T) {
 
 func TestSaveEventsFromMoreThanOneAggregateType(t *testing.T) {
 	os.Remove(dbFile)
-	eventStore := bbolt.MustOpenBBolt(dbFile,jsonSerializer)
+	eventStore := bbolt.MustOpenBBolt(dbFile, jsonSerializer)
 	defer eventStore.Close()
 	defer os.Remove(dbFile)
 
@@ -149,7 +149,7 @@ func TestSaveEventsFromMoreThanOneAggregateType(t *testing.T) {
 
 func TestSaveEventsInWrongOrder(t *testing.T) {
 	os.Remove(dbFile)
-	eventStore := bbolt.MustOpenBBolt(dbFile,jsonSerializer)
+	eventStore := bbolt.MustOpenBBolt(dbFile, jsonSerializer)
 	defer eventStore.Close()
 	defer os.Remove(dbFile)
 
@@ -163,7 +163,7 @@ func TestSaveEventsInWrongOrder(t *testing.T) {
 
 func TestSaveEventsInWrongVersion(t *testing.T) {
 	os.Remove(dbFile)
-	eventStore := bbolt.MustOpenBBolt(dbFile,jsonSerializer)
+	eventStore := bbolt.MustOpenBBolt(dbFile, jsonSerializer)
 	defer eventStore.Close()
 	defer os.Remove(dbFile)
 
@@ -177,7 +177,7 @@ func TestSaveEventsInWrongVersion(t *testing.T) {
 
 func TestSaveEventsWithEmptyReason(t *testing.T) {
 	os.Remove(dbFile)
-	eventStore := bbolt.MustOpenBBolt(dbFile,jsonSerializer)
+	eventStore := bbolt.MustOpenBBolt(dbFile, jsonSerializer)
 	defer eventStore.Close()
 	defer os.Remove(dbFile)
 
@@ -192,7 +192,7 @@ func TestSaveEventsWithEmptyReason(t *testing.T) {
 
 func TestGetGlobalEvents(t *testing.T) {
 	os.Remove(dbFile)
-	eventStore := bbolt.MustOpenBBolt(dbFile,jsonSerializer)
+	eventStore := bbolt.MustOpenBBolt(dbFile, jsonSerializer)
 	defer eventStore.Close()
 	defer os.Remove(dbFile)
 
@@ -216,7 +216,7 @@ func TestGetGlobalEvents(t *testing.T) {
 
 func TestGetGlobalEventsNotExisting(t *testing.T) {
 	os.Remove(dbFile)
-	eventStore := bbolt.MustOpenBBolt(dbFile,jsonSerializer)
+	eventStore := bbolt.MustOpenBBolt(dbFile, jsonSerializer)
 	defer eventStore.Close()
 	defer os.Remove(dbFile)
 
@@ -236,7 +236,7 @@ func TestGetGlobalEventsNotExisting(t *testing.T) {
 
 func TestEventStream(t *testing.T) {
 	os.Remove(dbFile)
-	eventStore := bbolt.MustOpenBBolt(dbFile,jsonSerializer)
+	eventStore := bbolt.MustOpenBBolt(dbFile, jsonSerializer)
 	defer eventStore.Close()
 	defer os.Remove(dbFile)
 	stream := eventStore.EventStream()
@@ -256,7 +256,7 @@ outer:
 			// advance to next value
 			stream.Next()
 			counter++
-		case <-time.After(10*time.Millisecond):
+		case <-time.After(10 * time.Millisecond):
 			// The stream has 10 milliseconds to deliver the events
 			break outer
 		}

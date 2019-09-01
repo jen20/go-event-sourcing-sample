@@ -25,21 +25,16 @@ func itob(v int) []byte {
 	return b
 }
 
-type serializer interface {
-	Serialize(event eventsourcing.Event) ([]byte, error)
-	Deserialize(v []byte) (event eventsourcing.Event, err error)
-}
-
 // BBolt is a handler for event streaming
 type BBolt struct {
-	db 				*bbolt.DB 			// The bbolt db where we store everything
-	serializer 		serializer			// The interface that serialize event
-	eventsProperty  observer.Property   // A property to which all event changes for all event types are published
+	db             *bbolt.DB             // The bbolt db where we store everything
+	serializer     eventstore.Serializer // The interface that serialize event
+	eventsProperty observer.Property     // A property to which all event changes for all event types are published
 }
 
 // MustOpenBBolt opens the event stream found in the given file. If the file is not found it will be created and
 // initialized. Will panic if it has problems persisting the changes to the filesystem.
-func MustOpenBBolt(dbFile string, s serializer) *BBolt {
+func MustOpenBBolt(dbFile string, s eventstore.Serializer) *BBolt {
 	db, err := bbolt.Open(dbFile, 0600, &bbolt.Options{
 		Timeout: 1 * time.Second,
 	})
@@ -58,8 +53,8 @@ func MustOpenBBolt(dbFile string, s serializer) *BBolt {
 		panic(err)
 	}
 	return &BBolt{
-		db: db,
-		serializer: s,
+		db:             db,
+		serializer:     s,
 		eventsProperty: observer.NewProperty(nil),
 	}
 }
@@ -169,9 +164,9 @@ func (e *BBolt) Get(id string, aggregateType string) ([]eventsourcing.Event, err
 	//event := &eventsourcing.Event{}
 
 	for k, obj := cursor.First(); k != nil; k, obj = cursor.Next() {
-		event,err := e.serializer.Deserialize(obj)
+		event, err := e.serializer.Deserialize(obj)
 		if err != nil {
-			return nil,fmt.Errorf("Could not deserialize event, %v", err)
+			return nil, fmt.Errorf("Could not deserialize event, %v", err)
 		}
 		events = append(events, event)
 	}
@@ -193,7 +188,7 @@ func (e *BBolt) GlobalGet(start int, count int) []eventsourcing.Event {
 	counter := 0
 
 	for k, obj := cursor.Seek([]byte(itob(int(start)))); k != nil; k, obj = cursor.Next() {
-		event,err := e.serializer.Deserialize(obj)
+		event, err := e.serializer.Deserialize(obj)
 		if err != nil {
 			return nil
 		}

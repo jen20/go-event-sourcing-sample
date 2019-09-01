@@ -16,7 +16,7 @@ func main() {
 	stream := repo.EventStream()
 
 	// Read the event stream async
-	go func(){
+	go func() {
 		for {
 			<-stream.Changes()
 			// advance to next value
@@ -31,7 +31,6 @@ func main() {
 	aggregate := CreateFrequentFlierAccount("morgan")
 	aggregate.RecordFlightTaken(10, 5)
 
-
 	err := repo.Save(aggregate)
 	if err != nil {
 		panic("Could not save the aggregate")
@@ -45,9 +44,8 @@ func main() {
 	}
 
 	// Sleep to make sure the events are delivered from the stream
-	time.Sleep(time.Millisecond*100)
+	time.Sleep(time.Millisecond * 100)
 	fmt.Println("AGGREGATE")
 	spew.Dump(copy)
-
 
 }
