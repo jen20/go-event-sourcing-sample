@@ -29,8 +29,7 @@ func CreatePerson(name string) (*Person, error) {
 		return nil, fmt.Errorf("name can't be blank")
 	}
 	person := Person{}
-	eventsourcing.InitAggregate(&person)
-	person.TrackChange(Born{name: name})
+	person.TrackChange(&person, Born{name: name})
 	return &person, nil
 }
 
@@ -41,21 +40,19 @@ func CreatePersonWithID(id, name string) (*Person, error) {
 	}
 
 	person := Person{}
-	eventsourcing.InitAggregate(&person)
 	err := person.SetID(id)
 	if err == eventsourcing.ErrAggregateAlreadyExists {
 		return nil, err
 	} else if err != nil {
 		panic(err)
 	}
-	person.TrackChange(Born{name: name})
+	person.TrackChange(&person, Born{name: name})
 	return &person, nil
 }
 
 // GrowOlder command
 func (person *Person) GrowOlder() {
-	person.TrackChange(AgedOneYear{})
-
+	person.TrackChange(person, AgedOneYear{})
 }
 
 // Transition the person state dependent on the events

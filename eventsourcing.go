@@ -18,7 +18,6 @@ type AggregateRoot struct {
 	id      AggregateRootID
 	version Version
 	changes []Event
-	parent  aggregate
 }
 
 // Event holding meta data and the application specific event in the Data property
@@ -34,7 +33,6 @@ type Event struct {
 // The interface that include the transition behavior from the struct carrying the aggregate root
 type aggregate interface {
 	Transition(event Event)
-	SetParent(a aggregate)
 }
 
 // ErrAggregateAlreadyExists returned if the ID is set more than one time
@@ -42,31 +40,16 @@ var ErrAggregateAlreadyExists = errors.New("its not possible to set id on alread
 
 var emptyAggregateID = AggregateRootID("")
 
-// InitAggregate binds the aggregate root to the aggregate
-func InitAggregate(a aggregate) {
-	a.SetParent(a)
-}
-
-// Parent get the parent aggregate
-func (state *AggregateRoot) Parent() aggregate {
-	return state.parent
-}
-
-// SetParent sets the aggregate as parent to the aggregate root
-func (state *AggregateRoot) SetParent(a aggregate) {
-	state.parent = a
-}
-
 // TrackChange is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
-func (state *AggregateRoot) TrackChange(eventData interface{}) {
+func (state *AggregateRoot) TrackChange(a aggregate, eventData interface{}) {
 	// This can be overwritten in the constructor of the aggregate
 	if state.id == emptyAggregateID {
 		state.setID(uuid.Must(uuid.NewV4()).String())
 	}
 
 	reason := reflect.TypeOf(eventData).Name()
-	aggregateType := reflect.TypeOf(state.parent).Elem().Name()
+	aggregateType := reflect.TypeOf(a).Elem().Name()
 	event := Event{
 		AggregateRootID: state.id,
 		Version:         state.nextVersion(),
@@ -75,13 +58,13 @@ func (state *AggregateRoot) TrackChange(eventData interface{}) {
 		Data:            eventData,
 	}
 	state.changes = append(state.changes, event)
-	state.parent.Transition(event)
+	a.Transition(event)
 }
 
 // BuildFromHistory builds the aggregate state from events
-func (state *AggregateRoot) BuildFromHistory(events []Event) {
+func (state *AggregateRoot) BuildFromHistory(a aggregate, events []Event) {
 	for _, event := range events {
-		state.parent.Transition(event)
+		a.Transition(event)
 		//Set the aggregate id
 		state.id = event.AggregateRootID
 		// Make sure the aggregate is in the correct version (the last event)
@@ -111,8 +94,6 @@ func (state *AggregateRoot) setID(id string) {
 
 // SetID opens up the possibility to set manual aggregate id from the outside
 func (state *AggregateRoot) SetID(id string) error {
-	//TODO: Validate id structure
-
 	if state.id != emptyAggregateID {
 		return ErrAggregateAlreadyExists
 	}

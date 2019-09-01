@@ -50,9 +50,8 @@ type PromotedToGoldStatus struct {
 // CreateFrequentFlierAccount constructor
 func CreateFrequentFlierAccount(id string) *FrequentFlierAccountAggregate {
 	self := FrequentFlierAccountAggregate{}
-	eventsourcing.InitAggregate(&self)
 	//self.aggregateRoot.SetID(id)
-	self.TrackChange(FrequentFlierAccountCreated{OpeningMiles: 0, OpeningTierPoints: 0})
+	self.TrackChange(&self, FrequentFlierAccountCreated{OpeningMiles: 0, OpeningTierPoints: 0})
 	return &self
 }
 
@@ -60,8 +59,7 @@ func CreateFrequentFlierAccount(id string) *FrequentFlierAccountAggregate {
 // of the changes which have occurred for that account.
 func NewFrequentFlierAccountFromHistory(events []eventsourcing.Event) *FrequentFlierAccountAggregate {
 	state := FrequentFlierAccountAggregate{}
-	eventsourcing.InitAggregate(&state)
-	state.BuildFromHistory(events)
+	state.BuildFromHistory(&state, events)
 	return &state
 }
 
@@ -72,14 +70,14 @@ func NewFrequentFlierAccountFromHistory(events []eventsourcing.Event) *FrequentF
 // If recording this flight takes the account over a status boundary, it will
 // automatically upgrade the account to the new status level.
 func (self *FrequentFlierAccountAggregate) RecordFlightTaken(miles int, tierPoints int) {
-	self.TrackChange(FlightTaken{MilesAdded: miles, TierPointsAdded: tierPoints})
+	self.TrackChange(self, FlightTaken{MilesAdded: miles, TierPointsAdded: tierPoints})
 
 	if self.tierPoints > 10 && self.status != StatusSilver {
-		self.TrackChange(StatusMatched{NewStatus: StatusSilver})
+		self.TrackChange(self, StatusMatched{NewStatus: StatusSilver})
 	}
 
 	if self.tierPoints > 20 && self.status != StatusGold {
-		self.TrackChange(PromotedToGoldStatus{})
+		self.TrackChange(self, PromotedToGoldStatus{})
 	}
 }
 

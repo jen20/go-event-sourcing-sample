@@ -23,7 +23,13 @@ func TestSaveAndGetAggregate(t *testing.T) {
 		t.Fatal("could not get aggregate")
 	}
 
+	// Check internal aggregate version
 	if person.Version() != twin.Version() {
 		t.Fatalf("Wrong version org %q copy %q", person.Version(), twin.Version())
+	}
+
+	// Check person name
+	if person.name != twin.name {
+		t.Fatalf("Wrong name org %q copy %q", person.name, twin.name)
 	}
 }
