@@ -115,7 +115,6 @@ func TestSaveAndGetEvents(t *testing.T) {
 	if fetchedEventsIncludingPartTwo[0].Version != testEvents()[0].Version {
 		t.Error("Wrong events returned")
 	}
-
 }
 
 func TestSaveEventsFromMoreThanOneAggregate(t *testing.T) {
