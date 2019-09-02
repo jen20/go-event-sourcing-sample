@@ -79,9 +79,18 @@ func TestSaveAndGetEvents(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not open sqlit3 database %v", err)
 	}
+	err = db.Ping()
+	if err != nil {
+		t.Fatalf("could not ping database")
+	}
 	s := sql.Open(*db, jsonSerializer)
 	defer s.Close()
 	defer os.Remove(dbFile)
+
+	err = s.Migrate()
+	if err != nil {
+		t.Fatalf("could not migrate database")
+	}
 
 	err = s.Save(testEvents())
 	if err != nil {
