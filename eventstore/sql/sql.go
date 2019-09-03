@@ -2,6 +2,7 @@ package sql
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore"
 )
@@ -38,18 +39,22 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 }
 
 func (sql *SQL) Get(id string, aggregateType string) (events []eventsourcing.Event, err error) {
-	selectStm := `Select id from events where id='$1' and aggregate_type='$2'`
+	selectStm := `Select data from events where id=? and aggregate_type=?`
 	rows, err := sql.db.Query(selectStm, id, aggregateType)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var aggregateID string
-		if err := rows.Scan(&aggregateID); err != nil {
+		var data string
+		if err := rows.Scan(&data); err != nil {
 			return nil, err
 		}
-		events = append(events, eventsourcing.Event{AggregateRootID: eventsourcing.AggregateRootID(aggregateID)})
+		event,err := sql.serializer.Deserialize([]byte(data))
+		if err != nil {
+			return nil, fmt.Errorf("Could not deserialize event %v", err)
+		}
+		events = append(events, event)
 	}
 	return
 }
