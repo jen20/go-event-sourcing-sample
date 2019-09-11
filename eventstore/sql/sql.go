@@ -88,7 +88,7 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 }
 
 func (sql *SQL) Get(id string, aggregateType string) (events []eventsourcing.Event, err error) {
-	selectStm := `Select data from events where id=? and aggregate_type=?`
+	selectStm := `Select data from events where id=? and aggregate_type=? order by version asc`
 	rows, err := sql.db.Query(selectStm, id, aggregateType)
 	if err != nil {
 		return nil, err
@@ -109,8 +109,8 @@ func (sql *SQL) Get(id string, aggregateType string) (events []eventsourcing.Eve
 }
 
 func (sql *SQL) GlobalGet(start int, count int) []eventsourcing.Event {
-	selectStm := `Select data from events where version>=? and version<? order by version asc`
-	rows, err := sql.db.Query(selectStm, start, start+count)
+	selectStm := `Select data from events where version>=? order by version asc limit ?`
+	rows, err := sql.db.Query(selectStm, start, count)
 	if err != nil {
 		return nil
 	}
