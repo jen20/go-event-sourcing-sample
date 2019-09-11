@@ -1,6 +1,7 @@
 package sql
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"github.com/hallgren/eventsourcing"
@@ -60,16 +61,27 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 	if err != nil {
 		return err
 	}
+
+	tx, err := sql.db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return fmt.Errorf("Could not start a write transaction, %v", err)
+	}
+	defer tx.Rollback()
 	insert := `Insert into events (id, version, reason, aggregate_type, data, meta_data) values ($1, $2, $3, $4, $5, $6)`
 	for _, event := range events {
 		d, err := sql.serializer.Serialize(event)
 		if err != nil {
 			return err
 		}
-		_, err = sql.db.Exec(insert, event.AggregateRootID, event.Version, event.Reason, event.AggregateType, string(d), "")
+		_, err = tx.Exec(insert, event.AggregateRootID, event.Version, event.Reason, event.AggregateType, string(d), "")
 		if err != nil {
 			return err
 		}
+	}
+	tx.Commit()
+
+	// publish to stream after transaction is complete
+	for _, event := range events {
 		sql.eventsProperty.Update(event)
 	}
 	return nil
