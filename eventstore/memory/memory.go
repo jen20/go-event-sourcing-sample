@@ -8,17 +8,19 @@ import (
 
 // Memory is a handler for event streaming
 type Memory struct {
-	aggregateEvents map[string][]eventsourcing.Event // The memory structure where we store aggregate events
-	eventsInOrder   []eventsourcing.Event            // The global event order
+	aggregateEvents map[string][][]byte // The memory structure where we store aggregate events
+	eventsInOrder   [][]byte            // The global event order
 	eventsProperty  observer.Property                // A property to which all event changes for all event types are published
+	serializer eventstore.Serializer
 }
 
 // Create in memory event store
-func Create() *Memory {
+func Create(serializer eventstore.Serializer) *Memory {
 	return &Memory{
-		aggregateEvents: make(map[string][]eventsourcing.Event),
-		eventsInOrder:   make([]eventsourcing.Event, 0),
+		aggregateEvents: make(map[string][][]byte),
+		eventsInOrder:   make([][]byte, 0),
 		eventsProperty:  observer.NewProperty(nil),
+		serializer: serializer,
 	}
 }
 
@@ -39,7 +41,11 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 
 	if len(evBucket) > 0 {
 		// Last version in the list
-		currentVersion = evBucket[len(evBucket)-1].Version
+		lastEvent, err := e.serializer.Deserialize(evBucket[len(evBucket)-1])
+		if err != nil {
+			return err
+		}
+		currentVersion = lastEvent.Version
 	}
 
 	//Validate events
@@ -51,8 +57,12 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	eventsInOrder := e.eventsInOrder
 
 	for _, event := range events {
-		evBucket = append(evBucket, event)
-		eventsInOrder = append(eventsInOrder, event)
+		eventSerialized,err := e.serializer.Serialize(event)
+		if err != nil {
+			return err
+		}
+		evBucket = append(evBucket, eventSerialized)
+		eventsInOrder = append(eventsInOrder, eventSerialized)
 		// update the event stream
 		e.eventsProperty.Update(event)
 	}
@@ -65,14 +75,28 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 
 // Get aggregate events
 func (e *Memory) Get(id string, aggregateType string) ([]eventsourcing.Event, error) {
-	return e.aggregateEvents[aggregateKey(aggregateType, id)], nil
+	var events []eventsourcing.Event
+	eventsSerialized := e.aggregateEvents[aggregateKey(aggregateType, id)]
+	for _, eventSerialized := range eventsSerialized {
+		event, err := e.serializer.Deserialize(eventSerialized)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+
+	return events, nil
 }
 
 // GlobalGet returns events from the global order
 func (e *Memory) GlobalGet(start int, count int) []eventsourcing.Event {
 	events := make([]eventsourcing.Event, 0)
 	var i int
-	for _, event := range e.eventsInOrder {
+	for _, eventSerialized := range e.eventsInOrder {
+		event, err := e.serializer.Deserialize(eventSerialized)
+		if err != nil {
+			return nil
+		}
 		if int(event.Version) >= start {
 			events = append(events, event)
 			i++

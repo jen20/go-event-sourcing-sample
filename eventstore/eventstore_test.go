@@ -7,6 +7,7 @@ import (
 	"github.com/hallgren/eventsourcing/eventstore/bbolt"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
 	s "github.com/hallgren/eventsourcing/eventstore/sql"
+	"github.com/hallgren/eventsourcing/serializer/unsafe"
 	"github.com/imkira/go-observer"
 	"reflect"
 	"time"
@@ -112,7 +113,7 @@ func initEventStores() ([]eventstore, func(), error) {
 		return nil, nil, err
 	}
 	boltEventStore, closerBolt := bolt()
-	eventstores := []eventstore{sqlEventStore, boltEventStore, memory.Create()}
+	eventstores := []eventstore{sqlEventStore, boltEventStore, memory.Create(unsafe.New())}
 	return eventstores, func() {
 		closer()
 		closerBolt()
