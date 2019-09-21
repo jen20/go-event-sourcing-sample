@@ -61,7 +61,7 @@ func (h *Handler) Serialize(event eventsourcing.Event) ([]byte, error) {
 	e.Version = int(event.Version)
 	e.AggregateRootID = string(event.AggregateRootID)
 	e.Reason = event.Reason
-	e.MetaData = nil // Todo fix correct value
+	e.MetaData = event.MetaData
 
 	b, err := json.Marshal(e)
 	if err != nil {

@@ -41,12 +41,22 @@ var data = SomeData {
 	"b",
 }
 
+var metaData = make(map[string]interface{})
+
+
 func TestSerializeDeserialize(t *testing.T) {
 	serializers := initSerializers(t)
-
+	metaData["foo"] = "bar"
 	for _, s := range serializers {
 		t.Run(reflect.TypeOf(s).Elem().Name(), func(t *testing.T) {
-			v, err := s.Serialize(eventsourcing.Event{AggregateRootID: "123", Data: data, AggregateType: "SomeAggregate", Reason: "SomeData"})
+			v, err := s.Serialize(eventsourcing.Event{
+				AggregateRootID: "123",
+				Version: 1,
+				Data: data,
+				AggregateType: "SomeAggregate",
+				Reason: "SomeData",
+				MetaData: metaData,
+			})
 			if err != nil {
 				t.Fatalf("could not serialize event, %v", err)
 			}
@@ -57,6 +67,18 @@ func TestSerializeDeserialize(t *testing.T) {
 
 			if event.AggregateRootID != "123" {
 				t.Fatalf("wrong value in aggregateID expected: 123, actual: %v", event.AggregateRootID)
+			}
+
+			if event.Reason != "SomeData" {
+				t.Fatalf("wrong reason")
+			}
+
+			if event.MetaData["foo"] != "bar" {
+				t.Fatalf("wrong value in meta data")
+			}
+
+			if event.Version != 1 {
+				t.Fatalf("wrong value in Version")
 			}
 
 			switch event.AggregateType {
