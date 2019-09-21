@@ -1,0 +1,75 @@
+package serializer_test
+
+import (
+	"github.com/hallgren/eventsourcing"
+	"github.com/hallgren/eventsourcing/serializer/json"
+	"github.com/hallgren/eventsourcing/serializer/unsafe"
+	"reflect"
+	"testing"
+)
+
+type serializer interface {
+	Serialize(event eventsourcing.Event) ([]byte, error)
+	Deserialize(v []byte) (event eventsourcing.Event, err error)
+}
+
+func initSerializers(t *testing.T) []serializer {
+	j := json.New()
+	err := j.Register(&SomeAggregate{},&SomeData{}, &SomeData2{})
+	if err != nil {
+		t.Fatalf("could not register aggregate events %v", err)
+	}
+	return []serializer{j, unsafe.New()}
+}
+
+type SomeAggregate struct {}
+
+func (s *SomeAggregate) Transition(event eventsourcing.Event) {}
+
+type SomeData struct {
+	A int
+	B string
+}
+
+type SomeData2 struct {
+	A int
+	B string
+}
+
+var data = SomeData {
+	1,
+	"b",
+}
+
+func TestSerializeDeserialize(t *testing.T) {
+	serializers := initSerializers(t)
+
+	for _, s := range serializers {
+		t.Run(reflect.TypeOf(s).Elem().Name(), func(t *testing.T) {
+			v, err := s.Serialize(eventsourcing.Event{AggregateRootID: "123", Data: data, AggregateType: "SomeAggregate", Reason: "SomeData"})
+			if err != nil {
+				t.Fatalf("could not serialize event, %v", err)
+			}
+			event, err := s.Deserialize(v)
+			if err != nil {
+				t.Fatalf("Could not deserialize event, %v", err)
+			}
+
+			if event.AggregateRootID != "123" {
+				t.Fatalf("wrong value in aggregateID expected: 123, actual: %v", event.AggregateRootID)
+			}
+
+			switch event.AggregateType {
+				case "SomeAggregate":
+					switch d := event.Data.(type) {
+					case *SomeData:
+						if d.A != data.A {
+							t.Fatalf("wrong value in event.Data.A")
+						}
+					}
+			default:
+				t.Error("wrong aggregate type")
+			}
+		})
+	}
+}

@@ -16,7 +16,7 @@ type Person struct {
 
 // Born event
 type Born struct {
-	name string
+	Name string
 }
 
 // AgedOneYear event
@@ -29,7 +29,7 @@ func CreatePerson(name string) (*Person, error) {
 		return nil, fmt.Errorf("name can't be blank")
 	}
 	person := Person{}
-	person.TrackChange(&person, Born{name: name})
+	person.TrackChange(&person, &Born{Name: name})
 	return &person, nil
 }
 
@@ -46,24 +46,22 @@ func CreatePersonWithID(id, name string) (*Person, error) {
 	} else if err != nil {
 		panic(err)
 	}
-	person.TrackChange(&person, Born{name: name})
+	person.TrackChange(&person, &Born{Name: name})
 	return &person, nil
 }
 
 // GrowOlder command
 func (person *Person) GrowOlder() {
-	person.TrackChange(person, AgedOneYear{})
+	person.TrackChange(person, &AgedOneYear{})
 }
 
 // Transition the person state dependent on the events
 func (person *Person) Transition(event eventsourcing.Event) {
 	switch e := event.Data.(type) {
-
-	case Born:
+	case *Born:
 		person.age = 0
-		person.name = e.name
-
-	case AgedOneYear:
+		person.name = e.Name
+	case *AgedOneYear:
 		person.age += 1
 	}
 }

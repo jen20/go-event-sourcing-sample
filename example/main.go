@@ -5,13 +5,14 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
+	"github.com/hallgren/eventsourcing/serializer/unsafe"
 	"time"
 )
 
 func main() {
 
 	// Setup a memory based event store
-	eventStore := memory.Create()
+	eventStore := memory.Create(unsafe.New())
 	repo := eventsourcing.NewRepository(eventStore)
 	stream := repo.EventStream()
 
