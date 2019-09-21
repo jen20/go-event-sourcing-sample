@@ -3,12 +3,14 @@ package eventsourcing_test
 import (
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
-	"github.com/hallgren/eventsourcing/serializer/unsafe"
+	"github.com/hallgren/eventsourcing/serializer/json"
 	"testing"
 )
 
 func TestSaveAndGetAggregate(t *testing.T) {
-	repo := eventsourcing.NewRepository(memory.Create(unsafe.New()))
+	serializer := json.New()
+	serializer.Register(&Person{}, &Born{})
+	repo := eventsourcing.NewRepository(memory.Create(serializer))
 
 	person, err := CreatePerson("kalle")
 	if err != nil {

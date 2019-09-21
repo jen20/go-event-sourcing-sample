@@ -48,7 +48,7 @@ func (state *AggregateRoot) TrackChange(a aggregate, eventData interface{}) {
 		state.setID(uuid.Must(uuid.NewV4()).String())
 	}
 
-	reason := reflect.TypeOf(eventData).Name()
+	reason := reflect.TypeOf(eventData).Elem().Name()
 	aggregateType := reflect.TypeOf(a).Elem().Name()
 	event := Event{
 		AggregateRootID: state.id,

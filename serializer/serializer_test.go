@@ -1,7 +1,6 @@
 package serializer_test
 
 import (
-	"fmt"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/serializer/json"
 	"github.com/hallgren/eventsourcing/serializer/unsafe"
@@ -14,63 +13,62 @@ type serializer interface {
 	Deserialize(v []byte) (event eventsourcing.Event, err error)
 }
 
-func initSerializers() []serializer {
-	return []serializer{json.New(), unsafe.New()}
-}
-
-// FrequentFlierAccount represents the state of an instance of the frequent flier
-// account aggregate. It tracks changes on itself in the form of domain events.
-type testEvent struct {
-	b int
-}
-
-type testAggregate struct {
-	eventsourcing.AggregateRoot
-	a int
-}
-
-// Create constructor for the Person
-func Create() *testAggregate {
-	aggregate := testAggregate{}
-	aggregate.TrackChange(&aggregate, testEvent{b: 1})
-	return &aggregate
-}
-// Transition the testAggregate state dependent on the events
-func (t *testAggregate) Transition(event eventsourcing.Event) {
-	switch e := ev.Data.(type) {
-
-	case testEvent:
-		t.a = e.b
+func initSerializers(t *testing.T) []serializer {
+	j := json.New()
+	err := j.Register(&SomeAggregate{},&SomeData{}, &SomeData2{})
+	if err != nil {
+		t.Fatalf("could not register aggregate events %v", err)
 	}
+	return []serializer{j, unsafe.New()}
 }
 
-var ev = eventsourcing.Event{AggregateRootID: "123", Version: 7, Reason: "FlightTaken", AggregateType: "nana", Data: testEvent{b: 1}}
+type SomeAggregate struct {}
+
+func (s *SomeAggregate) Transition(event eventsourcing.Event) {}
+
+type SomeData struct {
+	A int
+	B string
+}
+
+type SomeData2 struct {
+	A int
+	B string
+}
+
+var data = SomeData {
+	1,
+	"b",
+}
 
 func TestSerializeDeserialize(t *testing.T) {
-	serializers := initSerializers()
+	serializers := initSerializers(t)
 
 	for _, s := range serializers {
 		t.Run(reflect.TypeOf(s).Elem().Name(), func(t *testing.T) {
-			b, err := s.Serialize(ev)
+			v, err := s.Serialize(eventsourcing.Event{AggregateRootID: "123", Data: data, AggregateType: "SomeAggregate", Reason: "SomeData"})
 			if err != nil {
-				t.Fatalf("could not serialize ev, %v", err)
+				t.Fatalf("could not serialize event, %v", err)
 			}
-			event2, err := s.Deserialize(b)
+			event, err := s.Deserialize(v)
 			if err != nil {
-				t.Fatalf("could not deserialize to ev, %v", err)
+				t.Fatalf("Could not deserialize event, %v", err)
 			}
-			aggregate := Create()
-			testAggregate.BuildFromHistory(&aggregate, []eventsourcing.Event{ev})
-			if ev.AggregateRootID != event2.AggregateRootID {
-				t.Fatalf("ev id %q and event2 id %q are not the same", ev.AggregateRootID, event2.AggregateRootID)
+
+			if event.AggregateRootID != "123" {
+				t.Fatalf("wrong value in aggregateID expected: 123, actual: %v", event.AggregateRootID)
 			}
-			if ev.Version != event2.Version {
-				t.Fatalf("ev version %q and event2 version %q are not the same", ev.Version, event2.Version)
-			}
-			if ev.Data != event2.Data {
-				fmt.Println(ev.Data)
-				fmt.Println(event2.Data)
-				t.Fatalf("ev data %q and event2 data %q are not the same", ev.Data, event2.Data)
+
+			switch event.AggregateType {
+				case "SomeAggregate":
+					switch d := event.Data.(type) {
+					case *SomeData:
+						if d.A != data.A {
+							t.Fatalf("wrong value in event.Data.A")
+						}
+					}
+			default:
+				t.Error("wrong aggregate type")
 			}
 		})
 	}
