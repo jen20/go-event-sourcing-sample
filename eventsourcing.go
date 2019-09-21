@@ -2,6 +2,7 @@ package eventsourcing
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 
 	uuid "github.com/satori/go.uuid"
@@ -39,10 +40,20 @@ type aggregate interface {
 var ErrAggregateAlreadyExists = errors.New("its not possible to set id on already existing aggregate")
 
 var emptyAggregateID = AggregateRootID("")
+var AggregateNotPointerTypeError = fmt.Errorf("aggregate is not a pointer type")
+var EventDataNotPointerTypeError = fmt.Errorf("eventData is not a pointer type")
 
 // TrackChange is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
-func (state *AggregateRoot) TrackChange(a aggregate, eventData interface{}) {
+func (state *AggregateRoot) TrackChange(a aggregate, eventData interface{}) error {
+	// Make sure the aggregate and eventData is a pointer type
+	if reflect.ValueOf(a).Kind() != reflect.Ptr {
+		return AggregateNotPointerTypeError
+	}
+	if reflect.ValueOf(eventData).Kind() != reflect.Ptr {
+		return AggregateNotPointerTypeError
+	}
+
 	// This can be overwritten in the constructor of the aggregate
 	if state.id == emptyAggregateID {
 		state.setID(uuid.Must(uuid.NewV4()).String())
@@ -59,6 +70,7 @@ func (state *AggregateRoot) TrackChange(a aggregate, eventData interface{}) {
 	}
 	state.changes = append(state.changes, event)
 	a.Transition(event)
+	return nil
 }
 
 // BuildFromHistory builds the aggregate state from events
