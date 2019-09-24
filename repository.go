@@ -5,15 +5,15 @@ import (
 	"reflect"
 )
 
-// EventStore interface expose the methods an event store must uphold
-type EventStore interface {
+// eventStore interface expose the methods an event store must uphold
+type eventStore interface {
 	Save(events []Event) error
 	Get(id string, aggregateType string) ([]Event, error)
 	EventStream() observer.Stream
 }
 
-// AggregateRooter interface to use the aggregate root specific methods
-type AggregateRooter interface {
+// aggregateRooter interface to use the aggregate root specific methods
+type aggregateRooter interface {
 	Changes() []Event
 	BuildFromHistory(a aggregate, events []Event)
 	Transition(event Event)
@@ -21,24 +21,23 @@ type AggregateRooter interface {
 
 // Repository is the returned instance from the factory function
 type Repository struct {
-	eventStore EventStore
+	eventStore eventStore
 }
 
 // NewRepository factory function
-func NewRepository(eventStore EventStore) *Repository {
+func NewRepository(eventStore eventStore) *Repository {
 	return &Repository{
 		eventStore: eventStore,
 	}
 }
 
 // Save an aggregates events
-func (r *Repository) Save(aggregate AggregateRooter) error {
+func (r *Repository) Save(aggregate aggregateRooter) error {
 	return r.eventStore.Save(aggregate.Changes())
 }
 
 // Get fetches the aggregates event and build up the aggregate
-func (r *Repository) Get(id string, aggregate AggregateRooter) error {
-	// TODO error handle the incoming aggregate to make sure its a pointer
+func (r *Repository) Get(id string, aggregate aggregateRooter) error {
 	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
 	events, err := r.eventStore.Get(id, aggregateType)
 	if err != nil {
