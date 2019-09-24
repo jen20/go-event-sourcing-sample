@@ -1,6 +1,7 @@
 package eventsourcing
 
 import (
+	"fmt"
 	"github.com/imkira/go-observer"
 	"reflect"
 )
@@ -38,6 +39,9 @@ func (r *Repository) Save(aggregate aggregateRooter) error {
 
 // Get fetches the aggregates event and build up the aggregate
 func (r *Repository) Get(id string, aggregate aggregateRooter) error {
+	if reflect.ValueOf(aggregate).Kind() != reflect.Ptr {
+		return fmt.Errorf("aggregate needs to be a pointer")
+	}
 	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
 	events, err := r.eventStore.Get(id, aggregateType)
 	if err != nil {
