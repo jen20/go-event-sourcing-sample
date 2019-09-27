@@ -127,6 +127,7 @@ func (sql *SQL) EventStream() observer.Stream {
 }
 
 func (sql *SQL) transform(rows *sql.Rows) (events []eventsourcing.Event, err error) {
+	events = make([]eventsourcing.Event, 0)
 	for rows.Next() {
 		var data string
 		if err = rows.Scan(&data); err != nil {
