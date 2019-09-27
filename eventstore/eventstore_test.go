@@ -43,6 +43,7 @@ type FlightTaken struct {
 }
 
 var aggregateID = eventsourcing.AggregateRootID("123")
+var aggregateID2 = eventsourcing.AggregateRootID("321")
 var aggregateType = "FrequentFlierAccount"
 var jsonSerializer = json.New()
 
@@ -268,17 +269,18 @@ func TestGetGlobalEvents(t *testing.T) {
 	for _, es := range stores {
 		err := es.Save(events)
 		if err != nil {
-			t.Fatalf("%v could not save the events", es)
+			t.Fatalf("%v could not save the events", err)
 		}
+		_ = es.Save([]eventsourcing.Event{{AggregateRootID: aggregateID2, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Data: FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}}})
 
-		fetchedEvents := es.GlobalGet(2, 2)
+		fetchedEvents := es.GlobalGet(6, 2)
 
 		if len(fetchedEvents) != 2 {
-			t.Error("Fetched the wrong amount of events")
+			t.Fatalf("Fetched the wrong amount of events")
 		}
 
-		if fetchedEvents[0].Version != events[1].Version {
-			t.Errorf("%v fetched the wrong events %v %v",es, fetchedEvents[0].Version, events[2].Version)
+		if fetchedEvents[0].Version != events[5].Version {
+			t.Fatalf("%v fetched the wrong events %v %v",es, fetchedEvents[0].Version, events[2].Version)
 		}
 	}
 }

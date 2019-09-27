@@ -36,7 +36,7 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 	aggregateType := events[0].AggregateType
 
 	// the current version of that is the last event saved
-	selectStm := `Select data from events where id=? and aggregate_type=? order by version desc limit 1`
+	selectStm := `Select data from events where aggregate_id=? and aggregate_type=? order by version desc limit 1`
 	rows, err := sql.db.Query(selectStm, aggregateID, aggregateType)
 	if err != nil {
 		return err
@@ -67,7 +67,7 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 		return fmt.Errorf("Could not start a write transaction, %v", err)
 	}
 	defer tx.Rollback()
-	insert := `Insert into events (id, version, reason, aggregate_type, data, meta_data) values ($1, $2, $3, $4, $5, $6)`
+	insert := `Insert into events (aggregate_id, version, reason, aggregate_type, data, meta_data) values ($1, $2, $3, $4, $5, $6)`
 	for _, event := range events {
 		d, err := sql.serializer.Serialize(event)
 		if err != nil {
@@ -88,7 +88,7 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 }
 
 func (sql *SQL) Get(id string, aggregateType string) (events []eventsourcing.Event, err error) {
-	selectStm := `Select data from events where id=? and aggregate_type=? order by version asc`
+	selectStm := `Select data from events where aggregate_id=? and aggregate_type=? order by version asc`
 	rows, err := sql.db.Query(selectStm, id, aggregateType)
 	if err != nil {
 		return nil, err
@@ -109,7 +109,7 @@ func (sql *SQL) Get(id string, aggregateType string) (events []eventsourcing.Eve
 }
 
 func (sql *SQL) GlobalGet(start int, count int) []eventsourcing.Event {
-	selectStm := `Select data from events where version>=? order by version asc limit ?`
+	selectStm := `Select data from events where id>=? order by id asc limit ?`
 	rows, err := sql.db.Query(selectStm, start, count)
 	if err != nil {
 		return nil

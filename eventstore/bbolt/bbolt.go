@@ -185,7 +185,6 @@ func (e *BBolt) GlobalGet(start int, count int) []eventsourcing.Event {
 	evBucket := tx.Bucket([]byte(globalEventOrderBucketName))
 	cursor := evBucket.Cursor()
 	events := make([]eventsourcing.Event, 0)
-	//event := &eventsourcing.Event{}
 	counter := 0
 
 	for k, obj := cursor.Seek([]byte(itob(int(start)))); k != nil; k, obj = cursor.Next() {
