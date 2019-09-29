@@ -7,7 +7,7 @@ import (
 	"reflect"
 )
 
-type Handler struct{
+type Handler struct {
 	eventRegister map[string]interface{}
 }
 
@@ -17,12 +17,12 @@ func New() *Handler {
 }
 
 type jsonEvent struct {
-	AggregateType string
-	Reason string
-	Version int
+	AggregateType   string
+	Reason          string
+	Version         int
 	AggregateRootID string
-	Data json.RawMessage
-	MetaData map[string]interface{}
+	Data            json.RawMessage
+	MetaData        map[string]interface{}
 }
 
 type aggregate interface {
@@ -30,7 +30,7 @@ type aggregate interface {
 }
 
 var AggregateNameMissingError = fmt.Errorf("missing aggregate name")
-var NoEventsToRegisterError = fmt.Errorf("No events to register")
+var NoEventsToRegisterError = fmt.Errorf("no events to register")
 var EventNameMissingError = fmt.Errorf("missing event name")
 
 func (h *Handler) Register(aggregate aggregate, events ...interface{}) error {
@@ -46,7 +46,7 @@ func (h *Handler) Register(aggregate aggregate, events ...interface{}) error {
 		if eventName == "" {
 			return EventNameMissingError
 		}
-		h.eventRegister[aggregateName + "_" + eventName] = event
+		h.eventRegister[aggregateName+"_"+eventName] = event
 	}
 	return nil
 }
@@ -77,7 +77,7 @@ func (h *Handler) Deserialize(v []byte) (event eventsourcing.Event, err error) {
 	if err != nil {
 		return
 	}
-	data := h.eventRegister[jsonEvent.AggregateType + "_" +jsonEvent.Reason]
+	data := h.eventRegister[jsonEvent.AggregateType+"_"+jsonEvent.Reason]
 	err = json.Unmarshal(jsonEvent.Data, &data)
 	if err != nil {
 		return
