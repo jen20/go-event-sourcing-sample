@@ -11,11 +11,11 @@ type Memory struct {
 	aggregateEvents map[string][][]byte // The memory structure where we store aggregate events
 	eventsInOrder   [][]byte            // The global event order
 	eventsProperty  observer.Property                // A property to which all event changes for all event types are published
-	serializer eventstore.Serializer
+	serializer eventstore.EventSerializer
 }
 
 // Create in memory event store
-func Create(serializer eventstore.Serializer) *Memory {
+func Create(serializer eventstore.EventSerializer) *Memory {
 	return &Memory{
 		aggregateEvents: make(map[string][][]byte),
 		eventsInOrder:   make([][]byte, 0),
@@ -41,7 +41,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 
 	if len(evBucket) > 0 {
 		// Last version in the list
-		lastEvent, err := e.serializer.Deserialize(evBucket[len(evBucket)-1])
+		lastEvent, err := e.serializer.DeserializeEvent(evBucket[len(evBucket)-1])
 		if err != nil {
 			return err
 		}
@@ -57,7 +57,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	eventsInOrder := e.eventsInOrder
 
 	for _, event := range events {
-		eventSerialized,err := e.serializer.Serialize(event)
+		eventSerialized,err := e.serializer.SerializeEvent(event)
 		if err != nil {
 			return err
 		}
@@ -78,7 +78,7 @@ func (e *Memory) Get(id string, aggregateType string) ([]eventsourcing.Event, er
 	var events []eventsourcing.Event
 	eventsSerialized := e.aggregateEvents[aggregateKey(aggregateType, id)]
 	for _, eventSerialized := range eventsSerialized {
-		event, err := e.serializer.Deserialize(eventSerialized)
+		event, err := e.serializer.DeserializeEvent(eventSerialized)
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +93,7 @@ func (e *Memory) GlobalGet(start int, count int) []eventsourcing.Event {
 	events := make([]eventsourcing.Event, 0)
 	var i int
 	for id, eventSerialized := range e.eventsInOrder {
-		event, err := e.serializer.Deserialize(eventSerialized)
+		event, err := e.serializer.DeserializeEvent(eventSerialized)
 		if err != nil {
 			return nil
 		}

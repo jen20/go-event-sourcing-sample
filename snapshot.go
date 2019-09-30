@@ -1,7 +1,5 @@
 package eventsourcing
 
-import "reflect"
-
 type snapshotStore interface {
 	Save(id AggregateRootID, a interface{}) error
 	Get(id AggregateRootID) (interface{}, error)
@@ -20,7 +18,6 @@ func (s *Snapshot) Save(id AggregateRootID, a interface{}) error {
 }
 
 func (s *Snapshot) Get(id AggregateRootID, a interface{}) error {
-	d, err := s.store.Get(id)
-	d.Value()
+	a, err := s.store.Get(id)
 	return err
 }

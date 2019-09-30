@@ -9,8 +9,8 @@ import (
 )
 
 type serializer interface {
-	Serialize(event eventsourcing.Event) ([]byte, error)
-	Deserialize(v []byte) (event eventsourcing.Event, err error)
+	SerializeEvent(event eventsourcing.Event) ([]byte, error)
+	DeserializeEvent(v []byte) (event eventsourcing.Event, err error)
 }
 
 func initSerializers(t *testing.T) []serializer {
@@ -49,7 +49,7 @@ func TestSerializeDeserialize(t *testing.T) {
 	metaData["foo"] = "bar"
 	for _, s := range serializers {
 		t.Run(reflect.TypeOf(s).Elem().Name(), func(t *testing.T) {
-			v, err := s.Serialize(eventsourcing.Event{
+			v, err := s.SerializeEvent(eventsourcing.Event{
 				AggregateRootID: "123",
 				Version: 1,
 				Data: data,
@@ -60,7 +60,7 @@ func TestSerializeDeserialize(t *testing.T) {
 			if err != nil {
 				t.Fatalf("could not serialize event, %v", err)
 			}
-			event, err := s.Deserialize(v)
+			event, err := s.DeserializeEvent(v)
 			if err != nil {
 				t.Fatalf("Could not deserialize event, %v", err)
 			}

@@ -11,11 +11,11 @@ import (
 
 type SQL struct {
 	db sql.DB
-	serializer eventstore.Serializer
+	serializer eventstore.EventSerializer
 	eventsProperty  observer.Property                // A property to which all event changes for all event types are published
 }
 
-func Open(db sql.DB, serializer eventstore.Serializer) *SQL {
+func Open(db sql.DB, serializer eventstore.EventSerializer) *SQL {
 	return &SQL{
 		db: db,
 		serializer: serializer,
@@ -49,7 +49,7 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 		if err := rows.Scan(&data); err != nil {
 			return err
 		}
-		event,err := sql.serializer.Deserialize([]byte(data))
+		event,err := sql.serializer.DeserializeEvent([]byte(data))
 		if err != nil {
 			return fmt.Errorf("Could not deserialize event %v", err)
 		}
@@ -69,7 +69,7 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 	defer tx.Rollback()
 	insert := `Insert into events (aggregate_id, version, reason, aggregate_type, data, meta_data) values ($1, $2, $3, $4, $5, $6)`
 	for _, event := range events {
-		d, err := sql.serializer.Serialize(event)
+		d, err := sql.serializer.SerializeEvent(event)
 		if err != nil {
 			return err
 		}
@@ -99,7 +99,7 @@ func (sql *SQL) Get(id string, aggregateType string) (events []eventsourcing.Eve
 		if err := rows.Scan(&data); err != nil {
 			return nil, err
 		}
-		event,err := sql.serializer.Deserialize([]byte(data))
+		event,err := sql.serializer.DeserializeEvent([]byte(data))
 		if err != nil {
 			return nil, fmt.Errorf("Could not deserialize event %v", err)
 		}
@@ -133,7 +133,7 @@ func (sql *SQL) transform(rows *sql.Rows) (events []eventsourcing.Event, err err
 		if err = rows.Scan(&data); err != nil {
 			return nil, err
 		}
-		event,err := sql.serializer.Deserialize([]byte(data))
+		event,err := sql.serializer.DeserializeEvent([]byte(data))
 		if err != nil {
 			return nil, fmt.Errorf("Could not deserialize event %v", err)
 		}

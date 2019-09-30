@@ -16,9 +16,9 @@ type AggregateRootID string
 
 // AggregateRoot to be included into aggregates
 type AggregateRoot struct {
-	id      AggregateRootID
-	version Version
-	changes []Event
+	ID      AggregateRootID
+	Version Version
+	Events  []Event
 }
 
 // Event holding meta data and the application specific event in the Data property
@@ -46,24 +46,24 @@ func (state *AggregateRoot) TrackChange(a aggregate, eventData interface{}) erro
 		return AggregateNotPointerTypeError
 	}
 	if reflect.ValueOf(eventData).Kind() != reflect.Ptr {
-		return AggregateNotPointerTypeError
+		return EventDataNotPointerTypeError
 	}
 
 	// This can be overwritten in the constructor of the aggregate
-	if state.id == emptyAggregateID {
+	if state.ID == emptyAggregateID {
 		state.setID(uuid.Must(uuid.NewV4()).String())
 	}
 
 	reason := reflect.TypeOf(eventData).Elem().Name()
 	aggregateType := reflect.TypeOf(a).Elem().Name()
 	event := Event{
-		AggregateRootID: state.id,
+		AggregateRootID: state.ID,
 		Version:         state.nextVersion(),
 		Reason:          reason,
 		AggregateType:   aggregateType,
 		Data:            eventData,
 	}
-	state.changes = append(state.changes, event)
+	state.Events = append(state.Events, event)
 	a.Transition(event)
 	return nil
 }
@@ -73,26 +73,26 @@ func (state *AggregateRoot) BuildFromHistory(a aggregate, events []Event) {
 	for _, event := range events {
 		a.Transition(event)
 		//Set the aggregate id
-		state.id = event.AggregateRootID
+		state.ID = event.AggregateRootID
 		// Make sure the aggregate is in the correct version (the last event)
-		state.version = event.Version
+		state.Version = event.Version
 	}
 }
 
 func (state *AggregateRoot) nextVersion() Version {
-	return state.currentVersion() + 1
+	return state.CurrentVersion() + 1
 }
 
-func (state *AggregateRoot) currentVersion() Version {
-	if len(state.changes) > 0 {
-		return state.changes[len(state.changes)-1].Version
+func (state *AggregateRoot) CurrentVersion() Version {
+	if len(state.Events) > 0 {
+		return state.Events[len(state.Events)-1].Version
 	}
-	return state.version
+	return state.Version
 }
 
 // setID is the internal method to set the aggregate id
 func (state *AggregateRoot) setID(id string) {
-	state.id = AggregateRootID(id)
+	state.ID = AggregateRootID(id)
 }
 
 //Public accessors for aggregate root properties
@@ -101,7 +101,7 @@ func (state *AggregateRoot) setID(id string) {
 
 // SetID opens up the possibility to set manual aggregate id from the outside
 func (state *AggregateRoot) SetID(id string) error {
-	if state.id != emptyAggregateID {
+	if state.ID != emptyAggregateID {
 		return ErrAggregateAlreadyExists
 	}
 
@@ -109,19 +109,6 @@ func (state *AggregateRoot) SetID(id string) error {
 	return nil
 }
 
-// Getters
-
-// ID exposes the internal id
-func (state *AggregateRoot) ID() string {
-	return string(state.id)
-}
-
-// Changes exposes the internal changes property on the aggregateRoot
 func (state *AggregateRoot) Changes() []Event {
-	return state.changes
-}
-
-// Version get the current version including the pending changes
-func (state *AggregateRoot) Version() int {
-	return int(state.currentVersion())
+	return state.Events
 }

@@ -52,7 +52,7 @@ func (h *Handler) Register(aggregate aggregate, events ...interface{}) error {
 }
 
 // Serialize marshals an event into a json byte array
-func (h *Handler) Serialize(event eventsourcing.Event) ([]byte, error) {
+func (h *Handler) SerializeEvent(event eventsourcing.Event) ([]byte, error) {
 	e := jsonEvent{}
 	// Marshal the event data by itself
 	data, _ := json.Marshal(event.Data)
@@ -71,7 +71,7 @@ func (h *Handler) Serialize(event eventsourcing.Event) ([]byte, error) {
 }
 
 // Deserialize un marshals an byte array into an event
-func (h *Handler) Deserialize(v []byte) (event eventsourcing.Event, err error) {
+func (h *Handler) DeserializeEvent(v []byte) (event eventsourcing.Event, err error) {
 	jsonEvent := jsonEvent{}
 	err = json.Unmarshal(v, &jsonEvent)
 	if err != nil {
