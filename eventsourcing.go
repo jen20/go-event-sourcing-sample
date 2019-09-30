@@ -109,6 +109,14 @@ func (state *AggregateRoot) SetID(id string) error {
 	return nil
 }
 
-func (state *AggregateRoot) Changes() []Event {
+// UpdateVersion sets the Version to the Version in the last event
+func (state *AggregateRoot) updateVersion() {
+	if len(state.Events) > 0 {
+		state.Version = state.Events[len(state.Events)-1].Version
+		state.Events = []Event{}
+	}
+}
+
+func (state *AggregateRoot) changes() []Event {
 	return state.Events
 }

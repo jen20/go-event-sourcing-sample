@@ -15,9 +15,10 @@ type eventStore interface {
 
 // aggregate interface to use the aggregate root specific methods
 type aggregate interface {
-	Changes() []Event
+	changes() []Event
 	BuildFromHistory(a aggregate, events []Event)
 	Transition(event Event)
+	updateVersion()
 }
 
 // Repository is the returned instance from the factory function
@@ -34,7 +35,12 @@ func NewRepository(eventStore eventStore) *Repository {
 
 // Save an aggregates events
 func (r *Repository) Save(aggregate aggregate) error {
-	return r.eventStore.Save(aggregate.Changes())
+	err := r.eventStore.Save(aggregate.changes())
+	if err != nil {
+		return err
+	}
+	aggregate.updateVersion()
+	return nil
 }
 
 // Get fetches the aggregates event and build up the aggregate

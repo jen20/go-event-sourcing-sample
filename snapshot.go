@@ -2,7 +2,7 @@ package eventsourcing
 
 type snapshotStore interface {
 	Save(id AggregateRootID, a interface{}) error
-	Get(id AggregateRootID) (interface{}, error)
+	Get(id AggregateRootID, a interface{}) error
 }
 
 type Snapshot struct {
@@ -18,6 +18,5 @@ func (s *Snapshot) Save(id AggregateRootID, a interface{}) error {
 }
 
 func (s *Snapshot) Get(id AggregateRootID, a interface{}) error {
-	a, err := s.store.Get(id)
-	return err
+	return s.store.Get(id, a)
 }

@@ -86,7 +86,7 @@ func TestCreateNewPerson(t *testing.T) {
 		t.Fatal("Wrong person Age")
 	}
 
-	if len(person.Changes()) != 1 {
+	if len(person.Events) != 1 {
 		t.Fatal("There should be one event on the person aggregateRoot")
 	}
 
@@ -132,12 +132,12 @@ func TestPersonAgedOneYear(t *testing.T) {
 	person, _ := CreatePerson("kalle")
 	person.GrowOlder()
 
-	if len(person.Changes()) != 2 {
-		t.Fatal("There should be two event on the person aggregateRoot", person.Changes())
+	if len(person.Events) != 2 {
+		t.Fatal("There should be two event on the person aggregateRoot", person.Events)
 	}
 
-	if person.Changes()[len(person.Changes())-1].Reason != "AgedOneYear" {
-		t.Fatal("The last event reason should be AgedOneYear", person.Changes()[len(person.Changes())-1].Reason)
+	if person.Events[len(person.Events)-1].Reason != "AgedOneYear" {
+		t.Fatal("The last event reason should be AgedOneYear", person.Events[len(person.Events)-1].Reason)
 	}
 }
 

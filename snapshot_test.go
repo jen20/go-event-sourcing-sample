@@ -1,27 +1,23 @@
 package eventsourcing_test
 
 import (
-	"encoding/json"
-	"fmt"
 	"github.com/hallgren/eventsourcing"
+	"github.com/hallgren/eventsourcing/serializer/json"
 	"github.com/hallgren/eventsourcing/snapshotstore/memory"
 	"testing"
 )
 
 func TestSnapshot(t *testing.T) {
-	snapshot := eventsourcing.NewSnapshot(memory.New())
+	snapshot := eventsourcing.NewSnapshot(memory.New(json.New()))
 	person, err := CreatePerson("morgan")
 	if err != nil {
 		t.Fatal(err)
 	}
 	person.GrowOlder()
-	b, err := json.Marshal(*person)
-	fmt.Println(b)
-	snapshot.Save(eventsourcing.AggregateRootID(person.ID), person)
+
+	snapshot.Save(person.ID, person)
 	p := Person{}
-	fmt.Printf("person memory 1 %p\n", &p)
-	err = snapshot.Get(eventsourcing.AggregateRootID(person.ID), &p)
-	fmt.Printf("person memory 4 %p\n", &p)
+	err = snapshot.Get(person.ID, &p)
 	if err != nil {
 		t.Fatalf("could not get snapshot %v", err)
 	}

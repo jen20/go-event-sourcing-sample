@@ -90,3 +90,17 @@ func (h *Handler) DeserializeEvent(v []byte) (event eventsourcing.Event, err err
 	event.AggregateType = jsonEvent.AggregateType
 	return
 }
+
+// SerializeSnapshot marshals an aggregate as interface{} to []byte
+func (h *Handler) SerializeSnapshot(aggregate interface{}) ([]byte, error) {
+	data, err := json.Marshal(aggregate)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// DeserializeSnapshot unmarshals []byte to an aggregate
+func (h *Handler) DeserializeSnapshot(data []byte, a interface{}) error {
+	return json.Unmarshal(data, a)
+}
