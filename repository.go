@@ -13,8 +13,8 @@ type eventStore interface {
 	EventStream() observer.Stream
 }
 
-// aggregateRooter interface to use the aggregate root specific methods
-type aggregateRooter interface {
+// aggregate interface to use the aggregate root specific methods
+type aggregate interface {
 	Changes() []Event
 	BuildFromHistory(a aggregate, events []Event)
 	Transition(event Event)
@@ -33,12 +33,12 @@ func NewRepository(eventStore eventStore) *Repository {
 }
 
 // Save an aggregates events
-func (r *Repository) Save(aggregate aggregateRooter) error {
+func (r *Repository) Save(aggregate aggregate) error {
 	return r.eventStore.Save(aggregate.Changes())
 }
 
 // Get fetches the aggregates event and build up the aggregate
-func (r *Repository) Get(id string, aggregate aggregateRooter) error {
+func (r *Repository) Get(id string, aggregate aggregate) error {
 	if reflect.ValueOf(aggregate).Kind() != reflect.Ptr {
 		return fmt.Errorf("aggregate needs to be a pointer")
 	}

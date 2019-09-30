@@ -31,11 +31,6 @@ type Event struct {
 	MetaData        map[string]interface{}
 }
 
-// The interface that include the transition behavior from the struct carrying the aggregate root
-type aggregate interface {
-	Transition(event Event)
-}
-
 // ErrAggregateAlreadyExists returned if the ID is set more than one time
 var ErrAggregateAlreadyExists = errors.New("its not possible to set id on already existing aggregate")
 
