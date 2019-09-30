@@ -83,33 +83,8 @@ func (state *AggregateRoot) nextVersion() Version {
 	return state.CurrentVersion() + 1
 }
 
-func (state *AggregateRoot) CurrentVersion() Version {
-	if len(state.Events) > 0 {
-		return state.Events[len(state.Events)-1].Version
-	}
-	return state.Version
-}
-
-// setID is the internal method to set the aggregate id
-func (state *AggregateRoot) setID(id string) {
-	state.ID = AggregateRootID(id)
-}
-
-//Public accessors for aggregate root properties
-
-// Setters
-
-// SetID opens up the possibility to set manual aggregate id from the outside
-func (state *AggregateRoot) SetID(id string) error {
-	if state.ID != emptyAggregateID {
-		return ErrAggregateAlreadyExists
-	}
-
-	state.setID(id)
-	return nil
-}
-
-// UpdateVersion sets the Version to the Version in the last event
+// updateVersion sets the Version to the Version in the last event if reset the events
+// called by the Save func in the repository after the events are stored
 func (state *AggregateRoot) updateVersion() {
 	if len(state.Events) > 0 {
 		state.Version = state.Events[len(state.Events)-1].Version
@@ -119,4 +94,28 @@ func (state *AggregateRoot) updateVersion() {
 
 func (state *AggregateRoot) changes() []Event {
 	return state.Events
+}
+
+// setID is the internal method to set the aggregate id
+func (state *AggregateRoot) setID(id string) {
+	state.ID = AggregateRootID(id)
+}
+
+//Public accessors for aggregate root properties
+
+// SetID opens up the possibility to set manual aggregate id from the outside
+func (state *AggregateRoot) SetID(id string) error {
+	if state.ID != emptyAggregateID {
+		return ErrAggregateAlreadyExists
+	}
+	state.setID(id)
+	return nil
+}
+
+// CurrentVersion return the version based on events that are not stored
+func (state *AggregateRoot) CurrentVersion() Version {
+	if len(state.Events) > 0 {
+		return state.Events[len(state.Events)-1].Version
+	}
+	return state.Version
 }
