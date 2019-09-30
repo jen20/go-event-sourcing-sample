@@ -10,7 +10,7 @@ import (
 func TestSaveAndGetAggregate(t *testing.T) {
 	serializer := json.New()
 	serializer.Register(&Person{}, &Born{})
-	repo := eventsourcing.NewRepository(memory.Create(serializer))
+	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
 
 	person, err := CreatePerson("kalle")
 	if err != nil {

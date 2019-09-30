@@ -123,7 +123,7 @@ func initEventStores() ([]eventstore, func(), error) {
 
 type eventstore interface {
 	Save(events []eventsourcing.Event) error
-	Get(id string, aggregateType string) ([]eventsourcing.Event, error)
+	Get(id string, aggregateType string, fromVersion eventsourcing.Version) ([]eventsourcing.Event, error)
 	GlobalGet(start,  count int) []eventsourcing.Event
 	EventStream() observer.Stream
 }
@@ -142,7 +142,7 @@ func TestSaveAndGetEvents(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			fetchedEvents, err := es.Get(string(aggregateID), aggregateType)
+			fetchedEvents, err := es.Get(string(aggregateID), aggregateType, 0)
 
 			if len(fetchedEvents) != len(testEvents()) {
 				t.Fatal("Wrong number of events returned")
@@ -158,7 +158,7 @@ func TestSaveAndGetEvents(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			fetchedEventsIncludingPartTwo, err := es.Get(string(aggregateID), aggregateType)
+			fetchedEventsIncludingPartTwo, err := es.Get(string(aggregateID), aggregateType,0)
 
 			if len(fetchedEventsIncludingPartTwo) != len(append(testEvents(), testEventsPartTwo()...)) {
 				t.Error("Wrong number of events returned")

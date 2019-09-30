@@ -9,27 +9,36 @@ import (
 // eventStore interface expose the methods an event store must uphold
 type eventStore interface {
 	Save(events []Event) error
-	Get(id string, aggregateType string) ([]Event, error)
+	Get(id string, aggregateType string, fromVersion Version) ([]Event, error)
 	EventStream() observer.Stream
 }
 
+type snapshotStore interface {
+	Get(id AggregateRootID, a interface{}) error
+	Save(id AggregateRootID, a interface{}) error
+}
+
+
 // aggregate interface to use the aggregate root specific methods
 type aggregate interface {
-	changes() []Event
 	BuildFromHistory(a aggregate, events []Event)
 	Transition(event Event)
+	changes() []Event
 	updateVersion()
+	version() Version
 }
 
 // Repository is the returned instance from the factory function
 type Repository struct {
 	eventStore eventStore
+	snapshotStore snapshotStore
 }
 
 // NewRepository factory function
-func NewRepository(eventStore eventStore) *Repository {
+func NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Repository {
 	return &Repository{
 		eventStore: eventStore,
+		snapshotStore: snapshotStore,
 	}
 }
 
@@ -49,7 +58,14 @@ func (r *Repository) Get(id string, aggregate aggregate) error {
 		return fmt.Errorf("aggregate needs to be a pointer")
 	}
 	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
-	events, err := r.eventStore.Get(id, aggregateType)
+	if r.snapshotStore != nil {
+		err := r.snapshotStore.Get(AggregateRootID(id), aggregate)
+		if err != nil {
+			fmt.Println("Could not find snapshot")
+		}
+	}
+
+	events, err := r.eventStore.Get(id, aggregateType, aggregate.version())
 	if err != nil {
 		return err
 	}

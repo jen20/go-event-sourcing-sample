@@ -149,7 +149,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 }
 
 // Get aggregate events
-func (e *BBolt) Get(id string, aggregateType string) ([]eventsourcing.Event, error) {
+func (e *BBolt) Get(id string, aggregateType string, fromVersion eventsourcing.Version) ([]eventsourcing.Event, error) {
 	bucketName := aggregateKey(aggregateType, id)
 
 	tx, err := e.db.Begin(false)

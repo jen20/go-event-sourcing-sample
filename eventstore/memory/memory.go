@@ -74,7 +74,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 }
 
 // Get aggregate events
-func (e *Memory) Get(id string, aggregateType string) ([]eventsourcing.Event, error) {
+func (e *Memory) Get(id string, aggregateType string, fromVersion eventsourcing.Version) ([]eventsourcing.Event, error) {
 	var events []eventsourcing.Event
 	eventsSerialized := e.aggregateEvents[aggregateKey(aggregateType, id)]
 	for _, eventSerialized := range eventsSerialized {
@@ -82,7 +82,9 @@ func (e *Memory) Get(id string, aggregateType string) ([]eventsourcing.Event, er
 		if err != nil {
 			return nil, err
 		}
-		events = append(events, event)
+		if event.Version >= fromVersion {
+			events = append(events, event)
+		}
 	}
 
 	return events, nil
