@@ -61,7 +61,7 @@ func (r *Repository) Get(id string, aggregate aggregate) error {
 	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
 	if r.snapshotStore != nil {
 		err := r.snapshotStore.Get(id, aggregate)
-		if err != snapshotstore.SnapshotNotFoundError && err != nil {
+		if err != nil && err != snapshotstore.SnapshotNotFoundError {
 			return err
 		}
 	}
