@@ -15,14 +15,14 @@ type serializer interface {
 
 func initSerializers(t *testing.T) []serializer {
 	j := json.New()
-	err := j.Register(&SomeAggregate{},&SomeData{}, &SomeData2{})
+	err := j.Register(&SomeAggregate{}, &SomeData{}, &SomeData2{})
 	if err != nil {
 		t.Fatalf("could not register aggregate events %v", err)
 	}
 	return []serializer{j, unsafe.New()}
 }
 
-type SomeAggregate struct {}
+type SomeAggregate struct{}
 
 func (s *SomeAggregate) Transition(event eventsourcing.Event) {}
 
@@ -36,13 +36,12 @@ type SomeData2 struct {
 	B string
 }
 
-var data = SomeData {
+var data = SomeData{
 	1,
 	"b",
 }
 
 var metaData = make(map[string]interface{})
-
 
 func TestSerializeDeserialize(t *testing.T) {
 	serializers := initSerializers(t)
@@ -51,11 +50,11 @@ func TestSerializeDeserialize(t *testing.T) {
 		t.Run(reflect.TypeOf(s).Elem().Name(), func(t *testing.T) {
 			v, err := s.SerializeEvent(eventsourcing.Event{
 				AggregateRootID: "123",
-				Version: 1,
-				Data: data,
-				AggregateType: "SomeAggregate",
-				Reason: "SomeData",
-				MetaData: metaData,
+				Version:         1,
+				Data:            data,
+				AggregateType:   "SomeAggregate",
+				Reason:          "SomeData",
+				MetaData:        metaData,
 			})
 			if err != nil {
 				t.Fatalf("could not serialize event, %v", err)
@@ -82,13 +81,13 @@ func TestSerializeDeserialize(t *testing.T) {
 			}
 
 			switch event.AggregateType {
-				case "SomeAggregate":
-					switch d := event.Data.(type) {
-					case *SomeData:
-						if d.A != data.A {
-							t.Fatalf("wrong value in event.Data.A")
-						}
+			case "SomeAggregate":
+				switch d := event.Data.(type) {
+				case *SomeData:
+					if d.A != data.A {
+						t.Fatalf("wrong value in event.Data.A")
 					}
+				}
 			default:
 				t.Error("wrong aggregate type")
 			}

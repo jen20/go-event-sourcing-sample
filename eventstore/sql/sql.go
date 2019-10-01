@@ -9,13 +9,13 @@ import (
 )
 
 type SQL struct {
-	db sql.DB
+	db         sql.DB
 	serializer eventstore.EventSerializer
 }
 
 func Open(db sql.DB, serializer eventstore.EventSerializer) *SQL {
 	return &SQL{
-		db: db,
+		db:         db,
 		serializer: serializer,
 	}
 }
@@ -46,7 +46,7 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 		if err := rows.Scan(&data); err != nil {
 			return err
 		}
-		event,err := sql.serializer.DeserializeEvent([]byte(data))
+		event, err := sql.serializer.DeserializeEvent([]byte(data))
 		if err != nil {
 			return fmt.Errorf("Could not deserialize event %v", err)
 		}
@@ -91,7 +91,7 @@ func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.
 		if err := rows.Scan(&data); err != nil {
 			return nil, err
 		}
-		event,err := sql.serializer.DeserializeEvent([]byte(data))
+		event, err := sql.serializer.DeserializeEvent([]byte(data))
 		if err != nil {
 			return nil, fmt.Errorf("Could not deserialize event %v", err)
 		}
@@ -121,7 +121,7 @@ func (sql *SQL) transform(rows *sql.Rows) (events []eventsourcing.Event, err err
 		if err = rows.Scan(&data); err != nil {
 			return nil, err
 		}
-		event,err := sql.serializer.DeserializeEvent([]byte(data))
+		event, err := sql.serializer.DeserializeEvent([]byte(data))
 		if err != nil {
 			return nil, fmt.Errorf("Could not deserialize event %v", err)
 		}

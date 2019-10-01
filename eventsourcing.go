@@ -104,6 +104,7 @@ func (state *AggregateRoot) setID(id string) {
 func (state *AggregateRoot) version() Version {
 	return state.AggregateVersion
 }
+
 //Public accessors for aggregate root properties
 
 // SetID opens up the possibility to set manual aggregate id from the outside
@@ -115,7 +116,7 @@ func (state *AggregateRoot) SetID(id string) error {
 	return nil
 }
 
-func (id AggregateRootID) String() string  {
+func (id AggregateRootID) String() string {
 	return string(id)
 }
 
@@ -126,4 +127,3 @@ func (state *AggregateRoot) CurrentVersion() Version {
 	}
 	return state.AggregateVersion
 }
-

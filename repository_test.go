@@ -39,7 +39,6 @@ func TestSaveAndGetAggregate(t *testing.T) {
 	}
 }
 
-
 func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 	serializer := json.New()
 	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
@@ -100,7 +99,7 @@ func TestEventStream(t *testing.T) {
 	}
 
 	counter := 0
-	outer:
+outer:
 	for {
 		select {
 		// wait for changes

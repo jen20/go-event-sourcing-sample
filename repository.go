@@ -18,7 +18,6 @@ type snapshotStore interface {
 	Save(id string, a interface{}) error
 }
 
-
 // aggregate interface to use the aggregate root specific methods
 type aggregate interface {
 	BuildFromHistory(a aggregate, events []Event)
@@ -30,18 +29,18 @@ type aggregate interface {
 
 // Repository is the returned instance from the factory function
 type Repository struct {
-	eventStore eventStore
+	eventStore    eventStore
 	snapshotStore snapshotStore
-	events observer.Property  // A property to which all event changes for all event types are published
+	events        observer.Property // A property to which all event changes for all event types are published
 
 }
 
 // NewRepository factory function
 func NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Repository {
 	return &Repository{
-		eventStore: eventStore,
+		eventStore:    eventStore,
 		snapshotStore: snapshotStore,
-		events: observer.NewProperty(nil),
+		events:        observer.NewProperty(nil),
 	}
 }
 

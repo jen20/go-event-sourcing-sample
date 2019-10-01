@@ -16,7 +16,6 @@ type Person struct {
 	Dead int
 }
 
-
 // Born event
 type Born struct {
 	Name string
@@ -55,7 +54,6 @@ func (person *Person) Transition(event eventsourcing.Event) {
 	}
 }
 
-
 func TestSnapshot(t *testing.T) {
 	snapshot := snapshotstore.New(json.New())
 	person, err := CreatePerson("morgan")
@@ -84,4 +82,3 @@ func TestSnapshot(t *testing.T) {
 		t.Fatalf("wrong AggregateVersion in snapshot %q expected: %q", p.AggregateVersion, personVersion)
 	}
 }
-

@@ -26,8 +26,8 @@ func itob(v int) []byte {
 
 // BBolt is a handler for event streaming
 type BBolt struct {
-	db             *bbolt.DB             // The bbolt db where we store everything
-	serializer     eventstore.EventSerializer // The interface that serialize event
+	db         *bbolt.DB                  // The bbolt db where we store everything
+	serializer eventstore.EventSerializer // The interface that serialize event
 }
 
 // MustOpenBBolt opens the event stream found in the given file. If the file is not found it will be created and
@@ -51,8 +51,8 @@ func MustOpenBBolt(dbFile string, s eventstore.EventSerializer) *BBolt {
 		panic(err)
 	}
 	return &BBolt{
-		db:             db,
-		serializer:     s,
+		db:         db,
+		serializer: s,
 	}
 }
 
@@ -154,7 +154,7 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 
 	cursor := evBucket.Cursor()
 	events := make([]eventsourcing.Event, 0)
-	firstEvent := int(afterVersion)+1
+	firstEvent := int(afterVersion) + 1
 
 	for k, obj := cursor.Seek(itob(firstEvent)); k != nil; k, obj = cursor.Next() {
 		event, err := e.serializer.DeserializeEvent(obj)

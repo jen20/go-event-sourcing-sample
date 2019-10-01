@@ -90,7 +90,7 @@ func sql() (*s.SQL, func(), error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("could not migrate database %v", err)
 	}
-	return s, func(){
+	return s, func() {
 		s.Close()
 		os.Remove(dbFile)
 	}, nil
@@ -121,7 +121,7 @@ func initEventStores() ([]eventstore, func(), error) {
 type eventstore interface {
 	Save(events []eventsourcing.Event) error
 	Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)
-	GlobalGet(start,  count int) []eventsourcing.Event
+	GlobalGet(start, count int) []eventsourcing.Event
 }
 
 func TestSaveAndGetEvents(t *testing.T) {
@@ -154,7 +154,7 @@ func TestSaveAndGetEvents(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			fetchedEventsIncludingPartTwo, err := es.Get(string(aggregateID), aggregateType,0)
+			fetchedEventsIncludingPartTwo, err := es.Get(string(aggregateID), aggregateType, 0)
 			if err != nil {
 				t.Fatalf("repository Get returned error: %v", err)
 			}
@@ -200,7 +200,6 @@ func TestGetEventsAfterVersion(t *testing.T) {
 
 	}
 }
-
 
 func TestSaveEventsFromMoreThanOneAggregate(t *testing.T) {
 	stores, closer, err := initEventStores()

@@ -9,7 +9,7 @@ import (
 type Memory struct {
 	aggregateEvents map[string][][]byte // The memory structure where we store aggregate events
 	eventsInOrder   [][]byte            // The global event order
-	serializer eventstore.EventSerializer
+	serializer      eventstore.EventSerializer
 }
 
 // Create in memory event store
@@ -17,7 +17,7 @@ func Create(serializer eventstore.EventSerializer) *Memory {
 	return &Memory{
 		aggregateEvents: make(map[string][][]byte),
 		eventsInOrder:   make([][]byte, 0),
-		serializer: serializer,
+		serializer:      serializer,
 	}
 }
 
@@ -54,7 +54,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	eventsInOrder := e.eventsInOrder
 
 	for _, event := range events {
-		eventSerialized,err := e.serializer.SerializeEvent(event)
+		eventSerialized, err := e.serializer.SerializeEvent(event)
 		if err != nil {
 			return err
 		}
