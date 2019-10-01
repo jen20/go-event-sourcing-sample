@@ -175,6 +175,37 @@ func TestSaveAndGetEvents(t *testing.T) {
 	}
 }
 
+func TestGetEventsAfterVersion(t *testing.T) {
+	stores, closer, err := initEventStores()
+	if err != nil {
+		t.Fatalf("Could not init event stores %v", err)
+	}
+	defer closer()
+
+	for _, es := range stores {
+		t.Run(reflect.TypeOf(es).Elem().Name(), func(t *testing.T) {
+			err := es.Save(testEvents())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			fetchedEvents, err := es.Get(string(aggregateID), aggregateType, 1)
+
+			// Should return one less event
+			if len(fetchedEvents) != len(testEvents())-1 {
+				t.Fatal("Wrong number of events returned")
+			}
+
+			// first event version should be 2
+			if fetchedEvents[0].Version != 2 {
+				t.Fatal("Wrong events returned")
+			}
+		})
+
+	}
+}
+
+
 func TestSaveEventsFromMoreThanOneAggregate(t *testing.T) {
 	stores, closer, err := initEventStores()
 	if err != nil {
