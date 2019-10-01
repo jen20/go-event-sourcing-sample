@@ -3,24 +3,21 @@ package memory
 import (
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore"
-	"github.com/imkira/go-observer"
 )
 
 // Memory is a handler for event streaming
 type Memory struct {
 	aggregateEvents map[string][][]byte // The memory structure where we store aggregate events
 	eventsInOrder   [][]byte            // The global event order
-	eventsProperty  observer.Property                // A property to which all event changes for all event types are published
-	serializer eventstore.Serializer
+	serializer      eventstore.EventSerializer
 }
 
 // Create in memory event store
-func Create(serializer eventstore.Serializer) *Memory {
+func Create(serializer eventstore.EventSerializer) *Memory {
 	return &Memory{
 		aggregateEvents: make(map[string][][]byte),
 		eventsInOrder:   make([][]byte, 0),
-		eventsProperty:  observer.NewProperty(nil),
-		serializer: serializer,
+		serializer:      serializer,
 	}
 }
 
@@ -41,7 +38,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 
 	if len(evBucket) > 0 {
 		// Last version in the list
-		lastEvent, err := e.serializer.Deserialize(evBucket[len(evBucket)-1])
+		lastEvent, err := e.serializer.DeserializeEvent(evBucket[len(evBucket)-1])
 		if err != nil {
 			return err
 		}
@@ -57,14 +54,12 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	eventsInOrder := e.eventsInOrder
 
 	for _, event := range events {
-		eventSerialized,err := e.serializer.Serialize(event)
+		eventSerialized, err := e.serializer.SerializeEvent(event)
 		if err != nil {
 			return err
 		}
 		evBucket = append(evBucket, eventSerialized)
 		eventsInOrder = append(eventsInOrder, eventSerialized)
-		// update the event stream
-		e.eventsProperty.Update(event)
 	}
 
 	e.aggregateEvents[bucketName] = evBucket
@@ -74,17 +69,18 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 }
 
 // Get aggregate events
-func (e *Memory) Get(id string, aggregateType string) ([]eventsourcing.Event, error) {
+func (e *Memory) Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) {
 	var events []eventsourcing.Event
 	eventsSerialized := e.aggregateEvents[aggregateKey(aggregateType, id)]
 	for _, eventSerialized := range eventsSerialized {
-		event, err := e.serializer.Deserialize(eventSerialized)
+		event, err := e.serializer.DeserializeEvent(eventSerialized)
 		if err != nil {
 			return nil, err
 		}
-		events = append(events, event)
+		if event.Version > afterVersion {
+			events = append(events, event)
+		}
 	}
-
 	return events, nil
 }
 
@@ -93,7 +89,7 @@ func (e *Memory) GlobalGet(start int, count int) []eventsourcing.Event {
 	events := make([]eventsourcing.Event, 0)
 	var i int
 	for id, eventSerialized := range e.eventsInOrder {
-		event, err := e.serializer.Deserialize(eventSerialized)
+		event, err := e.serializer.DeserializeEvent(eventSerialized)
 		if err != nil {
 			return nil
 		}
@@ -108,15 +104,8 @@ func (e *Memory) GlobalGet(start int, count int) []eventsourcing.Event {
 	return events
 }
 
-// EventStream returns a stream with all saved events
-func (e *Memory) EventStream() observer.Stream {
-	return e.eventsProperty.Observe()
-}
-
 // Close does nothing
-func (e *Memory) Close() {
-
-}
+func (e *Memory) Close() {}
 
 // aggregateKey generate a aggregate key to store events against from aggregateType and aggregateID
 func aggregateKey(aggregateType, aggregateID string) string {

@@ -7,7 +7,6 @@ import (
 	"github.com/etcd-io/bbolt"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore"
-	"github.com/imkira/go-observer"
 	"time"
 )
 
@@ -27,14 +26,13 @@ func itob(v int) []byte {
 
 // BBolt is a handler for event streaming
 type BBolt struct {
-	db             *bbolt.DB             // The bbolt db where we store everything
-	serializer     eventstore.Serializer // The interface that serialize event
-	eventsProperty observer.Property     // A property to which all event changes for all event types are published
+	db         *bbolt.DB                  // The bbolt db where we store everything
+	serializer eventstore.EventSerializer // The interface that serialize event
 }
 
 // MustOpenBBolt opens the event stream found in the given file. If the file is not found it will be created and
 // initialized. Will panic if it has problems persisting the changes to the filesystem.
-func MustOpenBBolt(dbFile string, s eventstore.Serializer) *BBolt {
+func MustOpenBBolt(dbFile string, s eventstore.EventSerializer) *BBolt {
 	db, err := bbolt.Open(dbFile, 0600, &bbolt.Options{
 		Timeout: 1 * time.Second,
 	})
@@ -53,9 +51,8 @@ func MustOpenBBolt(dbFile string, s eventstore.Serializer) *BBolt {
 		panic(err)
 	}
 	return &BBolt{
-		db:             db,
-		serializer:     s,
-		eventsProperty: observer.NewProperty(nil),
+		db:         db,
+		serializer: s,
 	}
 }
 
@@ -91,7 +88,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 	cursor := evBucket.Cursor()
 	k, obj := cursor.Last()
 	if k != nil {
-		event, err := e.serializer.Deserialize(obj)
+		event, err := e.serializer.DeserializeEvent(obj)
 		if err != nil {
 			return fmt.Errorf("could not serialize event, %v", err)
 		}
@@ -114,7 +111,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 		if err != nil {
 			return fmt.Errorf("could not get sequence for %#v", bucketName)
 		}
-		value, err := e.serializer.Serialize(event)
+		value, err := e.serializer.SerializeEvent(event)
 		if err != nil {
 			return fmt.Errorf("could not serialize event, %v", err)
 		}
@@ -140,16 +137,11 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 	if err != nil {
 		return err
 	}
-
-	// update the stream after the events are commited
-	for _, event := range events {
-		e.eventsProperty.Update(event)
-	}
 	return nil
 }
 
 // Get aggregate events
-func (e *BBolt) Get(id string, aggregateType string) ([]eventsourcing.Event, error) {
+func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) {
 	bucketName := aggregateKey(aggregateType, id)
 
 	tx, err := e.db.Begin(false)
@@ -162,10 +154,10 @@ func (e *BBolt) Get(id string, aggregateType string) ([]eventsourcing.Event, err
 
 	cursor := evBucket.Cursor()
 	events := make([]eventsourcing.Event, 0)
-	//event := &eventsourcing.Event{}
+	firstEvent := int(afterVersion) + 1
 
-	for k, obj := cursor.First(); k != nil; k, obj = cursor.Next() {
-		event, err := e.serializer.Deserialize(obj)
+	for k, obj := cursor.Seek(itob(firstEvent)); k != nil; k, obj = cursor.Next() {
+		event, err := e.serializer.DeserializeEvent(obj)
 		if err != nil {
 			return nil, fmt.Errorf("Could not deserialize event, %v", err)
 		}
@@ -187,8 +179,8 @@ func (e *BBolt) GlobalGet(start int, count int) []eventsourcing.Event {
 	events := make([]eventsourcing.Event, 0)
 	counter := 0
 
-	for k, obj := cursor.Seek([]byte(itob(int(start)))); k != nil; k, obj = cursor.Next() {
-		event, err := e.serializer.Deserialize(obj)
+	for k, obj := cursor.Seek(itob(start)); k != nil; k, obj = cursor.Next() {
+		event, err := e.serializer.DeserializeEvent(obj)
 		if err != nil {
 			return nil
 		}
@@ -199,13 +191,7 @@ func (e *BBolt) GlobalGet(start int, count int) []eventsourcing.Event {
 			break
 		}
 	}
-
 	return events
-}
-
-// EventStream returns a stream with all saved events
-func (e *BBolt) EventStream() observer.Stream {
-	return e.eventsProperty.Observe()
 }
 
 // Close closes the event stream and the underlying database

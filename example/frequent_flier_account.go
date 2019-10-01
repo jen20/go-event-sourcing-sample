@@ -117,9 +117,9 @@ func (a FrequentFlierAccountAggregate) String() string {
 	var reason string
 	var aggregateType string
 
-	if len(a.Changes()) > 0 {
-		reason = a.Changes()[0].Reason
-		aggregateType = a.Changes()[0].AggregateType
+	if len(a.AggregateEvents) > 0 {
+		reason = a.AggregateEvents[0].Reason
+		aggregateType = a.AggregateEvents[0].AggregateType
 	} else {
 		reason = "No reason"
 		aggregateType = "No aggregateType"
@@ -131,8 +131,8 @@ func (a FrequentFlierAccountAggregate) String() string {
 	Status: %s
 	(First Reason: %s)
 	(First AggregateType %s)
-	(Pending Changes: %d)
-	(Version: %d)
+	(Pending AggregateEvents: %d)
+	(AggregateVersion: %d)
 `
-	return fmt.Sprintf(format, a.ID(), a.miles, a.tierPoints, a.status, reason, aggregateType, len(a.Changes()), a.Version())
+	return fmt.Sprintf(format, a.AggregateID, a.miles, a.tierPoints, a.status, reason, aggregateType, len(a.AggregateEvents), a.AggregateVersion)
 }

@@ -7,7 +7,7 @@ import (
 	"reflect"
 )
 
-type Handler struct{
+type Handler struct {
 	eventRegister map[string]interface{}
 }
 
@@ -17,12 +17,12 @@ func New() *Handler {
 }
 
 type jsonEvent struct {
-	AggregateType string
-	Reason string
-	Version int
+	AggregateType   string
+	Reason          string
+	Version         int
 	AggregateRootID string
-	Data json.RawMessage
-	MetaData map[string]interface{}
+	Data            json.RawMessage
+	MetaData        map[string]interface{}
 }
 
 type aggregate interface {
@@ -30,7 +30,7 @@ type aggregate interface {
 }
 
 var AggregateNameMissingError = fmt.Errorf("missing aggregate name")
-var NoEventsToRegisterError = fmt.Errorf("No events to register")
+var NoEventsToRegisterError = fmt.Errorf("no events to register")
 var EventNameMissingError = fmt.Errorf("missing event name")
 
 func (h *Handler) Register(aggregate aggregate, events ...interface{}) error {
@@ -46,13 +46,13 @@ func (h *Handler) Register(aggregate aggregate, events ...interface{}) error {
 		if eventName == "" {
 			return EventNameMissingError
 		}
-		h.eventRegister[aggregateName + "_" + eventName] = event
+		h.eventRegister[aggregateName+"_"+eventName] = event
 	}
 	return nil
 }
 
 // Serialize marshals an event into a json byte array
-func (h *Handler) Serialize(event eventsourcing.Event) ([]byte, error) {
+func (h *Handler) SerializeEvent(event eventsourcing.Event) ([]byte, error) {
 	e := jsonEvent{}
 	// Marshal the event data by itself
 	data, _ := json.Marshal(event.Data)
@@ -71,13 +71,13 @@ func (h *Handler) Serialize(event eventsourcing.Event) ([]byte, error) {
 }
 
 // Deserialize un marshals an byte array into an event
-func (h *Handler) Deserialize(v []byte) (event eventsourcing.Event, err error) {
+func (h *Handler) DeserializeEvent(v []byte) (event eventsourcing.Event, err error) {
 	jsonEvent := jsonEvent{}
 	err = json.Unmarshal(v, &jsonEvent)
 	if err != nil {
 		return
 	}
-	data := h.eventRegister[jsonEvent.AggregateType + "_" +jsonEvent.Reason]
+	data := h.eventRegister[jsonEvent.AggregateType+"_"+jsonEvent.Reason]
 	err = json.Unmarshal(jsonEvent.Data, &data)
 	if err != nil {
 		return
@@ -89,4 +89,18 @@ func (h *Handler) Deserialize(v []byte) (event eventsourcing.Event, err error) {
 	event.Version = eventsourcing.Version(jsonEvent.Version)
 	event.AggregateType = jsonEvent.AggregateType
 	return
+}
+
+// SerializeSnapshot marshals an aggregate as interface{} to []byte
+func (h *Handler) SerializeSnapshot(aggregate interface{}) ([]byte, error) {
+	data, err := json.Marshal(aggregate)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+// DeserializeSnapshot unmarshals []byte to an aggregate
+func (h *Handler) DeserializeSnapshot(data []byte, a interface{}) error {
+	return json.Unmarshal(data, a)
 }

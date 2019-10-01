@@ -9,9 +9,9 @@ import (
 // Person aggregate
 type Person struct {
 	eventsourcing.AggregateRoot
-	name string
-	age  int
-	dead int
+	Name string
+	Age  int
+	Dead int
 }
 
 // Born event
@@ -26,7 +26,7 @@ type AgedOneYear struct {
 // CreatePerson constructor for the Person
 func CreatePerson(name string) (*Person, error) {
 	if name == "" {
-		return nil, fmt.Errorf("name can't be blank")
+		return nil, fmt.Errorf("Name can't be blank")
 	}
 	person := Person{}
 	err := person.TrackChange(&person, &Born{Name: name})
@@ -39,7 +39,7 @@ func CreatePerson(name string) (*Person, error) {
 // CreatePersonWithID constructor for the Person that sets the aggregate id from the outside
 func CreatePersonWithID(id, name string) (*Person, error) {
 	if name == "" {
-		return nil, fmt.Errorf("name can't be blank")
+		return nil, fmt.Errorf("Name can't be blank")
 	}
 
 	person := Person{}
@@ -65,10 +65,10 @@ func (person *Person) GrowOlder() error {
 func (person *Person) Transition(event eventsourcing.Event) {
 	switch e := event.Data.(type) {
 	case *Born:
-		person.age = 0
-		person.name = e.Name
+		person.Age = 0
+		person.Name = e.Name
 	case *AgedOneYear:
-		person.age += 1
+		person.Age += 1
 	}
 }
 
@@ -78,20 +78,20 @@ func TestCreateNewPerson(t *testing.T) {
 		t.Fatal("Error when creating person", err.Error())
 	}
 
-	if person.name != "kalle" {
-		t.Fatal("Wrong person name")
+	if person.Name != "kalle" {
+		t.Fatal("Wrong person Name")
 	}
 
-	if person.age != 0 {
-		t.Fatal("Wrong person age")
+	if person.Age != 0 {
+		t.Fatal("Wrong person Age")
 	}
 
-	if len(person.Changes()) != 1 {
+	if len(person.AggregateEvents) != 1 {
 		t.Fatal("There should be one event on the person aggregateRoot")
 	}
 
-	if person.Version() != 1 {
-		t.Fatal("Wrong version on the person aggregateRoot", person.Version())
+	if person.CurrentVersion() != 1 {
+		t.Fatal("Wrong version on the person aggregateRoot", person.AggregateVersion)
 	}
 }
 
@@ -102,15 +102,15 @@ func TestCreateNewPersonWithIDFromOutside(t *testing.T) {
 		t.Fatal("Error when creating person", err.Error())
 	}
 
-	if person.ID() != id {
-		t.Fatal("Wrong aggregate id on the person aggregateRoot", person.ID())
+	if string(person.AggregateID) != id {
+		t.Fatal("Wrong aggregate id on the person aggregateRoot", person.AggregateID)
 	}
 }
 
 func TestBlankName(t *testing.T) {
 	_, err := CreatePerson("")
 	if err == nil {
-		t.Fatal("The constructor should return error on blank name")
+		t.Fatal("The constructor should return error on blank Name")
 	}
 
 }
@@ -132,12 +132,12 @@ func TestPersonAgedOneYear(t *testing.T) {
 	person, _ := CreatePerson("kalle")
 	person.GrowOlder()
 
-	if len(person.Changes()) != 2 {
-		t.Fatal("There should be two event on the person aggregateRoot", person.Changes())
+	if len(person.AggregateEvents) != 2 {
+		t.Fatal("There should be two event on the person aggregateRoot", person.AggregateEvents)
 	}
 
-	if person.Changes()[len(person.Changes())-1].Reason != "AgedOneYear" {
-		t.Fatal("The last event reason should be AgedOneYear", person.Changes()[len(person.Changes())-1].Reason)
+	if person.AggregateEvents[len(person.AggregateEvents)-1].Reason != "AgedOneYear" {
+		t.Fatal("The last event reason should be AgedOneYear", person.AggregateEvents[len(person.AggregateEvents)-1].Reason)
 	}
 }
 
@@ -147,7 +147,7 @@ func TestPersonGrewTenYears(t *testing.T) {
 		person.GrowOlder()
 	}
 
-	if person.age != 10 {
-		t.Fatal("person has the wrong age")
+	if person.Age != 10 {
+		t.Fatal("person has the wrong Age")
 	}
 }
