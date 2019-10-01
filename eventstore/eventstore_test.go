@@ -123,7 +123,7 @@ func initEventStores() ([]eventstore, func(), error) {
 
 type eventstore interface {
 	Save(events []eventsourcing.Event) error
-	Get(id string, aggregateType string, fromVersion eventsourcing.Version) ([]eventsourcing.Event, error)
+	Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)
 	GlobalGet(start,  count int) []eventsourcing.Event
 	EventStream() observer.Stream
 }

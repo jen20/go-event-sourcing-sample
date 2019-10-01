@@ -9,7 +9,7 @@ import (
 // eventStore interface expose the methods an event store must uphold
 type eventStore interface {
 	Save(events []Event) error
-	Get(id string, aggregateType string, fromVersion Version) ([]Event, error)
+	Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
 	EventStream() observer.Stream
 }
 

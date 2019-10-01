@@ -149,7 +149,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 }
 
 // Get aggregate events
-func (e *BBolt) Get(id string, aggregateType string, fromVersion eventsourcing.Version) ([]eventsourcing.Event, error) {
+func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) {
 	bucketName := aggregateKey(aggregateType, id)
 
 	tx, err := e.db.Begin(false)
@@ -162,7 +162,6 @@ func (e *BBolt) Get(id string, aggregateType string, fromVersion eventsourcing.V
 
 	cursor := evBucket.Cursor()
 	events := make([]eventsourcing.Event, 0)
-	//event := &eventsourcing.Event{}
 
 	for k, obj := cursor.First(); k != nil; k, obj = cursor.Next() {
 		event, err := e.serializer.DeserializeEvent(obj)
