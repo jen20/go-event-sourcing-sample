@@ -205,10 +205,12 @@ func TestSaveEventsFromMoreThanOneAggregateType(t *testing.T) {
 	events[1].AggregateType = "OtherAggregateType"
 
 	for _, es := range stores {
-		err := es.Save(events)
-		if err == nil {
-			t.Error("Should not be able to save events that belongs to other aggregate type")
-		}
+		t.Run(reflect.TypeOf(es).Elem().Name(), func(t *testing.T) {
+			err := es.Save(events)
+			if err == nil {
+				t.Error("Should not be able to save events that belongs to other aggregate type")
+			}
+		})
 	}
 }
 
@@ -221,10 +223,12 @@ func TestSaveEventsInWrongOrder(t *testing.T) {
 
 	events := append(testEvents(), testEvents()[0])
 	for _, es := range stores {
-		err := es.Save(events)
-		if err == nil {
-			t.Error("Should not be able to save events that are in wrong version order")
-		}
+		t.Run(reflect.TypeOf(es).Elem().Name(), func(t *testing.T) {
+			err := es.Save(events)
+			if err == nil {
+				t.Error("Should not be able to save events that are in wrong version order")
+			}
+		})
 	}
 }
 
@@ -237,10 +241,12 @@ func TestSaveEventsInWrongVersion(t *testing.T) {
 
 	events := testEventsPartTwo()
 	for _, es := range stores {
-		err := es.Save(events)
-		if err == nil {
-			t.Error("Should not be able to save events that are out of sync compared to the storage order")
-		}
+		t.Run(reflect.TypeOf(es).Elem().Name(), func(t *testing.T) {
+			err := es.Save(events)
+			if err == nil {
+				t.Error("Should not be able to save events that are out of sync compared to the storage order")
+			}
+		})
 	}
 }
 
@@ -254,10 +260,12 @@ func TestSaveEventsWithEmptyReason(t *testing.T) {
 	events := testEvents()
 	events[2].Reason = ""
 	for _, es := range stores {
-		err := es.Save(events)
-		if err == nil {
-			t.Error("Should not be able to save events with empty reason")
-		}
+		t.Run(reflect.TypeOf(es).Elem().Name(), func(t *testing.T) {
+			err := es.Save(events)
+			if err == nil {
+				t.Error("Should not be able to save events with empty reason")
+			}
+		})
 	}
 }
 
@@ -270,21 +278,24 @@ func TestGetGlobalEvents(t *testing.T) {
 
 	events := testEvents()
 	for _, es := range stores {
-		err := es.Save(events)
-		if err != nil {
-			t.Fatalf("%v could not save the events", err)
-		}
-		_ = es.Save([]eventsourcing.Event{{AggregateRootID: aggregateID2, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Data: FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}}})
+		t.Run(reflect.TypeOf(es).Elem().Name(), func(t *testing.T) {
 
-		fetchedEvents := es.GlobalGet(6, 2)
+			err := es.Save(events)
+			if err != nil {
+				t.Fatalf("%v could not save the events", err)
+			}
+			_ = es.Save([]eventsourcing.Event{{AggregateRootID: aggregateID2, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Data: FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}}})
 
-		if len(fetchedEvents) != 2 {
-			t.Fatalf("Fetched the wrong amount of events")
-		}
+			fetchedEvents := es.GlobalGet(6, 2)
 
-		if fetchedEvents[0].Version != events[5].Version {
-			t.Fatalf("%v fetched the wrong events %v %v",es, fetchedEvents[0].Version, events[2].Version)
-		}
+			if len(fetchedEvents) != 2 {
+				t.Fatalf("Fetched the wrong amount of events")
+			}
+
+			if fetchedEvents[0].Version != events[5].Version {
+				t.Fatalf("%v fetched the wrong events %v %v", es, fetchedEvents[0].Version, events[2].Version)
+			}
+		})
 	}
 }
 
@@ -296,16 +307,18 @@ func TestGetGlobalEventsNotExisting(t *testing.T) {
 	defer closer()
 	events := testEvents()
 	for _, es := range stores {
-		err := es.Save(events)
-		if err != nil {
-			t.Error("Could not save the events")
-		}
+		t.Run(reflect.TypeOf(es).Elem().Name(), func(t *testing.T) {
+			err := es.Save(events)
+			if err != nil {
+				t.Error("Could not save the events")
+			}
 
-		fetchedEvents := es.GlobalGet(100, 2)
+			fetchedEvents := es.GlobalGet(100, 2)
 
-		if len(fetchedEvents) != 0 {
-			t.Error("Fetched none existing events")
-		}
+			if len(fetchedEvents) != 0 {
+				t.Error("Fetched none existing events")
+			}
+		})
 	}
 }
 
@@ -318,30 +331,33 @@ func TestEventStream(t *testing.T) {
 
 	events := testEvents()
 	for _, es := range stores {
-		stream := es.EventStream()
+		t.Run(reflect.TypeOf(es).Elem().Name(), func(t *testing.T) {
 
-		err := es.Save(events)
-		if err != nil {
-			t.Error("Could not save the events")
-		}
+			stream := es.EventStream()
 
-		counter := 0
-	outer:
-		for {
-			select {
-			// wait for changes
-			case <-stream.Changes():
-				// advance to next value
-				stream.Next()
-				counter++
-			case <-time.After(10 * time.Millisecond):
-				// The stream has 10 milliseconds to deliver the events
-				break outer
+			err := es.Save(events)
+			if err != nil {
+				t.Error("Could not save the events")
 			}
-		}
 
-		if counter != 6 {
-			t.Errorf("Not all events was received from the stream, got %q", counter)
-		}
+			counter := 0
+		outer:
+			for {
+				select {
+				// wait for changes
+				case <-stream.Changes():
+					// advance to next value
+					stream.Next()
+					counter++
+				case <-time.After(10 * time.Millisecond):
+					// The stream has 10 milliseconds to deliver the events
+					break outer
+				}
+			}
+
+			if counter != 6 {
+				t.Errorf("Not all events was received from the stream, got %q", counter)
+			}
+		})
 	}
 }
