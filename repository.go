@@ -2,6 +2,7 @@ package eventsourcing
 
 import (
 	"fmt"
+	"github.com/hallgren/eventsourcing/snapshotstore"
 	"github.com/imkira/go-observer"
 	"reflect"
 )
@@ -14,8 +15,8 @@ type eventStore interface {
 }
 
 type snapshotStore interface {
-	Get(id AggregateRootID, a interface{}) error
-	Save(id AggregateRootID, a interface{}) error
+	Get(id string, a interface{}) error
+	Save(id string, a interface{}) error
 }
 
 
@@ -59,12 +60,10 @@ func (r *Repository) Get(id string, aggregate aggregate) error {
 	}
 	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
 	if r.snapshotStore != nil {
-		_ = r.snapshotStore.Get(AggregateRootID(id), aggregate)
-	/*	if err != snapshotstore.SnapshotNotFoundError {
+		err := r.snapshotStore.Get(id, aggregate)
+		if err != snapshotstore.SnapshotNotFoundError && err != nil {
 			return err
 		}
-
-	 */
 	}
 
 	events, err := r.eventStore.Get(id, aggregateType, aggregate.version())

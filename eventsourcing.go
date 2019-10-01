@@ -115,6 +115,10 @@ func (state *AggregateRoot) SetID(id string) error {
 	return nil
 }
 
+func (id AggregateRootID) String() string  {
+	return string(id)
+}
+
 // CurrentVersion return the version based on events that are not stored
 func (state *AggregateRoot) CurrentVersion() Version {
 	if len(state.Events) > 0 {

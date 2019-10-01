@@ -2,11 +2,10 @@ package snapshotstore
 
 import (
 	"fmt"
-	"github.com/hallgren/eventsourcing"
 )
 
 type Handler struct {
-	store map[eventsourcing.AggregateRootID][]byte
+	store map[string][]byte
 	serializer snapshotSerializer
 }
 
@@ -19,12 +18,12 @@ var SnapshotNotFoundError = fmt.Errorf("snapshot not found")
 
 func New(serializer snapshotSerializer) *Handler {
 	return &Handler{
-		store: make(map[eventsourcing.AggregateRootID][]byte),
+		store: make(map[string][]byte),
 		serializer: serializer,
 	}
 }
 
-func (h *Handler) Get(id eventsourcing.AggregateRootID, a interface{})  error {
+func (h *Handler) Get(id string, a interface{})  error {
 	data, ok := h.store[id]
 	if !ok {
 		return SnapshotNotFoundError
@@ -36,7 +35,7 @@ func (h *Handler) Get(id eventsourcing.AggregateRootID, a interface{})  error {
 	return nil
 }
 
-func (h *Handler) Save(id eventsourcing.AggregateRootID, a interface{}) error  {
+func (h *Handler) Save(id string, a interface{}) error  {
 	if id == "" {
 		return fmt.Errorf("aggregate id is empty")
 	}

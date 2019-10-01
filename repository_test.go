@@ -55,7 +55,7 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 	}
 
 	// save person to snapshot store
-	err = snapshot.Save(person.ID, person)
+	err = snapshot.Save(person.ID.String(), person)
 	if err != nil {
 		t.Fatal(err)
 	}
