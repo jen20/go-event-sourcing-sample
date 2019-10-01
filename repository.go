@@ -60,6 +60,8 @@ func (r *Repository) Save(aggregate aggregate) error {
 }
 
 // Get fetches the aggregates event and build up the aggregate
+// If there is a snapshot store try fetch a snapshot of the aggregate and fetch event after the
+// version of the aggregate if any
 func (r *Repository) Get(id string, aggregate aggregate) error {
 	if reflect.ValueOf(aggregate).Kind() != reflect.Ptr {
 		return fmt.Errorf("aggregate needs to be a pointer")

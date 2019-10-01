@@ -81,8 +81,9 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 func TestEventStream(t *testing.T) {
 	serializer := json.New()
 	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
-	snapshot := snapshotstore.New(serializer)
-	repo := eventsourcing.NewRepository(memory.Create(serializer), snapshot)
+	snapshotstore := snapshotstore.New(serializer)
+	eventstore := memory.Create(serializer)
+	repo := eventsourcing.NewRepository(eventstore, snapshotstore)
 	stream := repo.EventStream()
 
 	person, err := CreatePerson("kalle")
