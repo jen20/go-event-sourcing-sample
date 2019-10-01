@@ -162,8 +162,9 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 
 	cursor := evBucket.Cursor()
 	events := make([]eventsourcing.Event, 0)
+	firstEvent := int(afterVersion)+1
 
-	for k, obj := cursor.First(); k != nil; k, obj = cursor.Next() {
+	for k, obj := cursor.Seek(itob(firstEvent)); k != nil; k, obj = cursor.Next() {
 		event, err := e.serializer.DeserializeEvent(obj)
 		if err != nil {
 			return nil, fmt.Errorf("Could not deserialize event, %v", err)
@@ -186,7 +187,7 @@ func (e *BBolt) GlobalGet(start int, count int) []eventsourcing.Event {
 	events := make([]eventsourcing.Event, 0)
 	counter := 0
 
-	for k, obj := cursor.Seek([]byte(itob(int(start)))); k != nil; k, obj = cursor.Next() {
+	for k, obj := cursor.Seek(itob(start)); k != nil; k, obj = cursor.Next() {
 		event, err := e.serializer.DeserializeEvent(obj)
 		if err != nil {
 			return nil
