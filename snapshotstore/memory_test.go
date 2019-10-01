@@ -65,6 +65,12 @@ func TestSnapshot(t *testing.T) {
 	person.GrowOlder()
 
 	snapshot.Save(person.ID, person)
+	// save the version we expect in the snapshot
+	personVersion := person.Version
+
+	// generate events that are not stored in the snapshot
+	person.GrowOlder()
+	person.GrowOlder()
 	p := Person{}
 	err = snapshot.Get(person.ID, &p)
 	if err != nil {
@@ -72,6 +78,10 @@ func TestSnapshot(t *testing.T) {
 	}
 	if p.Name != person.Name {
 		t.Fatalf("wrong Name in snapshot %q expected: %q", p.Name, person.Name)
+	}
+
+	if p.Version != personVersion {
+		t.Fatalf("wrong Version in snapshot %q expected: %q", p.Version, personVersion)
 	}
 }
 
