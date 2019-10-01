@@ -7,7 +7,6 @@ import (
 	"github.com/etcd-io/bbolt"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore"
-	"github.com/imkira/go-observer"
 	"time"
 )
 
@@ -29,7 +28,6 @@ func itob(v int) []byte {
 type BBolt struct {
 	db             *bbolt.DB             // The bbolt db where we store everything
 	serializer     eventstore.EventSerializer // The interface that serialize event
-	eventsProperty observer.Property     // A property to which all event changes for all event types are published
 }
 
 // MustOpenBBolt opens the event stream found in the given file. If the file is not found it will be created and
@@ -55,7 +53,6 @@ func MustOpenBBolt(dbFile string, s eventstore.EventSerializer) *BBolt {
 	return &BBolt{
 		db:             db,
 		serializer:     s,
-		eventsProperty: observer.NewProperty(nil),
 	}
 }
 
@@ -140,11 +137,6 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 	if err != nil {
 		return err
 	}
-
-	// update the stream after the events are commited
-	for _, event := range events {
-		e.eventsProperty.Update(event)
-	}
 	return nil
 }
 
@@ -199,13 +191,7 @@ func (e *BBolt) GlobalGet(start int, count int) []eventsourcing.Event {
 			break
 		}
 	}
-
 	return events
-}
-
-// EventStream returns a stream with all saved events
-func (e *BBolt) EventStream() observer.Stream {
-	return e.eventsProperty.Observe()
 }
 
 // Close closes the event stream and the underlying database

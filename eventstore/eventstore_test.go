@@ -7,14 +7,11 @@ import (
 	"github.com/hallgren/eventsourcing/eventstore/bbolt"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
 	s "github.com/hallgren/eventsourcing/eventstore/sql"
-	"github.com/hallgren/eventsourcing/serializer/unsafe"
-	"github.com/imkira/go-observer"
-	"reflect"
-	"time"
-
 	"github.com/hallgren/eventsourcing/serializer/json"
+	"github.com/hallgren/eventsourcing/serializer/unsafe"
 	_ "github.com/mattn/go-sqlite3"
 	"os"
+	"reflect"
 	"testing"
 )
 
@@ -125,7 +122,6 @@ type eventstore interface {
 	Save(events []eventsourcing.Event) error
 	Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)
 	GlobalGet(start,  count int) []eventsourcing.Event
-	EventStream() observer.Stream
 }
 
 func TestSaveAndGetEvents(t *testing.T) {
@@ -348,46 +344,6 @@ func TestGetGlobalEventsNotExisting(t *testing.T) {
 
 			if len(fetchedEvents) != 0 {
 				t.Error("Fetched none existing events")
-			}
-		})
-	}
-}
-
-func TestEventStream(t *testing.T) {
-	stores, closer, err := initEventStores()
-	if err != nil {
-		t.Fatalf("Could not init event stores %v", err)
-	}
-	defer closer()
-
-	events := testEvents()
-	for _, es := range stores {
-		t.Run(reflect.TypeOf(es).Elem().Name(), func(t *testing.T) {
-
-			stream := es.EventStream()
-
-			err := es.Save(events)
-			if err != nil {
-				t.Error("Could not save the events")
-			}
-
-			counter := 0
-		outer:
-			for {
-				select {
-				// wait for changes
-				case <-stream.Changes():
-					// advance to next value
-					stream.Next()
-					counter++
-				case <-time.After(10 * time.Millisecond):
-					// The stream has 10 milliseconds to deliver the events
-					break outer
-				}
-			}
-
-			if counter != 6 {
-				t.Errorf("Not all events was received from the stream, got %q", counter)
 			}
 		})
 	}

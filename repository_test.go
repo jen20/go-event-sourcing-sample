@@ -6,6 +6,7 @@ import (
 	"github.com/hallgren/eventsourcing/serializer/json"
 	"github.com/hallgren/eventsourcing/snapshotstore"
 	"testing"
+	"time"
 )
 
 func TestSaveAndGetAggregate(t *testing.T) {
@@ -19,7 +20,7 @@ func TestSaveAndGetAggregate(t *testing.T) {
 	}
 	err = repo.Save(person)
 	if err != nil {
-		t.Fatal("could not save device")
+		t.Fatal("could not save aggregate")
 	}
 	twin := Person{}
 	err = repo.Get(string(person.AggregateID), &twin)
@@ -51,7 +52,7 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 	}
 	err = repo.Save(person)
 	if err != nil {
-		t.Fatal("could not save device")
+		t.Fatal("could not save aggregate")
 	}
 
 	// save person to snapshot store
@@ -75,5 +76,45 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 	// Check person Name
 	if person.Name != twin.Name {
 		t.Fatalf("Wrong Name org %q copy %q", person.Name, twin.Name)
+	}
+}
+
+func TestEventStream(t *testing.T) {
+	serializer := json.New()
+	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
+	snapshot := snapshotstore.New(serializer)
+	repo := eventsourcing.NewRepository(memory.Create(serializer), snapshot)
+	stream := repo.EventStream()
+
+	person, err := CreatePerson("kalle")
+	if err != nil {
+		t.Fatal(err)
+	}
+	person.GrowOlder()
+	person.GrowOlder()
+	person.GrowOlder()
+
+	err = repo.Save(person)
+	if err != nil {
+		t.Fatal("could not save aggregate")
+	}
+
+	counter := 0
+	outer:
+	for {
+		select {
+		// wait for changes
+		case <-stream.Changes():
+			// advance to next value
+			stream.Next()
+			counter++
+		case <-time.After(10 * time.Millisecond):
+			// The stream has 10 milliseconds to deliver the events
+			break outer
+		}
+	}
+
+	if counter != 4 {
+		t.Errorf("Not all events was received from the stream, got %q", counter)
 	}
 }

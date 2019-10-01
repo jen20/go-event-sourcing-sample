@@ -6,20 +6,17 @@ import (
 	"fmt"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore"
-	"github.com/imkira/go-observer"
 )
 
 type SQL struct {
 	db sql.DB
 	serializer eventstore.EventSerializer
-	eventsProperty  observer.Property                // A property to which all event changes for all event types are published
 }
 
 func Open(db sql.DB, serializer eventstore.EventSerializer) *SQL {
 	return &SQL{
 		db: db,
 		serializer: serializer,
-		eventsProperty: observer.NewProperty(nil),
 	}
 }
 
@@ -79,11 +76,6 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 		}
 	}
 	tx.Commit()
-
-	// publish to stream after transaction is complete
-	for _, event := range events {
-		sql.eventsProperty.Update(event)
-	}
 	return nil
 }
 
@@ -120,10 +112,6 @@ func (sql *SQL) GlobalGet(start int, count int) []eventsourcing.Event {
 		return nil
 	}
 	return events
-}
-
-func (sql *SQL) EventStream() observer.Stream {
-	return sql.eventsProperty.Observe()
 }
 
 func (sql *SQL) transform(rows *sql.Rows) (events []eventsourcing.Event, err error) {

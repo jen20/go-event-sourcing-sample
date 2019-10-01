@@ -3,14 +3,12 @@ package memory
 import (
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore"
-	"github.com/imkira/go-observer"
 )
 
 // Memory is a handler for event streaming
 type Memory struct {
 	aggregateEvents map[string][][]byte // The memory structure where we store aggregate events
 	eventsInOrder   [][]byte            // The global event order
-	eventsProperty  observer.Property                // A property to which all event changes for all event types are published
 	serializer eventstore.EventSerializer
 }
 
@@ -19,7 +17,6 @@ func Create(serializer eventstore.EventSerializer) *Memory {
 	return &Memory{
 		aggregateEvents: make(map[string][][]byte),
 		eventsInOrder:   make([][]byte, 0),
-		eventsProperty:  observer.NewProperty(nil),
 		serializer: serializer,
 	}
 }
@@ -63,8 +60,6 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 		}
 		evBucket = append(evBucket, eventSerialized)
 		eventsInOrder = append(eventsInOrder, eventSerialized)
-		// update the event stream
-		e.eventsProperty.Update(event)
 	}
 
 	e.aggregateEvents[bucketName] = evBucket
@@ -86,7 +81,6 @@ func (e *Memory) Get(id string, aggregateType string, afterVersion eventsourcing
 			events = append(events, event)
 		}
 	}
-
 	return events, nil
 }
 
@@ -110,15 +104,8 @@ func (e *Memory) GlobalGet(start int, count int) []eventsourcing.Event {
 	return events
 }
 
-// EventStream returns a stream with all saved events
-func (e *Memory) EventStream() observer.Stream {
-	return e.eventsProperty.Observe()
-}
-
 // Close does nothing
-func (e *Memory) Close() {
-
-}
+func (e *Memory) Close() {}
 
 // aggregateKey generate a aggregate key to store events against from aggregateType and aggregateID
 func aggregateKey(aggregateType, aggregateID string) string {
