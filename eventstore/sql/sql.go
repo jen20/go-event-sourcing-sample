@@ -88,8 +88,8 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 }
 
 func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.Version) (events []eventsourcing.Event, err error) {
-	selectStm := `Select data from events where aggregate_id=? and aggregate_type=? order by version asc`
-	rows, err := sql.db.Query(selectStm, id, aggregateType)
+	selectStm := `Select data from events where aggregate_id=? and aggregate_type=? and version>? order by version asc`
+	rows, err := sql.db.Query(selectStm, id, aggregateType, afterVersion)
 	if err != nil {
 		return nil, err
 	}

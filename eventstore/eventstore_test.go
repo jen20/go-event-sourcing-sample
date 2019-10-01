@@ -159,6 +159,9 @@ func TestSaveAndGetEvents(t *testing.T) {
 			}
 
 			fetchedEventsIncludingPartTwo, err := es.Get(string(aggregateID), aggregateType,0)
+			if err != nil {
+				t.Fatalf("repository Get returned error: %v", err)
+			}
 
 			if len(fetchedEventsIncludingPartTwo) != len(append(testEvents(), testEventsPartTwo()...)) {
 				t.Error("Wrong number of events returned")
