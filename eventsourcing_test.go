@@ -86,12 +86,12 @@ func TestCreateNewPerson(t *testing.T) {
 		t.Fatal("Wrong person Age")
 	}
 
-	if len(person.Events) != 1 {
+	if len(person.AggregateEvents) != 1 {
 		t.Fatal("There should be one event on the person aggregateRoot")
 	}
 
 	if person.CurrentVersion() != 1 {
-		t.Fatal("Wrong version on the person aggregateRoot", person.Version)
+		t.Fatal("Wrong version on the person aggregateRoot", person.AggregateVersion)
 	}
 }
 
@@ -102,8 +102,8 @@ func TestCreateNewPersonWithIDFromOutside(t *testing.T) {
 		t.Fatal("Error when creating person", err.Error())
 	}
 
-	if string(person.ID) != id {
-		t.Fatal("Wrong aggregate id on the person aggregateRoot", person.ID)
+	if string(person.AggregateID) != id {
+		t.Fatal("Wrong aggregate id on the person aggregateRoot", person.AggregateID)
 	}
 }
 
@@ -132,12 +132,12 @@ func TestPersonAgedOneYear(t *testing.T) {
 	person, _ := CreatePerson("kalle")
 	person.GrowOlder()
 
-	if len(person.Events) != 2 {
-		t.Fatal("There should be two event on the person aggregateRoot", person.Events)
+	if len(person.AggregateEvents) != 2 {
+		t.Fatal("There should be two event on the person aggregateRoot", person.AggregateEvents)
 	}
 
-	if person.Events[len(person.Events)-1].Reason != "AgedOneYear" {
-		t.Fatal("The last event reason should be AgedOneYear", person.Events[len(person.Events)-1].Reason)
+	if person.AggregateEvents[len(person.AggregateEvents)-1].Reason != "AgedOneYear" {
+		t.Fatal("The last event reason should be AgedOneYear", person.AggregateEvents[len(person.AggregateEvents)-1].Reason)
 	}
 }
 

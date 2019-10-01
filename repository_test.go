@@ -22,14 +22,14 @@ func TestSaveAndGetAggregate(t *testing.T) {
 		t.Fatal("could not save device")
 	}
 	twin := Person{}
-	err = repo.Get(string(person.ID), &twin)
+	err = repo.Get(string(person.AggregateID), &twin)
 	if err != nil {
 		t.Fatal("could not get aggregate")
 	}
 
 	// Check internal aggregate version
-	if person.Version != twin.Version {
-		t.Fatalf("Wrong version org %q copy %q", person.Version, twin.Version)
+	if person.AggregateVersion != twin.AggregateVersion {
+		t.Fatalf("Wrong version org %q copy %q", person.AggregateVersion, twin.AggregateVersion)
 	}
 
 	// Check person Name
@@ -55,21 +55,21 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 	}
 
 	// save person to snapshot store
-	err = snapshot.Save(person.ID.String(), person)
+	err = snapshot.Save(person.AggregateID.String(), person)
 	if err != nil {
 		t.Fatal(err)
 	}
 	person.GrowOlder()
 	repo.Save(person)
 	twin := Person{}
-	err = repo.Get(string(person.ID), &twin)
+	err = repo.Get(string(person.AggregateID), &twin)
 	if err != nil {
 		t.Fatal("could not get aggregate")
 	}
 
 	// Check internal aggregate version
-	if person.Version != twin.Version {
-		t.Fatalf("Wrong version org %q copy %q", person.Version, twin.Version)
+	if person.AggregateVersion != twin.AggregateVersion {
+		t.Fatalf("Wrong version org %q copy %q", person.AggregateVersion, twin.AggregateVersion)
 	}
 
 	// Check person Name
