@@ -1,10 +1,10 @@
-package memory_test
+package snapshotstore_test
 
 import (
 	"fmt"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/serializer/json"
-	"github.com/hallgren/eventsourcing/snapshotstore/memory"
+	"github.com/hallgren/eventsourcing/snapshotstore"
 	"testing"
 )
 
@@ -57,7 +57,7 @@ func (person *Person) Transition(event eventsourcing.Event) {
 
 
 func TestSnapshot(t *testing.T) {
-	snapshot := memory.New(json.New())
+	snapshot := snapshotstore.New(json.New())
 	person, err := CreatePerson("morgan")
 	if err != nil {
 		t.Fatal(err)

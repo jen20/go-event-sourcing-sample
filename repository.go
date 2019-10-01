@@ -59,10 +59,12 @@ func (r *Repository) Get(id string, aggregate aggregate) error {
 	}
 	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
 	if r.snapshotStore != nil {
-		err := r.snapshotStore.Get(AggregateRootID(id), aggregate)
-		if err != nil {
-			fmt.Println("Could not find snapshot")
+		_ = r.snapshotStore.Get(AggregateRootID(id), aggregate)
+	/*	if err != snapshotstore.SnapshotNotFoundError {
+			return err
 		}
+
+	 */
 	}
 
 	events, err := r.eventStore.Get(id, aggregateType, aggregate.version())

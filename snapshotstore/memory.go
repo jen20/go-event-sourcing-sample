@@ -1,4 +1,4 @@
-package memory
+package snapshotstore
 
 import (
 	"fmt"
@@ -15,6 +15,8 @@ type snapshotSerializer interface {
 	DeserializeSnapshot(data []byte, a interface{}) error
 }
 
+var SnapshotNotFoundError = fmt.Errorf("snapshot not found")
+
 func New(serializer snapshotSerializer) *Handler {
 	return &Handler{
 		store: make(map[eventsourcing.AggregateRootID][]byte),
@@ -25,7 +27,7 @@ func New(serializer snapshotSerializer) *Handler {
 func (h *Handler) Get(id eventsourcing.AggregateRootID, a interface{})  error {
 	data, ok := h.store[id]
 	if !ok {
-		return fmt.Errorf("aggreagate not found")
+		return SnapshotNotFoundError
 	}
 	err := h.serializer.DeserializeSnapshot(data, a)
 	if err != nil {
