@@ -55,7 +55,7 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 	}
 
 	// save person to snapshot store
-	err = snapshot.Save(person.AggregateID.String(), person)
+	err = repo.SaveSnapshot(person)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -75,6 +75,23 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 	// Check person Name
 	if person.Name != twin.Name {
 		t.Fatalf("Wrong Name org %q copy %q", person.Name, twin.Name)
+	}
+}
+
+func TestSaveSnapshotWithUnsavedEvents(t *testing.T) {
+	serializer := json.New()
+	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
+	snapshot := snapshotstore.New(serializer)
+	repo := eventsourcing.NewRepository(memory.Create(serializer), snapshot)
+
+	person, err := CreatePerson("kalle")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// save person to snapshot store
+	err = repo.SaveSnapshot(person)
+	if err == nil {
+		t.Fatalf("should not save snapshot with unsaved events %v", err)
 	}
 }
 

@@ -116,6 +116,11 @@ func (state *AggregateRoot) SetID(id string) error {
 	return nil
 }
 
+// ID returns the aggregate id as a string
+func (state *AggregateRoot) id() string {
+	return state.AggregateID.String()
+}
+
 func (id AggregateRootID) String() string {
 	return string(id)
 }
