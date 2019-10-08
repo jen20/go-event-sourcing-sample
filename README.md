@@ -4,9 +4,18 @@ This is the repository for the code which accompanies my post on Event Sourcing 
 
 Remade by @hallgren
 
-To build and run the example:
+# Overview
 
-- `cd example`
-- `go build`
-- `./example`
+# Event Sourcing
 
+## Aggregate Root
+
+## Aggregate Event
+
+# Repository
+
+## Event Store
+
+## Snapshot Store
+
+## Serializer
