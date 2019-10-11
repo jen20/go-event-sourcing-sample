@@ -45,13 +45,15 @@ var aggregateType = "FrequentFlierAccount"
 var jsonSerializer = json.New()
 
 func testEventsWithID(aggregateID eventsourcing.AggregateRootID) []eventsourcing.Event {
+	metaData := make(map[string]interface{})
+	metaData["test"] = "hello"
 	history := []eventsourcing.Event{
-		{AggregateRootID: aggregateID, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Data: FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}},
-		{AggregateRootID: aggregateID, Version: 2, Reason: "StatusMatched", AggregateType: aggregateType, Data: StatusMatched{NewStatus: StatusSilver}},
-		{AggregateRootID: aggregateID, Version: 3, Reason: "FlightTaken", AggregateType: aggregateType, Data: FlightTaken{MilesAdded: 2525, TierPointsAdded: 5}},
-		{AggregateRootID: aggregateID, Version: 4, Reason: "FlightTaken", AggregateType: aggregateType, Data: FlightTaken{MilesAdded: 2512, TierPointsAdded: 5}},
-		{AggregateRootID: aggregateID, Version: 5, Reason: "FlightTaken", AggregateType: aggregateType, Data: FlightTaken{MilesAdded: 5600, TierPointsAdded: 5}},
-		{AggregateRootID: aggregateID, Version: 6, Reason: "FlightTaken", AggregateType: aggregateType, Data: FlightTaken{MilesAdded: 3000, TierPointsAdded: 3}},
+		{AggregateRootID: aggregateID, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Data: FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}, MetaData: metaData},
+		{AggregateRootID: aggregateID, Version: 2, Reason: "StatusMatched", AggregateType: aggregateType, Data: StatusMatched{NewStatus: StatusSilver}, MetaData: metaData},
+		{AggregateRootID: aggregateID, Version: 3, Reason: "FlightTaken", AggregateType: aggregateType, Data: FlightTaken{MilesAdded: 2525, TierPointsAdded: 5}, MetaData: metaData},
+		{AggregateRootID: aggregateID, Version: 4, Reason: "FlightTaken", AggregateType: aggregateType, Data: FlightTaken{MilesAdded: 2512, TierPointsAdded: 5}, MetaData: metaData},
+		{AggregateRootID: aggregateID, Version: 5, Reason: "FlightTaken", AggregateType: aggregateType, Data: FlightTaken{MilesAdded: 5600, TierPointsAdded: 5}, MetaData: metaData},
+		{AggregateRootID: aggregateID, Version: 6, Reason: "FlightTaken", AggregateType: aggregateType, Data: FlightTaken{MilesAdded: 3000, TierPointsAdded: 3}, MetaData: metaData},
 	}
 	return history
 }
@@ -164,7 +166,23 @@ func TestSaveAndGetEvents(t *testing.T) {
 			}
 
 			if fetchedEventsIncludingPartTwo[0].Version != testEvents()[0].Version {
-				t.Error("Wrong events returned")
+				t.Error("Wrong event version returned")
+			}
+
+			if fetchedEventsIncludingPartTwo[0].AggregateRootID != testEvents()[0].AggregateRootID {
+				t.Error("Wrong event aggregateID returned")
+			}
+
+			if fetchedEventsIncludingPartTwo[0].AggregateType != testEvents()[0].AggregateType {
+				t.Error("Wrong event aggregateType returned")
+			}
+
+			if fetchedEventsIncludingPartTwo[0].Reason != testEvents()[0].Reason {
+				t.Error("Wrong event aggregateType returned")
+			}
+
+			if fetchedEventsIncludingPartTwo[0].MetaData["test"] != "hello" {
+				t.Error("Wrong event meta data returned")
 			}
 		})
 
@@ -191,7 +209,7 @@ func TestGetEventsAfterVersion(t *testing.T) {
 			if len(fetchedEvents) != len(testEvents())-1 {
 				t.Fatal("Wrong number of events returned")
 			}
-
+			fmt.Println(fetchedEvents)
 			// first event version should be 2
 			if fetchedEvents[0].Version != 2 {
 				t.Fatal("Wrong events returned")
