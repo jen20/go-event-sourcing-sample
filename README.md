@@ -14,7 +14,17 @@ Event Sourcing is a technique to store changes to domain entities as a series of
 
 ## Aggregate Root
 
-The aggregate root is the central point where entity events are bound. The aggregate struct needs to embedded `eventsource.AggreateRoot` to get the aggregate behaiviors.
+The aggregate root is the central point where events are bound. The aggregate struct needs to embedded `eventsourcing.AggreateRoot` to get the aggregate behaiviors.
+
+example Person aggregate
+
+```
+type Person struct {
+	eventsourcing.AggregateRoot
+	Name string
+	Age  int
+}
+```
 
 The aggregate also need to implement the `Transition(event eventsourcing.Event)` function. It define how events are transformed to represent the aggregate state.
 
