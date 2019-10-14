@@ -6,7 +6,7 @@ Remade by @hallgren
 
 # Overview
 
-This package is a try to implement event sourcing with the aggregate concept in mind from Domain Driven Design in mind.
+This package is a try to implement event sourcing with the aggregate concept in mind from Domain Driven Design.
 
 # Event Sourcing
 
