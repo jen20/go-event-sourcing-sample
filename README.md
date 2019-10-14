@@ -10,13 +10,13 @@ This package is a try to implement an event sourcing solution with the aggregate
 
 # Event Sourcing
 
-Event Sourcing is a technique to store changes to domain entities as a series of events. The events togheter builds up the final state of the entities in the system.
+Event Sourcing is a technique to store changes to domain entities as a series of events. The events togheter builds up the final state of the system.
 
 ## Aggregate Root
 
 The aggregate root is the central point where events are bound. The aggregate struct needs to embedded `eventsourcing.AggreateRoot` to get the aggregate behaiviors.
 
-example Person aggregate
+Below a Person aggregate where the Aggregate Root is embedded next to the Name and Age properties.
 
 ```
 type Person struct {
@@ -26,7 +26,7 @@ type Person struct {
 }
 ```
 
-The aggregate also need to implement the `Transition(event eventsourcing.Event)` function. It define how events are transformed to represent the final aggregate state.
+The aggregate needs to implement the `Transition(event eventsourcing.Event)` function to fulfill the aggregate interface. This function define how events are transformed to build the aggregate state.
 
 example of the Transition function from the Person aggregate
 
@@ -47,7 +47,7 @@ In the example we can see that the `Born` event sets the Person property Age and
 
 ## Aggregate Event
 
-An event is a clean struct with exported properties that holds the state of the event. 
+An event is a clean struct with exported properties that containce the state of the event.
 
 example of two events from the Person aggregate
 
@@ -62,6 +62,48 @@ type AgedOneYear struct {
 }
 
 ```
+
+When an aggregate is first created an event is needed to initialize the state of the aggregate. No event no aggregate. Below is an example where a constructor is defined that returns the Person aggregate and inside binds an event via the TrackChange function. Its also possible to define rules that the aggregate must uphold before an event is created, in this case a name != "".
+
+```
+// CreatePerson constructor for Person
+func CreatePerson(name string) (*Person, error) {
+	if name == "" {
+		return nil, fmt.Errorf("Name can't be blank")
+	}
+	person := Person{}
+	err := person.TrackChange(&person, &Born{Name: name})
+	if err != nil {
+		return nil, err
+	}
+	return &person, nil
+}
+```
+
+when the person is created more events could be created via functions on the Person aggregate. Below is the GrowOlder command that results in the event AgedOneYear event.
+
+```
+// GrowOlder command
+func (person *Person) GrowOlder() error {
+	return person.TrackChange(person, &AgedOneYear{})
+}
+```
+
+Internally the TrackChange functions calls the Transition function in the aggregate to transform the aggregate based on the newly created event.
+
+The internal Event looks like this
+
+```
+type Event struct {
+	AggregateRootID AggregateRootID // aggregate identifier 
+	Version         Version // aggregate version
+	Reason          string // name of the event (Born / AgedOneYear in the example above) 
+	AggregateType   string // aggregate name (Person)
+	Data            interface{} // The data from the event defined on the aggregate level
+	MetaData        map[string]interface{} // extra data that not belongs to the application state (correlation id or other request reference)
+}
+```
+
 
 
 # Repository
