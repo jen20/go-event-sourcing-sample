@@ -104,9 +104,9 @@ type Event struct {
 }
 ```
 
-
-
 # Repository
+
+The repository expose functions to save and retriew aggregates. 
 
 ## Event Store
 
