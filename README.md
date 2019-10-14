@@ -26,7 +26,7 @@ type Person struct {
 }
 ```
 
-The aggregate also need to implement the `Transition(event eventsourcing.Event)` function. It define how events are transformed to represent the aggregate state.
+The aggregate also need to implement the `Transition(event eventsourcing.Event)` function. It define how events are transformed to represent the final aggregate state.
 
 example of the Transition function from the Person aggregate
 
@@ -43,7 +43,7 @@ func (person *Person) Transition(event eventsourcing.Event) {
 }
 ```
 
-In the example we can see that the `Born` event sets the Person property Age and Name and that the `AgedOneYear` adds one year to the Age property.
+In the example we can see that the `Born` event sets the Person property Age and Name and that the `AgedOneYear` adds one year to the Age property. This makes the state of the aggregate very flexible and it could change in the future if required.
 
 ## Aggregate Event
 
