@@ -6,19 +6,53 @@ Remade by @hallgren
 
 # Overview
 
-This package is a try to implement event sourcing with the aggregate concept in mind from Domain Driven Design.
+This package is a try to implement an event sourcing solution with the aggregate concept in mind from Domain Driven Design.
 
 # Event Sourcing
 
-Event Sourcing is a technique to store changes to domain entities as a sequence of event that sums up to the final state
-of the entity.
+Event Sourcing is a technique to store changes to domain entities as a series of events. The events togheter builds up the final state of the entities in the system.
 
 ## Aggregate Root
 
-The aggregate root is there the events are bound. It takes in commands that transform to one or more events if the rules 
-in the aggregate are ok.
+The aggregate root is the central point where entity events are bound. The aggregate struct needs to embedded `eventsource.AggreateRoot` to get the aggregate behaiviors.
+
+The aggregate also need to implement the `Transition(event eventsourcing.Event)` function. It define how events are transformed to represent the aggregate state.
+
+example of the Transition function from the Person aggregate
+
+```
+// Transition the person state dependent on the events
+func (person *Person) Transition(event eventsourcing.Event) {
+        switch e := event.Data.(type) {
+        case *Born:
+                person.Age = 0
+                person.Name = e.Name
+        case *AgedOneYear:
+                person.Age += 1
+        }
+}
+```
+
+In the example we can see that the `Born` event sets the Person property Age and Name and that the `AgedOneYear` adds one year to the Age property.
 
 ## Aggregate Event
+
+An event is a clean struct with exported properties that holds the state of the event. 
+
+example of two events from the Person aggregate
+
+```
+// Initial event
+type Born struct {
+        Name string
+}
+
+// event that happens once a year
+type AgedOneYear struct {
+}
+
+```
+
 
 # Repository
 
