@@ -106,7 +106,18 @@ type Event struct {
 
 # Repository
 
-The repository expose functions to save and retriew aggregates. 
+The repository expose functions to save and retrieve aggregates. Its main functions are:
+
+`Save(aggregate aggregate) error` stores the aggregates events
+`Get(id string, aggregate aggregate) error` retrieves and build an aggregate from events based on the aggregates identifier
+
+It is possible to save a snapshot of the aggregate reducing the amount of event needed to be fetched and applied to the aggregate.
+
+`SaveSnapshot(aggregate aggregate) error` saves the hole aggregate (no unsaved events are allowed in the aggregate in the operation) 
+
+The constructor takes in an event store and a snapshot store that handles the reading and writing of the events and snapshots.
+
+`NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Repository`
 
 ## Event Store
 
