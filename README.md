@@ -52,12 +52,10 @@ type Born struct {
 }
 
 // event that happens once a year
-type AgedOneYear struct {
-}
-
+type AgedOneYear struct {}
 ```
 
-When an aggregate is first created an event is needed to initialize the state of the aggregate. No event no aggregate. Below is an example where a constructor is defined that returns the Person aggregate and inside binds an event via the TrackChange function. Its also possible to define rules that the aggregate must uphold before an event is created, in this case a name != "".
+When an aggregate is first created an event is needed to initialize the state of the aggregate. No event no aggregate. Below is an example where a constructor is defined that returns the Person aggregate and inside binds an event via the TrackChange function. Its possible to define rules that the aggregate must uphold before an event is created, in this case name can´t be blank.
 
 ```
 // CreatePerson constructor for Person
@@ -74,7 +72,7 @@ func CreatePerson(name string) (*Person, error) {
 }
 ```
 
-when the person is created more events could be created via functions on the Person aggregate. Below is the GrowOlder command that results in the event AgedOneYear event.
+When a person is created more events could be created via functions on the Person aggregate. Below is the GrowOlder function that results in the event AgedOneYear event is tracked on the person aggregate.
 
 ```
 // GrowOlder command
@@ -92,9 +90,9 @@ type Event struct {
 	AggregateRootID AggregateRootID // aggregate identifier 
 	Version         Version // aggregate version
 	Reason          string // name of the event (Born / AgedOneYear in the example above) 
-	AggregateType   string // aggregate name (Person)
-	Data            interface{} // The data from the event defined on the aggregate level
-	MetaData        map[string]interface{} // extra data that not belongs to the application state (correlation id or other request reference)
+	AggregateType   string // aggregate name (Person in the example above)
+	Data            interface{} // The data from the event (Born{}, AgedOneYear{})
+	MetaData        map[string]interface{} // extra data that don´t belongs to the application state (correlation id or other request reference)
 }
 ```
 
@@ -103,17 +101,17 @@ type Event struct {
 The repository is used to save and retrieve aggregates. Its main functions are:
 
 `Save(aggregate aggregate) error` stores the aggregates events
-`Get(id string, aggregate aggregate) error` retrieves and build an aggregate from events based on the aggregate identifier
+`Get(id string, aggregate aggregate) error` retrieves and build an aggregate from events based on an identifier
 
-It is possible to save a snapshot of an aggregate reducing the amount of event needed to be fetched and applied on the aggregate.
+It is possible to save a snapshot of an aggregate reducing the amount of event needed to be fetched and applied.
 
-`SaveSnapshot(aggregate aggregate) error` saves the hole aggregate (no unsaved events are allowed on the aggregate when doing  this operation) 
+`SaveSnapshot(aggregate aggregate) error` saves the aggregate (no unsaved events are allowed on the aggregate when doing this operation) 
 
 The constructor of the repository takes in an event store and a snapshot store that handles the reading and writing of the events and snapshots. We will dig deeper on the internal below
 
 `NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Repository`
 
-In the example below a person is saved and fetched from the repository.
+Here is an example of a person being saved and fetched from the repository.
 
 ```
 person := person.CreatePerson("Alice")
@@ -128,7 +126,7 @@ repo.Get(person.Id, &twin)
 The only thing an event store has to handle is events. It has to support the following interface
 
 `Save(events []eventsourcing.Event) error` saves events to an underlaying data store.
-`Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)` fetches events based on identifier and type but also after a specific version. The version is > 0 if the aggregate has been loaded from a snapshot.
+`Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)` fetches events based on identifier and type but also after a specific version. This is used to only load event that has happened after a snapshot is taken.
 
 The event store also has a function to fetch events not based on identifier or type. It could be used to build separate representations often called projections.
 
@@ -142,7 +140,7 @@ Currently there are three event store implementation
 
 ## Snapshot Store
 
-A snapshot store handles snapshots.  
+A snapshot store handles snapshots. The properties of an aggregate has to be exported for them to be saved in the snapshot.
 
 `Get(id string, a interface{}) error` Get snapshot by identifier
 `Save(id string, a interface{}) error` Saves snapshot
@@ -151,18 +149,20 @@ A snapshot store handles snapshots.
 
 The event and snapshot stores all depend on serializer to transform events and aggregates []byte.
 
-`SerializeSnapshot(interface{}) ([]byte, error)`
-`DeserializeSnapshot(data []byte, a interface{}) error`
-`SerializeEvent(event eventsourcing.Event) ([]byte, error)`
-`DeserializeEvent(v []byte) (event eventsourcing.Event, err error)`
+```
+SerializeSnapshot(interface{}) ([]byte, error)
+DeserializeSnapshot(data []byte, a interface{}) error
+SerializeEvent(event eventsourcing.Event) ([]byte, error)
+DeserializeEvent(v []byte) (event eventsourcing.Event, err error)
+```
 
 ### JSON
 
-The json serializer has the following function
+The json serializer has the following extra function
 
 `Register(aggregate aggregate, events ...interface{}) error`
 
-where you need to register the aggregate and its events for it to maintain correct type info after Marshall.
+it needs to register the aggregate and its events for it to maintain correct type info after Marshall.
 
 ```
 j := json.New()
@@ -171,4 +171,4 @@ err := j.Register(&Person{}, &Born{}, &AgedOneYear{})
 
 ### Unsafe
 
-The unsafe serializer stores the underlying memory representation of a struct directly. This makes it as its name implies unsafe to use.
+The unsafe serializer stores the underlying memory representation of a struct directly. This makes it as its name implies unsafe to use if you don´t know that you are doing. [Here](https://youtu.be/4xB46Xl9O9Q?t=610) is the video that is the reason for this serializer.
