@@ -1,12 +1,6 @@
-###Event Sourcing in Go
-
-This is the repository for the code which accompanies my post on Event Sourcing in Go. The original post is [here](http://jen20.com/2015/02/08/event-sourcing-in-go.html).
-
-Remade by @hallgren
-
 # Overview
 
-This package is a try to implement an event sourcing solution with the aggregate concept in mind from Domain Driven Design.
+This package is a experiment to try to generialize @jen20 way of implementing event sourcing. You can find the original blog post [here](http://jen20.com/2015/02/08/event-sourcing-in-go.html) and github repo [here](https://github.com/jen20/go-event-sourcing-sample)
 
 # Event Sourcing
 
