@@ -106,21 +106,75 @@ type Event struct {
 
 # Repository
 
-The repository expose functions to save and retrieve aggregates. Its main functions are:
+The repository is used to save and retrieve aggregates. Its main functions are:
 
 `Save(aggregate aggregate) error` stores the aggregates events
-`Get(id string, aggregate aggregate) error` retrieves and build an aggregate from events based on the aggregates identifier
+`Get(id string, aggregate aggregate) error` retrieves and build an aggregate from events based on the aggregate identifier
 
-It is possible to save a snapshot of the aggregate reducing the amount of event needed to be fetched and applied to the aggregate.
+It is possible to save a snapshot of an aggregate reducing the amount of event needed to be fetched and applied on the aggregate.
 
-`SaveSnapshot(aggregate aggregate) error` saves the hole aggregate (no unsaved events are allowed in the aggregate in the operation) 
+`SaveSnapshot(aggregate aggregate) error` saves the hole aggregate (no unsaved events are allowed on the aggregate when doing  this operation) 
 
-The constructor takes in an event store and a snapshot store that handles the reading and writing of the events and snapshots.
+The constructor of the repository takes in an event store and a snapshot store that handles the reading and writing of the events and snapshots. We will dig deeper on the internal below
 
 `NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Repository`
 
+In the example below a person is saved and fetched from the repository.
+
+```
+person := person.CreatePerson("Alice")
+person.GrowOlder()
+repo.Save(person)
+twin := Person{}
+repo.Get(person.Id, &twin)
+```
+
 ## Event Store
+
+The only thing an event store has to handle is events. It has to support the following interface
+
+`Save(events []eventsourcing.Event) error` saves events to an underlaying data store.
+`Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)` fetches events based on identifier and type but also after a specific version. The version is > 0 if the aggregate has been loaded from a snapshot.
+
+The event store also has a function to fetch events not based on identifier or type. It could be used to build separate representations often called projections.
+
+`GlobalGet(start int, count int) []eventsourcing.Event`
+
+Currently there are three event store implementation
+
+* Sql
+* Bolt
+* Memory
 
 ## Snapshot Store
 
+A snapshot store handles snapshots.  
+
+`Get(id string, a interface{}) error` Get snapshot by identifier
+`Save(id string, a interface{}) error` Saves snapshot
+
 ## Serializer
+
+The event and snapshot stores all depend on serializer to transform events and aggregates []byte.
+
+`SerializeSnapshot(interface{}) ([]byte, error)`
+`DeserializeSnapshot(data []byte, a interface{}) error`
+`SerializeEvent(event eventsourcing.Event) ([]byte, error)`
+`DeserializeEvent(v []byte) (event eventsourcing.Event, err error)`
+
+### JSON
+
+The json serializer has the following function
+
+`Register(aggregate aggregate, events ...interface{}) error`
+
+where you need to register the aggregate and its events for it to maintain correct type info after Marshall.
+
+```
+j := json.New()
+err := j.Register(&Person{}, &Born{}, &AgedOneYear{})
+```
+
+### Unsafe
+
+The unsafe serializer stores the underlying memory representation of a struct directly. This makes it as its name implies unsafe to use.
