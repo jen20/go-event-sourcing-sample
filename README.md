@@ -4,7 +4,7 @@ This package is a experiment to try to generialize @jen20 way of implementing ev
 
 # Event Sourcing
 
-Event Sourcing is a technique to store changes to domain entities as a series of events. The events togheter builds up the final state of the system.
+Event Sourcing is a technique to make it possible to capture all changes to an application state as a sequence of events. Read more about it [here](https://martinfowler.com/eaaDev/EventSourcing.html)
 
 ## Aggregate Root
 
