@@ -100,16 +100,21 @@ type Event struct {
 
 The repository is used to save and retrieve aggregates. Its main functions are:
 
-`Save(aggregate aggregate) error` stores the aggregates events
-`Get(id string, aggregate aggregate) error` retrieves and build an aggregate from events based on an identifier
-
+```
+Save(aggregate aggregate) error // stores the aggregates events
+Get(id string, aggregate aggregate) error // retrieves and build an aggregate from events based on an identifier
+```
 It is possible to save a snapshot of an aggregate reducing the amount of event needed to be fetched and applied.
 
-`SaveSnapshot(aggregate aggregate) error` saves the aggregate (no unsaved events are allowed on the aggregate when doing this operation) 
+```
+SaveSnapshot(aggregate aggregate) error // saves the aggregate (no unsaved events are allowed on the aggregate when doing this operation)
+```
 
 The constructor of the repository takes in an event store and a snapshot store that handles the reading and writing of the events and snapshots. We will dig deeper on the internal below
 
-`NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Repository`
+```
+NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Repository
+```
 
 Here is an example of a person being saved and fetched from the repository.
 
@@ -125,12 +130,16 @@ repo.Get(person.Id, &twin)
 
 The only thing an event store has to handle is events. It has to support the following interface
 
-`Save(events []eventsourcing.Event) error` saves events to an underlaying data store.
-`Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)` fetches events based on identifier and type but also after a specific version. This is used to only load event that has happened after a snapshot is taken.
+```
+Save(events []eventsourcing.Event) error // saves events to an underlaying data store.
+Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) // fetches events based on identifier and type but also after a specific version. This is used to only load event that has happened after a snapshot is taken.
+```
 
 The event store also has a function to fetch events not based on identifier or type. It could be used to build separate representations often called projections.
 
-`GlobalGet(start int, count int) []eventsourcing.Event`
+```
+GlobalGet(start int, count int) []eventsourcing.Event
+```
 
 Currently there are three event store implementation
 
@@ -142,8 +151,10 @@ Currently there are three event store implementation
 
 A snapshot store handles snapshots. The properties of an aggregate has to be exported for them to be saved in the snapshot.
 
-`Get(id string, a interface{}) error` Get snapshot by identifier
-`Save(id string, a interface{}) error` Saves snapshot
+```
+Get(id string, a interface{}) error` // get snapshot by identifier
+Save(id string, a interface{}) error` // saves snapshot
+```
 
 ## Serializer
 
@@ -160,9 +171,11 @@ DeserializeEvent(v []byte) (event eventsourcing.Event, err error)
 
 The json serializer has the following extra function
 
-`Register(aggregate aggregate, events ...interface{}) error`
+```
+Register(aggregate aggregate, events ...interface{}) error
+```
 
-it needs to register the aggregate and its events for it to maintain correct type info after Marshall.
+It needs to register the aggregate and its events for it to maintain correct type info after Marshall.
 
 ```
 j := json.New()
