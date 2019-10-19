@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
 	"github.com/hallgren/eventsourcing/serializer/unsafe"
@@ -24,7 +23,7 @@ func main() {
 			stream.Next()
 			event := stream.Value().(eventsourcing.Event)
 			fmt.Println("STREAM EVENT")
-			spew.Dump(event)
+			fmt.Println(event)
 		}
 	}()
 
@@ -48,6 +47,6 @@ func main() {
 	// Sleep to make sure the events are delivered from the stream
 	time.Sleep(time.Millisecond * 100)
 	fmt.Println("AGGREGATE")
-	spew.Dump(copy)
+	fmt.Println(copy)
 
 }
