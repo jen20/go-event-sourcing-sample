@@ -8,7 +8,7 @@ Event Sourcing is a technique to make it possible to capture all changes to an a
 
 ## Aggregate Root
 
-The aggregate root is the central point where events are bound. The aggregate struct needs to be embedded `eventsourcing.AggreateRoot` to get the aggregate behaviors.
+The aggregate root is the central point where events are bound. The aggregate struct needs to embed `eventsourcing.AggreateRoot` to get the aggregate behaviors.
 
 Below a Person aggregate where the Aggregate Root is embedded next to the Name and Age properties.
 
@@ -81,7 +81,7 @@ func (person *Person) GrowOlder() error {
 }
 ```
 
-Internally the TrackChange functions calls the Transition function in the aggregate to transform the aggregate based on the newly created event.
+Internally the TrackChange functions calls the Transition function on the aggregate to transform the aggregate based on the newly created event.
 
 The internal Event looks like this.
 
@@ -104,10 +104,11 @@ The repository is used to save and retrieve aggregates. Its main functions are:
 Save(aggregate aggregate) error // stores the aggregates events
 Get(id string, aggregate aggregate) error // retrieves and build an aggregate from events based on an identifier
 ```
+
 It is possible to save a snapshot of an aggregate reducing the amount of event needed to be fetched and applied.
 
 ```
-SaveSnapshot(aggregate aggregate) error // saves the aggregate (no unsaved events are allowed on the aggregate when doing this operation)
+SaveSnapshot(aggregate aggregate) error // saves the aggregate (en error will be returned if there are unsaved events on the aggregate when doing this operation)
 ```
 
 The constructor of the repository takes in an event store and a snapshot store that handles the reading and writing of the events and snapshots. We will dig deeper on the internals below
@@ -128,11 +129,11 @@ repo.Get(person.Id, &twin)
 
 ## Event Store
 
-The only thing an event store must handle are events. An event has to support the following interface.
+The only thing an event store must handle are events. An event store has to support the following interface.
 
 ```
 Save(events []eventsourcing.Event) error // saves events to an underlaying data store.
-Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) // fetches events based on identifier and type but also after a specific version. This is used to only load event that has happened after a snapshot is taken.
+Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) // fetches events based on identifier and type but also after a specific version. The version is used to only load event that has happened after a snapshot is taken.
 ```
 
 The event store also has a function that fetch events that are not based on identifier or type. It could be used to build separate representations often called projections.
@@ -158,7 +159,7 @@ Save(id string, a interface{}) error` // saves snapshot
 
 ## Serializer
 
-The event and snapshot stores all depend on serializer to transform events and aggregates []byte.
+The event and snapshot stores all depend on serializer to transform events and aggregates to []byte.
 
 ```
 SerializeSnapshot(interface{}) ([]byte, error)
