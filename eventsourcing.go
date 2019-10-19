@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
-	uuid "github.com/satori/go.uuid"
+	uuid "github.com/gofrs/uuid"
 )
 
 // AggregateVersion is the event version used in event and aggregateRoot
