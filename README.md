@@ -1,18 +1,18 @@
 # Overview
 
-This package is an experiment to try to generialize @jen20's way of implementing event sourcing. You can find the original blog post [here](http://jen20.com/2015/02/08/event-sourcing-in-go.html) and github repo [here](https://github.com/jen20/go-event-sourcing-sample)
+This package is an experiment to try to generialize [@jen20's](https://github.com/jen20) way of implementing event sourcing. You can find the original blog post [here](http://jen20.com/2015/02/08/event-sourcing-in-go.html) and github repo [here](https://github.com/jen20/go-event-sourcing-sample).
 
-# Event Sourcing
+## Event Sourcing
 
-Event Sourcing is a technique to make it possible to capture all changes to an application state as a sequence of events. Read more about it [here](https://martinfowler.com/eaaDev/EventSourcing.html)
+[Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) is a technique to make it possible to capture all changes to an application state as a sequence of events.
 
-## Aggregate Root
+### Aggregate Root
 
-The aggregate root is the central point where events are bound. The aggregate struct needs to embed `eventsourcing.AggreateRoot` to get the aggregate behaviors.
+The *aggregate root* is the central point where events are bound. The aggregate struct needs to embed `eventsourcing.AggreateRoot` to get the aggregate behaviors.
 
-Below a Person aggregate where the Aggregate Root is embedded next to the Name and Age properties.
+Below, a *Person* aggregate where the Aggregate Root is embedded next to the `Name` and `Age` properties.
 
-```
+```go
 type Person struct {
 	eventsourcing.AggregateRoot
 	Name string
@@ -22,9 +22,9 @@ type Person struct {
 
 The aggregate needs to implement the `Transition(event eventsourcing.Event)` function to fulfill the aggregate interface. This function define how events are transformed to build the aggregate state.
 
-Example of the Transition function from the Person aggregate.
+Example of the Transition function from the `Person` aggregate.
 
-```
+```go
 // Transition the person state dependent on the events
 func (person *Person) Transition(event eventsourcing.Event) {
         switch e := event.Data.(type) {
@@ -37,27 +37,27 @@ func (person *Person) Transition(event eventsourcing.Event) {
 }
 ```
 
-In this example we can see that the `Born` event sets the Person property Age and Name and that the `AgedOneYear` adds one year to the Age property. This makes the state of the aggregate very flexible and it could change in the future if required.
+In this example we can see that the `Born` event sets the `Person` property `Age` and `Name`, and that the `AgedOneYear` adds one year to the `Age` property. This makes the state of the aggregate flexible and could easily change in the future if required.
 
-## Aggregate Event
+### Aggregate Event
 
 An event is a clean struct with exported properties that contains the state of the event.
 
-Example of two events from the Person aggregate.
+Example of two events from the `Person` aggregate.
 
-```
+```go
 // Initial event
 type Born struct {
         Name string
 }
 
-// event that happens once a year
+// Event that happens once a year
 type AgedOneYear struct {}
 ```
 
-When an aggregate is first created an event is needed to initialize the state of the aggregate. No event, no aggregate. Below is an example where a constructor is defined that returns the Person aggregate and inside it binds an event via the TrackChange function. It's possible to define rules that the aggregate must uphold before an event is created, in this case the person's name can´t be blank.
+When an aggregate is first created an event is needed to initialize the state of the aggregate. No event, no aggregate. Below is an example of a constructor that returns the `Person` aggregate and inside it binds an event via the `TrackChange` function. It's possible to define rules that the aggregate must uphold before an event is created, in this case the person's name must not be blank.
 
-```
+```go
 // CreatePerson constructor for Person
 func CreatePerson(name string) (*Person, error) {
 	if name == "" {
@@ -72,20 +72,20 @@ func CreatePerson(name string) (*Person, error) {
 }
 ```
 
-When a person is created more events could be created via functions on the Person aggregate. Below is the GrowOlder function that results in the event AgedOneYear. This event is tracked on the person aggregate.
+When a person is created, more events could be created via functions on the `Person` aggregate. Below is the `GrowOlder` function which in turn triggers the event `AgedOneYear`. This event is tracked on the person aggregate.
 
-```
+```go
 // GrowOlder command
 func (person *Person) GrowOlder() error {
 	return person.TrackChange(person, &AgedOneYear{})
 }
 ```
 
-Internally the TrackChange functions calls the Transition function on the aggregate to transform the aggregate based on the newly created event.
+Internally the `TrackChange` functions calls the `Transition` function on the aggregate to transform the aggregate based on the newly created event.
 
-The internal Event looks like this.
+The internal `Event` looks like this.
 
-```
+```go
 type Event struct {
 	AggregateRootID AggregateRootID // aggregate identifier 
 	Version         Version // aggregate version
@@ -96,30 +96,30 @@ type Event struct {
 }
 ```
 
-# Repository
+## Repository
 
-The repository is used to save and retrieve aggregates. Its main functions are:
+The repository is used to save and retrieve aggregates. The main functions are:
 
-```
+```go
 Save(aggregate aggregate) error // stores the aggregates events
 Get(id string, aggregate aggregate) error // retrieves and build an aggregate from events based on an identifier
 ```
 
 It is possible to save a snapshot of an aggregate reducing the amount of event needed to be fetched and applied.
 
-```
+```go
 SaveSnapshot(aggregate aggregate) error // saves the aggregate (en error will be returned if there are unsaved events on the aggregate when doing this operation)
 ```
 
 The constructor of the repository takes in an event store and a snapshot store that handles the reading and writing of the events and snapshots. We will dig deeper on the internals below
 
-```
+```go
 NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Repository
 ```
 
 Here is an example of a person being saved and fetched from the repository.
 
-```
+```go
 person := person.CreatePerson("Alice")
 person.GrowOlder()
 repo.Save(person)
@@ -127,18 +127,18 @@ twin := Person{}
 repo.Get(person.Id, &twin)
 ```
 
-## Event Store
+### Event Store
 
-The only thing an event store must handle are events. An event store has to support the following interface.
+The only thing an event store must handle are events. An event store must implement the following interface.
 
-```
+```go
 Save(events []eventsourcing.Event) error // saves events to an underlaying data store.
 Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) // fetches events based on identifier and type but also after a specific version. The version is used to only load event that has happened after a snapshot is taken.
 ```
 
 The event store also has a function that fetch events that are not based on identifier or type. It could be used to build separate representations often called projections.
 
-```
+```go
 GlobalGet(start int, count int) []eventsourcing.Event
 ```
 
@@ -148,7 +148,7 @@ Currently there are three event store implementations.
 * Bolt
 * RAM Memory
 
-## Snapshot Store
+### Snapshot Store
 
 A snapshot store handles snapshots. The properties of an aggregate have to be exported for them to be saved in the snapshot.
 
@@ -159,9 +159,9 @@ Save(id string, a interface{}) error` // saves snapshot
 
 ## Serializer
 
-The event and snapshot stores all depend on serializer to transform events and aggregates to []byte.
+The event and snapshot stores depends on a serializer to transform events and aggregates to the `[]byte` data type.
 
-```
+```go
 SerializeSnapshot(interface{}) ([]byte, error)
 DeserializeSnapshot(data []byte, a interface{}) error
 SerializeEvent(event eventsourcing.Event) ([]byte, error)
@@ -170,19 +170,19 @@ DeserializeEvent(v []byte) (event eventsourcing.Event, err error)
 
 ### JSON
 
-The json serializer has the following extra function.
+The JSON serializer has the following extra function.
 
-```
+```go
 Register(aggregate aggregate, events ...interface{}) error
 ```
 
 It needs to register the aggregate and its events for it to maintain correct type info after Marshall.
 
-```
+```go
 j := json.New()
 err := j.Register(&Person{}, &Born{}, &AgedOneYear{})
 ```
 
 ### Unsafe
 
-The unsafe serializer stores the underlying memory representation of a struct directly. This makes it as its name implies unsafe to use if you are unsure what you are doing. [Here](https://youtu.be/4xB46Xl9O9Q?t=610) is the video that explains the reason for this serializer.
+The unsafe serializer stores the underlying memory representation of a struct directly. This makes, it as its name implies, unsafe to use if you are unsure what you are doing. [Here](https://youtu.be/4xB46Xl9O9Q?t=610) is the video that explains the reason for this serializer.
