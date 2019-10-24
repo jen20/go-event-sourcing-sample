@@ -1,5 +1,6 @@
 package sql
 
+// Migrate the database
 func (sql *SQL) Migrate() error {
 	sqlStmt := `
 	create table events (id INTEGER PRIMARY KEY AUTOINCREMENT, aggregate_id varchar not null, version integer, reason varchar, aggregate_type varchar, data varchar max, meta_data varchar max);

@@ -83,7 +83,7 @@ func (r *Repository) Get(id string, aggregate aggregate) error {
 	// if there is a snapshot store try fetch aggregate snapshot
 	if r.snapshotStore != nil {
 		err := r.snapshotStore.Get(id, aggregate)
-		if err != nil && err != snapshotstore.SnapshotNotFoundError {
+		if err != nil && err != snapshotstore.ErrSnapshotNotFound {
 			return err
 		}
 	}

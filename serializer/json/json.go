@@ -2,11 +2,13 @@ package json
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/hallgren/eventsourcing"
+	"errors"
 	"reflect"
+
+	"github.com/hallgren/eventsourcing"
 )
 
+// Handler for json serializes
 type Handler struct {
 	eventRegister map[string]interface{}
 }
@@ -29,29 +31,37 @@ type aggregate interface {
 	Transition(event eventsourcing.Event)
 }
 
-var AggregateNameMissingError = fmt.Errorf("missing aggregate name")
-var NoEventsToRegisterError = fmt.Errorf("no events to register")
-var EventNameMissingError = fmt.Errorf("missing event name")
+var (
+	// ErrAggregateNameMissing return if aggregate name is missing
+	ErrAggregateNameMissing = errors.New("missing aggregate name")
 
+	// ErrNoEventsToRegister return if no events to register
+	ErrNoEventsToRegister = errors.New("no events to register")
+
+	// ErrEventNameMissing return if event name is missing
+	ErrEventNameMissing = errors.New("missing event name")
+)
+
+// Register events aggregate
 func (h *Handler) Register(aggregate aggregate, events ...interface{}) error {
 	aggregateName := reflect.TypeOf(aggregate).Elem().Name()
 	if aggregateName == "" {
-		return AggregateNameMissingError
+		return ErrAggregateNameMissing
 	}
 	if len(events) == 0 {
-		return NoEventsToRegisterError
+		return ErrNoEventsToRegister
 	}
 	for _, event := range events {
 		eventName := reflect.TypeOf(event).Elem().Name()
 		if eventName == "" {
-			return EventNameMissingError
+			return ErrEventNameMissing
 		}
 		h.eventRegister[aggregateName+"_"+eventName] = event
 	}
 	return nil
 }
 
-// Serialize marshals an event into a json byte array
+// SerializeEvent marshals an event into a json byte array
 func (h *Handler) SerializeEvent(event eventsourcing.Event) ([]byte, error) {
 	e := jsonEvent{}
 	// Marshal the event data by itself
@@ -70,7 +80,7 @@ func (h *Handler) SerializeEvent(event eventsourcing.Event) ([]byte, error) {
 	return b, nil
 }
 
-// Deserialize un marshals an byte array into an event
+// DeserializeEvent un marshals an byte array into an event
 func (h *Handler) DeserializeEvent(v []byte) (event eventsourcing.Event, err error) {
 	jsonEvent := jsonEvent{}
 	err = json.Unmarshal(v, &jsonEvent)

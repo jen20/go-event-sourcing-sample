@@ -4,15 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore"
 )
 
+// SQL for store events
 type SQL struct {
 	db         sql.DB
 	serializer eventstore.EventSerializer
 }
 
+// Open connection to database
 func Open(db sql.DB, serializer eventstore.EventSerializer) *SQL {
 	return &SQL{
 		db:         db,
@@ -20,10 +23,12 @@ func Open(db sql.DB, serializer eventstore.EventSerializer) *SQL {
 	}
 }
 
+// Close the connection
 func (sql *SQL) Close() {
 	sql.db.Close()
 }
 
+// Save persists events to the database
 func (sql *SQL) Save(events []eventsourcing.Event) error {
 	// If no event return no error
 	if len(events) == 0 {
@@ -79,6 +84,7 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 	return nil
 }
 
+// Get the events from database
 func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.Version) (events []eventsourcing.Event, err error) {
 	selectStm := `Select data from events where aggregate_id=? and aggregate_type=? and version>? order by version asc`
 	rows, err := sql.db.Query(selectStm, id, aggregateType, afterVersion)
@@ -100,6 +106,7 @@ func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.
 	return
 }
 
+// GlobalGet get global events from database
 func (sql *SQL) GlobalGet(start int, count int) []eventsourcing.Event {
 	selectStm := `Select data from events where id>=? order by id asc limit ?`
 	rows, err := sql.db.Query(selectStm, start, count)

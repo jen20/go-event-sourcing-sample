@@ -2,13 +2,12 @@ package eventsourcing
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 
 	uuid "github.com/gofrs/uuid"
 )
 
-// AggregateVersion is the event version used in event and aggregateRoot
+// Version is the event version used in event and aggregateRoot
 type Version int
 
 // AggregateRootID is the identifier on the aggregate
@@ -31,22 +30,26 @@ type Event struct {
 	MetaData        map[string]interface{}
 }
 
-// ErrAggregateAlreadyExists returned if the AggregateID is set more than one time
-var ErrAggregateAlreadyExists = errors.New("its not possible to set id on already existing aggregate")
+var (
+	// ErrAggregateAlreadyExists returned if the AggregateID is set more than one time
+	ErrAggregateAlreadyExists = errors.New("its not possible to set id on already existing aggregate")
+	// ErrAggregateNotPointerType returned if aggregate is not pointer type
+	ErrAggregateNotPointerType = errors.New("aggregate is not a pointer type")
+	// ErrEventDataNotPointerType returned if event data is not pointer type
+	ErrEventDataNotPointerType = errors.New("eventData is not a pointer type")
 
-var emptyAggregateID = AggregateRootID("")
-var AggregateNotPointerTypeError = fmt.Errorf("aggregate is not a pointer type")
-var EventDataNotPointerTypeError = fmt.Errorf("eventData is not a pointer type")
+	emptyAggregateID = AggregateRootID("")
+)
 
 // TrackChange is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
 func (state *AggregateRoot) TrackChange(a aggregate, eventData interface{}) error {
 	// Make sure the aggregate and eventData is a pointer type
 	if reflect.ValueOf(a).Kind() != reflect.Ptr {
-		return AggregateNotPointerTypeError
+		return ErrAggregateNotPointerType
 	}
 	if reflect.ValueOf(eventData).Kind() != reflect.Ptr {
-		return EventDataNotPointerTypeError
+		return ErrEventDataNotPointerType
 	}
 
 	// This can be overwritten in the constructor of the aggregate

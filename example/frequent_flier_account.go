@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/hallgren/eventsourcing"
 )
 
@@ -13,6 +14,7 @@ type FrequentFlierAccount struct {
 	status     Status
 }
 
+// FrequentFlierAccountAggregate is the struct of frequent flier account aggregate
 type FrequentFlierAccountAggregate struct {
 	eventsourcing.AggregateRoot
 	FrequentFlierAccount
@@ -21,6 +23,7 @@ type FrequentFlierAccountAggregate struct {
 // Status represents the Red, Silver or Gold tier level of a FrequentFlierAccount
 type Status int
 
+// Status represents the Red, Silver or Gold tier level of a FrequentFlierAccount
 const (
 	StatusRed    Status = iota
 	StatusSilver Status = iota
@@ -29,21 +32,25 @@ const (
 
 // go:generate stringer -type=Status
 
+// FrequentFlierAccountCreated is the struct of frequent flier accounts created
 type FrequentFlierAccountCreated struct {
-	AccountId         string
+	AccountID         string
 	OpeningMiles      int
 	OpeningTierPoints int
 }
 
+// StatusMatched is the struct of start matched
 type StatusMatched struct {
 	NewStatus Status
 }
 
+// FlightTaken is the struct of flight taken
 type FlightTaken struct {
 	MilesAdded      int
 	TierPointsAdded int
 }
 
+// PromotedToGoldStatus promoted to gold status
 type PromotedToGoldStatus struct {
 }
 
@@ -69,57 +76,57 @@ func NewFrequentFlierAccountFromHistory(events []eventsourcing.Event) *FrequentF
 //
 // If recording this flight takes the account over a status boundary, it will
 // automatically upgrade the account to the new status level.
-func (self *FrequentFlierAccountAggregate) RecordFlightTaken(miles int, tierPoints int) {
-	err := self.TrackChange(self, &FlightTaken{MilesAdded: miles, TierPointsAdded: tierPoints})
+func (f *FrequentFlierAccountAggregate) RecordFlightTaken(miles int, tierPoints int) {
+	err := f.TrackChange(f, &FlightTaken{MilesAdded: miles, TierPointsAdded: tierPoints})
 	if err != nil {
 		panic(err)
 	}
 
-	if self.tierPoints > 10 && self.status != StatusSilver {
-		err = self.TrackChange(self, &StatusMatched{NewStatus: StatusSilver})
+	if f.tierPoints > 10 && f.status != StatusSilver {
+		err = f.TrackChange(f, &StatusMatched{NewStatus: StatusSilver})
 		if err != nil {
 			panic(err)
 		}
 	}
 
-	if self.tierPoints > 20 && self.status != StatusGold {
-		err := self.TrackChange(self, &PromotedToGoldStatus{})
+	if f.tierPoints > 20 && f.status != StatusGold {
+		err := f.TrackChange(f, &PromotedToGoldStatus{})
 		panic(err)
 	}
 }
 
 // Transition implements the pattern match against event types used both as part
 // of the fold when loading from history and when tracking an individual change.
-func (state *FrequentFlierAccountAggregate) Transition(event eventsourcing.Event) {
+func (f *FrequentFlierAccountAggregate) Transition(event eventsourcing.Event) {
 
 	switch e := event.Data.(type) {
 
 	case *FrequentFlierAccountCreated:
-		state.miles = e.OpeningMiles
-		state.tierPoints = e.OpeningTierPoints
-		state.status = StatusRed
+		f.miles = e.OpeningMiles
+		f.tierPoints = e.OpeningTierPoints
+		f.status = StatusRed
 
 	case *StatusMatched:
-		state.status = e.NewStatus
+		f.status = e.NewStatus
 
 	case *FlightTaken:
-		state.miles = state.miles + e.MilesAdded
-		state.tierPoints = state.tierPoints + e.TierPointsAdded
+		f.miles = f.miles + e.MilesAdded
+		f.tierPoints = f.tierPoints + e.TierPointsAdded
 
 	case *PromotedToGoldStatus:
-		state.status = StatusGold
+		f.status = StatusGold
 	}
 }
 
 // String implements Stringer for FrequentFlierAccount instances.
-func (a FrequentFlierAccountAggregate) String() string {
+func (f FrequentFlierAccountAggregate) String() string {
 
 	var reason string
 	var aggregateType string
 
-	if len(a.AggregateEvents) > 0 {
-		reason = a.AggregateEvents[0].Reason
-		aggregateType = a.AggregateEvents[0].AggregateType
+	if len(f.AggregateEvents) > 0 {
+		reason = f.AggregateEvents[0].Reason
+		aggregateType = f.AggregateEvents[0].AggregateType
 	} else {
 		reason = "No reason"
 		aggregateType = "No aggregateType"
@@ -134,5 +141,5 @@ func (a FrequentFlierAccountAggregate) String() string {
 	(Pending AggregateEvents: %d)
 	(AggregateVersion: %d)
 `
-	return fmt.Sprintf(format, a.AggregateID, a.miles, a.tierPoints, a.status, reason, aggregateType, len(a.AggregateEvents), a.AggregateVersion)
+	return fmt.Sprintf(format, f.AggregateID, f.miles, f.tierPoints, f.status, reason, aggregateType, len(f.AggregateEvents), f.AggregateVersion)
 }

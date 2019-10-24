@@ -2,10 +2,11 @@ package eventstore
 
 import (
 	"errors"
+
 	"github.com/hallgren/eventsourcing"
 )
 
-// EventSerializer	 is the common interface a event serializer must uphold
+// EventSerializer is the common interface a event serializer must uphold
 type EventSerializer interface {
 	SerializeEvent(event eventsourcing.Event) ([]byte, error)
 	DeserializeEvent(v []byte) (event eventsourcing.Event, err error)
