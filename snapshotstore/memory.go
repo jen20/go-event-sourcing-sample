@@ -1,9 +1,11 @@
 package snapshotstore
 
 import (
+	"errors"
 	"fmt"
 )
 
+// Handler of snapshot store
 type Handler struct {
 	store      map[string][]byte
 	serializer snapshotSerializer
@@ -14,8 +16,10 @@ type snapshotSerializer interface {
 	DeserializeSnapshot(data []byte, a interface{}) error
 }
 
-var SnapshotNotFoundError = fmt.Errorf("snapshot not found")
+// ErrSnapshotNotFound returns if snapshot not found
+var ErrSnapshotNotFound = errors.New("snapshot not found")
 
+// New handler for the snapshot service
 func New(serializer snapshotSerializer) *Handler {
 	return &Handler{
 		store:      make(map[string][]byte),
@@ -23,10 +27,11 @@ func New(serializer snapshotSerializer) *Handler {
 	}
 }
 
+// Get returns the deserialize snapshot
 func (h *Handler) Get(id string, a interface{}) error {
 	data, ok := h.store[id]
 	if !ok {
-		return SnapshotNotFoundError
+		return ErrSnapshotNotFound
 	}
 	err := h.serializer.DeserializeSnapshot(data, a)
 	if err != nil {
@@ -35,6 +40,7 @@ func (h *Handler) Get(id string, a interface{}) error {
 	return nil
 }
 
+// Save persists the snapshot
 func (h *Handler) Save(id string, a interface{}) error {
 	if id == "" {
 		return fmt.Errorf("aggregate id is empty")
