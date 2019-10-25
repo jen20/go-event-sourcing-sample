@@ -60,7 +60,7 @@ type Born struct {
 type AgedOneYear struct {}
 ```
 
-When an aggregate is first created an event is needed to initialize the state of the aggregate. No event, no aggregate. Below is an example of a constructor that returns the `Person` aggregate and inside it binds an event via the `TrackChange` function. It's possible to define rules that the aggregate must uphold before an event is created, in this case the person's name must not be blank.
+When an aggregate is first created, an event is needed to initialize the state of the aggregate. No event, no aggregate. Below is an example of a constructor that returns the `Person` aggregate and inside it binds an event via the `TrackChange` function. It's possible to define rules that the aggregate must uphold before an event is created, in this case the person's name must not be blank.
 
 ```go
 // CreatePerson constructor for Person
@@ -116,7 +116,7 @@ It is possible to save a snapshot of an aggregate reducing the amount of event n
 SaveSnapshot(aggregate aggregate) error // saves the aggregate (en error will be returned if there are unsaved events on the aggregate when doing this operation)
 ```
 
-The constructor of the repository takes in an event store and a snapshot store that handles the reading and writing of the events and snapshots. We will dig deeper on the internals below
+The repository constructor input values is an event store and a snapshot store, this handles the reading and writing of events and snapshots. We will dig deeper on the internals below.
 
 ```go
 NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Repository
@@ -134,7 +134,7 @@ repo.Get(person.Id, &twin)
 
 ### Event Store
 
-The only thing an event store must handle are events. An event store must implement the following interface.
+The only thing an event store handles are events and it must implement the following interface.
 
 ```go
 Save(events []eventsourcing.Event) error // saves events to an underlaying data store.
@@ -181,7 +181,7 @@ The JSON serializer has the following extra function.
 Register(aggregate aggregate, events ...interface{}) error
 ```
 
-It needs to register the aggregate and its events for it to maintain correct type info after Marshall.
+It needs to register the aggregate together with the events that belongs to it. It has to do this to maintain correct type info after Marshall.
 
 ```go
 j := json.New()
@@ -190,4 +190,4 @@ err := j.Register(&Person{}, &Born{}, &AgedOneYear{})
 
 ### Unsafe
 
-The unsafe serializer stores the underlying memory representation of a struct directly. This makes, it as its name implies, unsafe to use if you are unsure what you are doing. [Here](https://youtu.be/4xB46Xl9O9Q?t=610) is the video that explains the reason for this serializer.
+The unsafe serializer stores the underlying memory representation of a struct directly. This makes it as its name implies, unsafe to use if you are unsure what you are doing. [Here](https://youtu.be/4xB46Xl9O9Q?t=610) is the video that explains the reason for this serializer.
