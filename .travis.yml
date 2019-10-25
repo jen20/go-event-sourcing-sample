@@ -8,7 +8,9 @@ jobs:
     - stage: build
       script:
         - go get ./...
-        - go test ./...
+        - go test ./... -race -coverprofile=coverage.txt -covermode=atomic
+      after_success:
+        - bash <(curl -s https://codecov.io/bash)
       deploy:
         provider: releases
         api_key: $GH_TOKEN
