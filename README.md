@@ -1,8 +1,7 @@
 [![Build Status](https://travis-ci.org/hallgren/eventsourcing.svg?branch=master)](https://travis-ci.org/hallgren/eventsourcing)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hallgren/eventsourcing)](https://goreportcard.com/report/github.com/hallgren/eventsourcing)
 [![Coverage Status](https://codecov.io/gh/hallgren/eventsourcing/branch/codecov/graphs/badge.svg?branch=master
-)](https://codecov.io/gh/hallgren/eventsourcing/branch/codecov/graphs/badge.svg?branch=master
-)
+)](https://codecov.io/gh/hallgren/eventsourcing?branch=master)
 
 # Overview
 
