@@ -82,3 +82,23 @@ func TestSnapshot(t *testing.T) {
 		t.Fatalf("wrong AggregateVersion in snapshot %q expected: %q", p.AggregateVersion, personVersion)
 	}
 }
+
+func TestGetNoneExistingSnapshot(t *testing.T) {
+	snapshot := snapshotstore.New(json.New())
+
+	p := Person{}
+	err := snapshot.Get("noneExistingID", &p)
+	if err == nil {
+		t.Fatalf("could get none existing snapshot %v", err)
+	}
+}
+
+func TestSaveEmptySnapshotID(t *testing.T) {
+	snapshot := snapshotstore.New(json.New())
+
+	p := Person{}
+	err := snapshot.Get("", &p)
+	if err == nil {
+		t.Fatalf("could save blank snapshot id %v", err)
+	}
+}
