@@ -123,7 +123,7 @@ func initEventStores() ([]eventstore, func(), error) {
 type eventstore interface {
 	Save(events []eventsourcing.Event) error
 	Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)
-	GlobalGet(start, count int) []eventsourcing.Event
+	GlobalGet(start uint64, count int) []eventsourcing.Event
 }
 
 func TestSaveAndGetEvents(t *testing.T) {

@@ -18,9 +18,9 @@ const (
 var ErrorNotFound = errors.New("NotFoundError")
 
 // itob returns an 8-byte big endian representation of v.
-func itob(v int) []byte {
+func itob(v uint64) []byte {
 	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, uint64(v))
+	binary.BigEndian.PutUint64(b, v)
 	return b
 }
 
@@ -116,7 +116,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 			return fmt.Errorf("could not serialize event, %v", err)
 		}
 
-		err = evBucket.Put(itob(int(sequence)), value)
+		err = evBucket.Put(itob(sequence), value)
 		if err != nil {
 			return fmt.Errorf("could not save event %#v in bucket", event)
 		}
@@ -127,7 +127,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 		if err != nil {
 			return fmt.Errorf("could not get next sequence for global bucket")
 		}
-		err = globalBucket.Put(itob(int(globalSequence)), value)
+		err = globalBucket.Put(itob(globalSequence), value)
 		if err != nil {
 			return fmt.Errorf("could not save global sequence pointer for %#v", bucketName)
 		}
@@ -154,9 +154,9 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 
 	cursor := evBucket.Cursor()
 	events := make([]eventsourcing.Event, 0)
-	firstEvent := int(afterVersion) + 1
+	firstEvent := afterVersion + 1
 
-	for k, obj := cursor.Seek(itob(firstEvent)); k != nil; k, obj = cursor.Next() {
+	for k, obj := cursor.Seek(itob(uint64(firstEvent))); k != nil; k, obj = cursor.Next() {
 		event, err := e.serializer.DeserializeEvent(obj)
 		if err != nil {
 			return nil, fmt.Errorf("Could not deserialize event, %v", err)
@@ -167,7 +167,7 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 }
 
 // GlobalGet returns events from the global order
-func (e *BBolt) GlobalGet(start int, count int) []eventsourcing.Event {
+func (e *BBolt) GlobalGet(start uint64, count int) []eventsourcing.Event {
 	tx, err := e.db.Begin(false)
 	if err != nil {
 		return nil

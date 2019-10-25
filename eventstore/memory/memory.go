@@ -85,7 +85,7 @@ func (e *Memory) Get(id string, aggregateType string, afterVersion eventsourcing
 }
 
 // GlobalGet returns events from the global order
-func (e *Memory) GlobalGet(start int, count int) []eventsourcing.Event {
+func (e *Memory) GlobalGet(start uint64, count int) []eventsourcing.Event {
 	events := make([]eventsourcing.Event, 0)
 	var i int
 	for id, eventSerialized := range e.eventsInOrder {
@@ -93,7 +93,7 @@ func (e *Memory) GlobalGet(start int, count int) []eventsourcing.Event {
 		if err != nil {
 			return nil
 		}
-		if id >= start-1 {
+		if uint64(id) >= start-1 {
 			events = append(events, event)
 			i++
 			if i == count {

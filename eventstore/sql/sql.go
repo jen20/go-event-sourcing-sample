@@ -107,7 +107,7 @@ func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.
 }
 
 // GlobalGet get global events from database
-func (sql *SQL) GlobalGet(start int, count int) []eventsourcing.Event {
+func (sql *SQL) GlobalGet(start uint64, count int) []eventsourcing.Event {
 	selectStm := `Select data from events where id>=? order by id asc limit ?`
 	rows, err := sql.db.Query(selectStm, start, count)
 	if err != nil {
