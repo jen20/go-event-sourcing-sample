@@ -32,7 +32,6 @@ func (h *Handler) SerializeEvent(event eventsourcing.Event) ([]byte, error) {
 
 // DeserializeEvent deserializes from byte to event
 func (h *Handler) DeserializeEvent(obj []byte) (eventsourcing.Event, error) {
-	var event = &eventsourcing.Event{}
-	event = (*eventsourcing.Event)(unsafe.Pointer(&obj[0]))
+	event := (*eventsourcing.Event)(unsafe.Pointer(&obj[0]))
 	return *event, nil
 }

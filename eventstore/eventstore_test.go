@@ -141,6 +141,9 @@ func TestSaveAndGetEvents(t *testing.T) {
 			}
 
 			fetchedEvents, err := es.Get(string(aggregateID), aggregateType, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			if len(fetchedEvents) != len(testEvents()) {
 				t.Fatal("Wrong number of events returned")
@@ -204,6 +207,9 @@ func TestGetEventsAfterVersion(t *testing.T) {
 			}
 
 			fetchedEvents, err := es.Get(string(aggregateID), aggregateType, 1)
+			if err != nil {
+				t.Fatal(err)
+			}
 
 			// Should return one less event
 			if len(fetchedEvents) != len(testEvents())-1 {
