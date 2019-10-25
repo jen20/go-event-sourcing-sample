@@ -97,7 +97,7 @@ func TestSaveEmptySnapshotID(t *testing.T) {
 	snapshot := snapshotstore.New(json.New())
 
 	p := Person{}
-	err := snapshot.Get("", &p)
+	err := snapshot.Save("", &p)
 	if err == nil {
 		t.Fatalf("could save blank snapshot id %v", err)
 	}
