@@ -141,13 +141,15 @@ Save(events []eventsourcing.Event) error // saves events to an underlaying data 
 Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) // fetches events based on identifier and type but also after a specific version. The version is used to only load event that has happened after a snapshot is taken.
 ```
 
-The event store also has a function that fetch events that are not based on identifier or type. It could be used to build separate representations often called projections.
+Appart the manadatory `Get` and `Save`functions an event store could also implement the `GlobalGet` function for fetching events based on the order they were saved. This function makes it possible to build separate representations often called projections 
+
+The event store also has a function that fetch events that are not based on identifier or type. It could be used to build separate representations often called projections or [CQRS](https://martinfowler.com/bliki/CQRS.html).
 
 ```go
 GlobalGet(start int, count int) []eventsourcing.Event
 ```
 
-Currently there are three event store implementations.
+Currently there are three implementations.
 
 * SQL
 * Bolt
