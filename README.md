@@ -146,7 +146,7 @@ Appart the manadatory `Get` and `Save`functions an event store could also implem
 The event store also has a function that fetch events that are not based on identifier or type. It could be used to build separate representations often called projections or [CQRS](https://martinfowler.com/bliki/CQRS.html).
 
 ```go
-GlobalGet(start int, count int) []eventsourcing.Event
+GlobalGet(start uint64, count int) []eventsourcing.Event
 ```
 
 Currently there are three implementations.
