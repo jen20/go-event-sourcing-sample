@@ -95,6 +95,22 @@ func TestSaveSnapshotWithUnsavedEvents(t *testing.T) {
 	}
 }
 
+func TestSaveSnapshotWithoutSnapshotStore(t *testing.T) {
+	serializer := json.New()
+	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
+	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
+
+	person, err := CreatePerson("kalle")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// save person to snapshot store
+	err = repo.SaveSnapshot(person)
+	if err == nil {
+		t.Fatal("should not save snapshot when there is no snapshot store")
+	}
+}
+
 func TestEventStream(t *testing.T) {
 	serializer := json.New()
 	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
