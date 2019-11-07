@@ -2,6 +2,7 @@ package eventstore_test
 
 import (
 	sqldriver "database/sql"
+	"errors"
 	"fmt"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/bbolt"
@@ -81,16 +82,16 @@ func sql() (*s.SQL, func(), error) {
 	os.Remove(dbFile)
 	db, err := sqldriver.Open("sqlite3", dbFile)
 	if err != nil {
-		return nil, nil, fmt.Errorf("Could not open sqlit3 database %v", err)
+		return nil, nil, errors.New(fmt.Sprintf("could not open sqlit3 database %v", err))
 	}
 	err = db.Ping()
 	if err != nil {
-		return nil, nil, fmt.Errorf("could not ping database %v", err)
+		return nil, nil, errors.New(fmt.Sprintf("could not ping database %v", err))
 	}
 	s := s.Open(*db, jsonSerializer)
 	err = s.Migrate()
 	if err != nil {
-		return nil, nil, fmt.Errorf("could not migrate database %v", err)
+		return nil, nil, errors.New(fmt.Sprintf("could not migrate database %v", err))
 	}
 	return s, func() {
 		s.Close()
@@ -129,7 +130,7 @@ type eventstore interface {
 func TestSaveAndGetEvents(t *testing.T) {
 	stores, closer, err := initEventStores()
 	if err != nil {
-		t.Fatalf("Could not init event stores %v", err)
+		t.Fatalf("could not init event stores %v", err)
 	}
 	defer closer()
 
@@ -146,11 +147,11 @@ func TestSaveAndGetEvents(t *testing.T) {
 			}
 
 			if len(fetchedEvents) != len(testEvents()) {
-				t.Fatal("Wrong number of events returned")
+				t.Fatal("wrong number of events returned")
 			}
 
 			if fetchedEvents[0].Version != testEvents()[0].Version {
-				t.Fatal("Wrong events returned")
+				t.Fatal("wrong events returned")
 			}
 
 			// Add more events to the same aggregate event stream
@@ -165,27 +166,27 @@ func TestSaveAndGetEvents(t *testing.T) {
 			}
 
 			if len(fetchedEventsIncludingPartTwo) != len(append(testEvents(), testEventsPartTwo()...)) {
-				t.Error("Wrong number of events returned")
+				t.Error("wrong number of events returned")
 			}
 
 			if fetchedEventsIncludingPartTwo[0].Version != testEvents()[0].Version {
-				t.Error("Wrong event version returned")
+				t.Error("wrong event version returned")
 			}
 
 			if fetchedEventsIncludingPartTwo[0].AggregateRootID != testEvents()[0].AggregateRootID {
-				t.Error("Wrong event aggregateID returned")
+				t.Error("wrong event aggregateID returned")
 			}
 
 			if fetchedEventsIncludingPartTwo[0].AggregateType != testEvents()[0].AggregateType {
-				t.Error("Wrong event aggregateType returned")
+				t.Error("wrong event aggregateType returned")
 			}
 
 			if fetchedEventsIncludingPartTwo[0].Reason != testEvents()[0].Reason {
-				t.Error("Wrong event aggregateType returned")
+				t.Error("wrong event aggregateType returned")
 			}
 
 			if fetchedEventsIncludingPartTwo[0].MetaData["test"] != "hello" {
-				t.Error("Wrong event meta data returned")
+				t.Error("wrong event meta data returned")
 			}
 		})
 
@@ -195,7 +196,7 @@ func TestSaveAndGetEvents(t *testing.T) {
 func TestGetEventsAfterVersion(t *testing.T) {
 	stores, closer, err := initEventStores()
 	if err != nil {
-		t.Fatalf("Could not init event stores %v", err)
+		t.Fatalf("could not init event stores %v", err)
 	}
 	defer closer()
 
@@ -213,12 +214,12 @@ func TestGetEventsAfterVersion(t *testing.T) {
 
 			// Should return one less event
 			if len(fetchedEvents) != len(testEvents())-1 {
-				t.Fatal("Wrong number of events returned")
+				t.Fatal("wrong number of events returned")
 			}
 			fmt.Println(fetchedEvents)
 			// first event version should be 2
 			if fetchedEvents[0].Version != 2 {
-				t.Fatal("Wrong events returned")
+				t.Fatal("wrong events returned")
 			}
 		})
 
@@ -228,7 +229,7 @@ func TestGetEventsAfterVersion(t *testing.T) {
 func TestSaveEventsFromMoreThanOneAggregate(t *testing.T) {
 	stores, closer, err := initEventStores()
 	if err != nil {
-		t.Fatalf("Could not init event stores %v", err)
+		t.Fatalf("could not init event stores %v", err)
 	}
 	defer closer()
 
@@ -238,7 +239,7 @@ func TestSaveEventsFromMoreThanOneAggregate(t *testing.T) {
 
 			err := es.Save(invalidEvent)
 			if err == nil {
-				t.Error("Should not be able to save events that belongs to more than one aggregate")
+				t.Error("should not be able to save events that belongs to more than one aggregate")
 			}
 		})
 	}
@@ -247,7 +248,7 @@ func TestSaveEventsFromMoreThanOneAggregate(t *testing.T) {
 func TestSaveEventsFromMoreThanOneAggregateType(t *testing.T) {
 	stores, closer, err := initEventStores()
 	if err != nil {
-		t.Fatalf("Could not init event stores %v", err)
+		t.Fatalf("could not init event stores %v", err)
 	}
 	defer closer()
 
@@ -258,7 +259,7 @@ func TestSaveEventsFromMoreThanOneAggregateType(t *testing.T) {
 		t.Run(reflect.TypeOf(es).Elem().Name(), func(t *testing.T) {
 			err := es.Save(events)
 			if err == nil {
-				t.Error("Should not be able to save events that belongs to other aggregate type")
+				t.Error("should not be able to save events that belongs to other aggregate type")
 			}
 		})
 	}
@@ -267,7 +268,7 @@ func TestSaveEventsFromMoreThanOneAggregateType(t *testing.T) {
 func TestSaveEventsInWrongOrder(t *testing.T) {
 	stores, closer, err := initEventStores()
 	if err != nil {
-		t.Fatalf("Could not init event stores %v", err)
+		t.Fatalf("could not init event stores %v", err)
 	}
 	defer closer()
 
@@ -276,7 +277,7 @@ func TestSaveEventsInWrongOrder(t *testing.T) {
 		t.Run(reflect.TypeOf(es).Elem().Name(), func(t *testing.T) {
 			err := es.Save(events)
 			if err == nil {
-				t.Error("Should not be able to save events that are in wrong version order")
+				t.Error("should not be able to save events that are in wrong version order")
 			}
 		})
 	}
@@ -285,7 +286,7 @@ func TestSaveEventsInWrongOrder(t *testing.T) {
 func TestSaveEventsInWrongVersion(t *testing.T) {
 	stores, closer, err := initEventStores()
 	if err != nil {
-		t.Fatalf("Could not init event stores %v", err)
+		t.Fatalf("could not init event stores %v", err)
 	}
 	defer closer()
 
@@ -294,7 +295,7 @@ func TestSaveEventsInWrongVersion(t *testing.T) {
 		t.Run(reflect.TypeOf(es).Elem().Name(), func(t *testing.T) {
 			err := es.Save(events)
 			if err == nil {
-				t.Error("Should not be able to save events that are out of sync compared to the storage order")
+				t.Error("should not be able to save events that are out of sync compared to the storage order")
 			}
 		})
 	}
@@ -303,7 +304,7 @@ func TestSaveEventsInWrongVersion(t *testing.T) {
 func TestSaveEventsWithEmptyReason(t *testing.T) {
 	stores, closer, err := initEventStores()
 	if err != nil {
-		t.Fatalf("Could not init event stores %v", err)
+		t.Fatalf("could not init event stores %v", err)
 	}
 	defer closer()
 
@@ -313,7 +314,7 @@ func TestSaveEventsWithEmptyReason(t *testing.T) {
 		t.Run(reflect.TypeOf(es).Elem().Name(), func(t *testing.T) {
 			err := es.Save(events)
 			if err == nil {
-				t.Error("Should not be able to save events with empty reason")
+				t.Error("should not be able to save events with empty reason")
 			}
 		})
 	}
@@ -322,7 +323,7 @@ func TestSaveEventsWithEmptyReason(t *testing.T) {
 func TestGetGlobalEvents(t *testing.T) {
 	stores, closer, err := initEventStores()
 	if err != nil {
-		t.Fatalf("Could not init event stores %v", err)
+		t.Fatalf("could not init event stores %v", err)
 	}
 	defer closer()
 
@@ -339,7 +340,7 @@ func TestGetGlobalEvents(t *testing.T) {
 			fetchedEvents := es.GlobalGet(6, 2)
 
 			if len(fetchedEvents) != 2 {
-				t.Fatalf("Fetched the wrong amount of events")
+				t.Fatalf("fetched the wrong amount of events")
 			}
 
 			if fetchedEvents[0].Version != events[5].Version {
@@ -352,7 +353,7 @@ func TestGetGlobalEvents(t *testing.T) {
 func TestGetGlobalEventsNotExisting(t *testing.T) {
 	stores, closer, err := initEventStores()
 	if err != nil {
-		t.Fatalf("Could not init event stores %v", err)
+		t.Fatalf("could not init event stores %v", err)
 	}
 	defer closer()
 	events := testEvents()
@@ -360,13 +361,13 @@ func TestGetGlobalEventsNotExisting(t *testing.T) {
 		t.Run(reflect.TypeOf(es).Elem().Name(), func(t *testing.T) {
 			err := es.Save(events)
 			if err != nil {
-				t.Error("Could not save the events")
+				t.Error("could not save the events")
 			}
 
 			fetchedEvents := es.GlobalGet(100, 2)
 
 			if len(fetchedEvents) != 0 {
-				t.Error("Fetched none existing events")
+				t.Error("fetched none existing events")
 			}
 		})
 	}

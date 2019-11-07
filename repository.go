@@ -1,7 +1,7 @@
 package eventsourcing
 
 import (
-	"fmt"
+	"errors"
 	"github.com/hallgren/eventsourcing/snapshotstore"
 	"github.com/imkira/go-observer"
 	"reflect"
@@ -66,7 +66,7 @@ func (r *Repository) SaveSnapshot(aggregate aggregate) error {
 		return errors.New("no snapshot store has been initialized in the repository")
 	}
 	if len(aggregate.changes()) > 0 {
-		return fmt.Errorf("can't save snapshot with unsaved events")
+		return errors.New("can't save snapshot with unsaved events")
 	}
 	err := r.snapshotStore.Save(aggregate.id(), aggregate)
 	if err != nil {
@@ -80,7 +80,7 @@ func (r *Repository) SaveSnapshot(aggregate aggregate) error {
 // version of the aggregate if any
 func (r *Repository) Get(id string, aggregate aggregate) error {
 	if reflect.ValueOf(aggregate).Kind() != reflect.Ptr {
-		return fmt.Errorf("aggregate needs to be a pointer")
+		return errors.New("aggregate needs to be a pointer")
 	}
 	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
 	// if there is a snapshot store try fetch aggregate snapshot

@@ -3,6 +3,7 @@ package sql
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/hallgren/eventsourcing"
@@ -53,7 +54,7 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 		}
 		event, err := sql.serializer.DeserializeEvent([]byte(data))
 		if err != nil {
-			return fmt.Errorf("Could not deserialize event %v", err)
+			return errors.New(fmt.Sprintf("could not deserialize event %v", err))
 		}
 		currentVersion = event.Version
 	}
@@ -66,7 +67,7 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 
 	tx, err := sql.db.BeginTx(context.Background(), nil)
 	if err != nil {
-		return fmt.Errorf("Could not start a write transaction, %v", err)
+		return errors.New(fmt.Sprintf("could not start a write transaction, %v", err))
 	}
 	defer tx.Rollback()
 	insert := `Insert into events (aggregate_id, version, reason, aggregate_type, data, meta_data) values ($1, $2, $3, $4, $5, $6)`
@@ -99,7 +100,7 @@ func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.
 		}
 		event, err := sql.serializer.DeserializeEvent([]byte(data))
 		if err != nil {
-			return nil, fmt.Errorf("Could not deserialize event %v", err)
+			return nil, errors.New(fmt.Sprintf("could not deserialize event %v", err))
 		}
 		events = append(events, event)
 	}
@@ -130,7 +131,7 @@ func (sql *SQL) transform(rows *sql.Rows) (events []eventsourcing.Event, err err
 		}
 		event, err := sql.serializer.DeserializeEvent([]byte(data))
 		if err != nil {
-			return nil, fmt.Errorf("Could not deserialize event %v", err)
+			return nil, errors.New(fmt.Sprintf("could not deserialize event %v", err))
 		}
 		events = append(events, event)
 	}

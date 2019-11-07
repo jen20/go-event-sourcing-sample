@@ -1,7 +1,7 @@
 package snapshotstore_test
 
 import (
-	"fmt"
+	"errors"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/serializer/json"
 	"github.com/hallgren/eventsourcing/snapshotstore"
@@ -28,7 +28,7 @@ type AgedOneYear struct {
 // CreatePerson constructor for the Person
 func CreatePerson(name string) (*Person, error) {
 	if name == "" {
-		return nil, fmt.Errorf("Name can't be blank")
+		return nil, errors.New("name can't be blank")
 	}
 	person := Person{}
 	err := person.TrackChange(&person, &Born{Name: name})

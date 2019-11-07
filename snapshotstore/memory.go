@@ -2,7 +2,6 @@ package snapshotstore
 
 import (
 	"errors"
-	"fmt"
 )
 
 // Handler of snapshot store
@@ -43,7 +42,7 @@ func (h *Handler) Get(id string, a interface{}) error {
 // Save persists the snapshot
 func (h *Handler) Save(id string, a interface{}) error {
 	if id == "" {
-		return fmt.Errorf("aggregate id is empty")
+		return errors.New("aggregate id is empty")
 	}
 	data, err := h.serializer.SerializeSnapshot(a)
 	if err != nil {

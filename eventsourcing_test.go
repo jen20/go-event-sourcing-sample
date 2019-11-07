@@ -1,7 +1,7 @@
 package eventsourcing_test
 
 import (
-	"fmt"
+	"errors"
 	"github.com/hallgren/eventsourcing"
 	"testing"
 )
@@ -26,7 +26,7 @@ type AgedOneYear struct {
 // CreatePerson constructor for the Person
 func CreatePerson(name string) (*Person, error) {
 	if name == "" {
-		return nil, fmt.Errorf("Name can't be blank")
+		return nil, errors.New("name can't be blank")
 	}
 	person := Person{}
 	err := person.TrackChange(&person, &Born{Name: name})
@@ -39,7 +39,7 @@ func CreatePerson(name string) (*Person, error) {
 // CreatePersonWithID constructor for the Person that sets the aggregate id from the outside
 func CreatePersonWithID(id, name string) (*Person, error) {
 	if name == "" {
-		return nil, fmt.Errorf("Name can't be blank")
+		return nil, errors.New("name can't be blank")
 	}
 
 	person := Person{}

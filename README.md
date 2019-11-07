@@ -67,7 +67,7 @@ When an aggregate is first created, an event is needed to initialize the state o
 // CreatePerson constructor for Person
 func CreatePerson(name string) (*Person, error) {
 	if name == "" {
-		return nil, fmt.Errorf("Name can't be blank")
+		return nil, errors.New("name can't be blank")
 	}
 	person := Person{}
 	err := person.TrackChange(&person, &Born{Name: name})
