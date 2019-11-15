@@ -52,16 +52,14 @@ func (r *Repository) Save(aggregate aggregate) error {
 		return err
 	}
 
-	events := aggregate.changes()
-
-	// aggregate are saved to the event store now its safe to update the internal aggregate state
-	aggregate.updateVersion()
-
 	// publish the saved events to the events stream
-	for _, event := range events {
+	for _, event := range aggregate.changes() {
 		r.eventStream.Update(event)
 	}
 
+	// aggregate are saved to the event store now its safe to update the internal aggregate state
+	aggregate.updateVersion()
+	
 	return nil
 }
 

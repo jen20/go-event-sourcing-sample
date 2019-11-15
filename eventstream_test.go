@@ -12,8 +12,9 @@ type AnEvent struct {
 type AnotherEvent struct {}
 
 var event = eventsourcing.Event{Version:123,Data:&AnEvent{Name:"123"}}
+var otherEvent = eventsourcing.Event{Version:123,Data:&AnotherEvent{}}
 
-func TestAllEvents(t *testing.T) {
+func TestGlobal(t *testing.T) {
 	e := eventsourcing.NewEventStream()
 	stream := e.Subscribe()
 	e.Update(event)
@@ -28,7 +29,7 @@ func TestAllEvents(t *testing.T) {
 	}
 }
 
-func TestSpecificEvent(t *testing.T) {
+func TestSpecific(t *testing.T) {
 	e := eventsourcing.NewEventStream()
 	stream := e.Subscribe(&AnEvent{})
 	e.Update(event)
@@ -41,6 +42,33 @@ func TestSpecificEvent(t *testing.T) {
 	if streamEvent.Version != event.Version {
 		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, event.Version)
 	}
+}
+
+func TestManySpecific(t *testing.T) {
+	e := eventsourcing.NewEventStream()
+	stream := e.Subscribe(&AnEvent{}, &AnotherEvent{})
+	e.Update(event)
+	e.Update(otherEvent)
+
+	if !stream.HasNext() {
+		t.Fatalf("should have received event")
+	}
+
+	streamEvent := stream.WaitNext().(eventsourcing.Event)
+	switch ev := streamEvent.Data.(type) {
+	case *AnotherEvent:
+		t.Fatalf("expecting AnEvent got %q", ev)
+	}
+
+	if !stream.HasNext() {
+		t.Fatalf("should have received event")
+	}
+	streamEvent = stream.WaitNext().(eventsourcing.Event)
+	switch ev := streamEvent.Data.(type) {
+	case *AnEvent:
+		t.Fatalf("expecting OtherEvent got %q", ev)
+	}
+
 }
 
 func TestUpdateNoneSubscribedEvent(t *testing.T) {
