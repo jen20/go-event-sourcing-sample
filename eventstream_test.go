@@ -52,3 +52,44 @@ func TestUpdateNoneSubscribedEvent(t *testing.T) {
 		t.Fatalf("should not have received event %q", stream.WaitNext())
 	}
 }
+
+func TestManySubscribers(t *testing.T) {
+	e := eventsourcing.NewEventStream()
+	stream1 := e.Subscribe(&AnotherEvent{})
+	stream2 := e.Subscribe(&AnotherEvent{}, &AnEvent{})
+	stream3 := e.Subscribe(&AnEvent{})
+	stream4 := e.Subscribe()
+
+	e.Update(event)
+
+	if stream1.HasNext() {
+		t.Fatalf("stream1 should not have any events")
+	}
+
+	if !stream2.HasNext() {
+		t.Fatalf("stream2 should have one event")
+	} else {
+		stream2.Next()
+		if stream2.HasNext() {
+			t.Fatalf("stream2 should only have one event")
+		}
+	}
+
+	if !stream3.HasNext() {
+		t.Fatalf("stream3 should have one event")
+	} else {
+		stream3.Next()
+		if stream3.HasNext() {
+			t.Fatalf("stream3 should only have one event")
+		}
+	}
+
+	if !stream4.HasNext(){
+		t.Fatalf("stream4 should have one event")
+	} else {
+		stream4.Next()
+		if stream4.HasNext() {
+			t.Fatalf("stream4 should only have one event")
+		}
+	}
+}
