@@ -117,7 +117,7 @@ func TestEventStream(t *testing.T) {
 	snapshotstore := snapshotstore.New(serializer)
 	eventstore := memory.Create(serializer)
 	repo := eventsourcing.NewRepository(eventstore, snapshotstore)
-	stream := repo.EventStream()
+	stream := repo.EventStream(nil)
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -148,6 +148,6 @@ outer:
 	}
 
 	if counter != 4 {
-		t.Errorf("Not all events was received from the stream, got %q", counter)
+		t.Errorf("No global events was received from the stream, got %q", counter)
 	}
 }
