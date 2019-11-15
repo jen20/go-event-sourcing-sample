@@ -13,6 +13,7 @@ type eventStore interface {
 	Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
 }
 
+// snapshotStore interface expose the methods an snapshot store must uphold
 type snapshotStore interface {
 	Get(id string, a interface{}) error
 	Save(id string, a interface{}) error

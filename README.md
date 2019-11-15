@@ -243,3 +243,42 @@ go func() {
 }()
 ```
 
+## Custom made components
+
+Hey parts of this repo either sucks or does not implement your preferred storage engine or serializer. Well, make your own.
+
+The repository expects that the event store implements the following interface
+
+```go
+type eventStore interface {
+	Save(events []Event) error
+	Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
+}
+```
+
+If the snapshot store is the thing you need to change here is the interface you need to uphold
+
+```go
+type snapshotStore interface {
+	Get(id string, a interface{}) error
+	Save(id string, a interface{}) error
+}
+```
+
+To make a custom made serializer the following interface is the one used in the existing event stores
+
+```go
+type EventSerializer interface {
+	SerializeEvent(event eventsourcing.Event) ([]byte, error)
+	DeserializeEvent(v []byte) (event eventsourcing.Event, err error)
+}
+```
+
+and for the snapshot store
+
+```go
+type snapshotSerializer interface {
+	SerializeSnapshot(interface{}) ([]byte, error)
+	DeserializeSnapshot(data []byte, a interface{}) error
+}
+```
