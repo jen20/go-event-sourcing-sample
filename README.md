@@ -208,3 +208,34 @@ err := j.Register(&Person{}, &Born{}, &AgedOneYear{})
 ### Unsafe
 
 The unsafe serializer stores the underlying memory representation of a struct directly. This makes it as its name implies, unsafe to use if you are unsure what you are doing. [Here](https://youtu.be/4xB46Xl9O9Q?t=610) is the video that explains the reason for this serializer.
+
+### Event Stream
+
+The repository expose the `EventStream() observer.Stream` function that makes it possible to subscribe on saved event.
+The returned stream will collect all events that has occurred after the call to the function and its possible to iterate over them via the functions from the [go-observer](https://github.com/imkira/go-observer) pkg (that is the pkg we use to accomplish this).  
+
+The event stream helps us decouple the application and make use of a reactive approach. Check out the [Reactive Manifesto](https://www.reactivemanifesto.org/) 
+for more detailed information. 
+
+Example on how to setup the event stream and consume the event `FrequentFlierAccountCreated`
+
+```go
+// Setup a memory based event store
+eventStore := memory.Create(unsafe.New())
+repo := eventsourcing.NewRepository(eventStore, nil)
+stream := repo.EventStream()
+	
+// Read the event stream async 
+go func() { 
+    for {
+        // wait for an event to be accessible on the stream
+        event := stream.WaitNext().(eventsourcing.Event)
+        // use similar switch as in the Transition function from the aggregate
+        switch e := event.Data.(type) {
+        case *FrequentFlierAccountCreated:
+            // e now have type info
+            fmt.Println(e)
+        }
+    }
+}()
+```
