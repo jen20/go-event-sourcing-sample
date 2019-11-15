@@ -9,10 +9,10 @@ type AnEvent struct {
 	Name string
 }
 
-type AnotherEvent struct {}
+type AnotherEvent struct{}
 
-var event = eventsourcing.Event{Version:123,Data:&AnEvent{Name:"123"}}
-var otherEvent = eventsourcing.Event{Version:123,Data:&AnotherEvent{}}
+var event = eventsourcing.Event{Version: 123, Data: &AnEvent{Name: "123"}}
+var otherEvent = eventsourcing.Event{Version: 123, Data: &AnotherEvent{}}
 
 func TestGlobal(t *testing.T) {
 	e := eventsourcing.NewEventStream()
@@ -112,7 +112,7 @@ func TestManySubscribers(t *testing.T) {
 		}
 	}
 
-	if !stream4.HasNext(){
+	if !stream4.HasNext() {
 		t.Fatalf("stream4 should have one event")
 	} else {
 		stream4.Next()

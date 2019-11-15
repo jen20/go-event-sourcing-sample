@@ -59,7 +59,7 @@ func (r *Repository) Save(aggregate aggregate) error {
 
 	// aggregate are saved to the event store now its safe to update the internal aggregate state
 	aggregate.updateVersion()
-	
+
 	return nil
 }
 
