@@ -6,21 +6,22 @@ import (
 )
 
 type EventStream struct {
-	eventRegister map[reflect.Type][]observer.Property
+	eventRegister map[string][]observer.Property
 	global        observer.Property
 }
 
 // NewEventStream factory function
 func NewEventStream() *EventStream {
 	return &EventStream{
-		eventRegister: make(map[reflect.Type][]observer.Property),
+		eventRegister: make(map[string][]observer.Property),
 		global:        observer.NewProperty(nil),
 	}
 }
 
 func (e *EventStream) Update(event Event) {
 	// update streams that subscribe to the event
-	if props, ok := e.eventRegister[reflect.TypeOf(event)]; ok {
+	t := reflect.TypeOf(event.Data).Elem().String()
+	if props, ok := e.eventRegister[t]; ok {
 		for _, prop := range props {
 			prop.Update(event)
 		}
@@ -29,9 +30,9 @@ func (e *EventStream) Update(event Event) {
 	e.global.Update(event)
 }
 
-func (e *EventStream) Subscribe(events []interface{}) observer.Stream {
+func (e *EventStream) Subscribe(events ...interface{}) observer.Stream {
 	// subscribe to global event changes
-	if events == nil || len(events) == 0 {
+	if events == nil {
 		return e.global.Observe()
 	}
 
@@ -40,7 +41,7 @@ func (e *EventStream) Subscribe(events []interface{}) observer.Stream {
 
 	// add prop to global events
 	for _, event := range events {
-		t := reflect.TypeOf(event)
+		t := reflect.TypeOf(event).Elem().String()
 		if e.eventRegister[t] == nil {
 			// add the event type and prop to the empty register key
 			e.eventRegister[t] = []observer.Property{prop}

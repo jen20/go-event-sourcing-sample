@@ -106,7 +106,12 @@ func (r *Repository) Get(id string, aggregate aggregate) error {
 	return nil
 }
 
-// EventStream returns a stream where global saved event will be published
-func (r *Repository) EventStream(events []interface{}) observer.Stream {
+// EventStream returns a stream where saved event will be published
+// if all events are wanted use EventStream()
+// if only specific events are wanted use EventStream(...events)
+func (r *Repository) EventStream(events ...interface{}) observer.Stream {
+	if events == nil {
+		return r.eventStream.Subscribe()
+	}
 	return r.eventStream.Subscribe(events)
 }

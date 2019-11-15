@@ -117,7 +117,7 @@ func TestEventStream(t *testing.T) {
 	snapshotstore := snapshotstore.New(serializer)
 	eventstore := memory.Create(serializer)
 	repo := eventsourcing.NewRepository(eventstore, snapshotstore)
-	stream := repo.EventStream(nil)
+	stream := repo.EventStream()
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
