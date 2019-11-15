@@ -2,8 +2,6 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/hallgren/eventsourcing)](https://goreportcard.com/report/github.com/hallgren/eventsourcing)
 [![codecov](https://codecov.io/gh/hallgren/eventsourcing/branch/master/graph/badge.svg)](https://codecov.io/gh/hallgren/eventsourcing)
 
-
-
 # Overview
 
 This package is an experiment to try to generialize [@jen20's](https://github.com/jen20) way of implementing event sourcing. You can find the original blog post [here](http://jen20.com/2015/02/08/event-sourcing-in-go.html) and github repo [here](https://github.com/jen20/go-event-sourcing-sample).
@@ -93,12 +91,18 @@ The internal `Event` looks like this.
 
 ```go
 type Event struct {
-	AggregateRootID AggregateRootID // aggregate identifier 
-	Version         Version // aggregate version
-	Reason          string // name of the event (Born / AgedOneYear in the example above) 
-	AggregateType   string // aggregate name (Person in the example above)
-	Data            interface{} // The data from the event (Born{}, AgedOneYear{})
-	MetaData        map[string]interface{} // extra data that don´t belongs to the application state (correlation id or other request reference)
+    // aggregate identifier 
+    AggregateRootID AggregateRootID
+    // the aggregate version when this event was created
+    Version         Version
+    // name of the event (Born / AgedOneYear in the example above)
+    Reason          string
+     // aggregate type (Person in the example above)
+    AggregateType   string
+     // The specific event data specified in the application (Born{}, AgedOneYear{})
+    Data            interface{}
+     // extra data that don´t belongs to the application state (could be correlation id or other request references)
+    MetaData        map[string]interface{}
 }
 ```
 
@@ -107,14 +111,18 @@ type Event struct {
 The repository is used to save and retrieve aggregates. The main functions are:
 
 ```go
-Save(aggregate aggregate) error // stores the aggregates events
-Get(id string, aggregate aggregate) error // retrieves and build an aggregate from events based on an identifier
+// saves the events on the aggregate
+Save(aggregate aggregate) error
+
+// retrieves and build an aggregate from events based on its identifier
+Get(id string, aggregate aggregate) error
 ```
 
 It is possible to save a snapshot of an aggregate reducing the amount of event needed to be fetched and applied.
 
 ```go
-SaveSnapshot(aggregate aggregate) error // saves the aggregate (en error will be returned if there are unsaved events on the aggregate when doing this operation)
+// saves the aggregate (an error will be returned if there are unsaved events on the aggregate when doing this operation)
+SaveSnapshot(aggregate aggregate) error
 ```
 
 The repository constructor input values is an event store and a snapshot store, this handles the reading and writing of events and snapshots. We will dig deeper on the internals below.
@@ -138,8 +146,11 @@ repo.Get(person.Id, &twin)
 The only thing an event store handles are events and it must implement the following interface.
 
 ```go
-Save(events []eventsourcing.Event) error // saves events to an underlaying data store.
-Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) // fetches events based on identifier and type but also after a specific version. The version is used to only load event that has happened after a snapshot is taken.
+// saves events to an underlaying data store.
+Save(events []eventsourcing.Event) error
+
+// fetches events based on identifier and type but also after a specific version. The version is used to load event that happened after a snapshot was taken.
+Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)
 ```
 
 Appart the manadatory `Get` and `Save`functions an event store could also implement the `GlobalGet` function for fetching events based on the order they were saved. This function makes it possible to build separate representations often called projections 
@@ -160,9 +171,12 @@ Currently there are three implementations.
 
 A snapshot store handles snapshots. The properties of an aggregate have to be exported for them to be saved in the snapshot.
 
-```
-Get(id string, a interface{}) error` // get snapshot by identifier
-Save(id string, a interface{}) error` // saves snapshot
+```go
+ // get snapshot by identifier
+Get(id string, a interface{}) error
+
+// saves snapshot
+Save(id string, a interface{}) error
 ```
 
 ## Serializer
