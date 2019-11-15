@@ -36,17 +36,15 @@ func (e *EventStream) Subscribe(events ...interface{}) observer.Stream {
 		return e.global.Observe()
 	}
 
-	// new property
+	// create new property and bind it to the events in the input
 	prop := observer.NewProperty(nil)
-
-	// add prop to global events
 	for _, event := range events {
 		t := reflect.TypeOf(event)
 		if e.eventRegister[t] == nil {
 			// add the event type and prop to the empty register key
 			e.eventRegister[t] = []observer.Property{prop}
 		} else {
-			// adds one more subscriber to the event type
+			// adds one more property to the event type
 			e.eventRegister[t] = append(e.eventRegister[t], prop)
 		}
 	}
