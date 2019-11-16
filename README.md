@@ -153,9 +153,7 @@ Save(events []eventsourcing.Event) error
 Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)
 ```
 
-Appart the manadatory `Get` and `Save`functions an event store could also implement the `GlobalGet` function for fetching events based on the order they were saved. This function makes it possible to build separate representations often called projections 
-
-The event store also has a function that fetch events that are not based on identifier or type. It could be used to build separate representations often called projections or [CQRS](https://martinfowler.com/bliki/CQRS.html).
+Apart the manadatory `Get` and `Save`functions an event store could also implement the `GlobalGet` function for fetching events based on the order they were saved. This function makes it possible to build separate representations often called projections 
 
 ```go
 GlobalGet(start uint64, count int) []eventsourcing.Event
@@ -198,7 +196,7 @@ The JSON serializer has the following extra function.
 Register(aggregate aggregate, events ...interface{}) error
 ```
 
-It needs to register the aggregate together with the events that belongs to it. It has to do this to maintain correct type info after Marshall.
+It needs to register the aggregate together with the events that belongs to it. It has to do this to maintain correct type info when it unmarshal an event.
 
 ```go
 j := json.New()
@@ -243,3 +241,42 @@ go func() {
 }()
 ```
 
+## Custom made components
+
+Hey parts of this repo either sucks or does not implement your preferred storage engine or serializer. Well, make your own.
+
+An event store must implements the following interface
+
+```go
+type eventStore interface {
+	Save(events []Event) error
+	Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
+}
+```
+
+If the snapshot store is the thing you need to change here is the interface you need to uphold
+
+```go
+type snapshotStore interface {
+	Get(id string, a interface{}) error
+	Save(id string, a interface{}) error
+}
+```
+
+To make a custom made serializer the following interface is the one used in the existing event stores
+
+```go
+type EventSerializer interface {
+	SerializeEvent(event eventsourcing.Event) ([]byte, error)
+	DeserializeEvent(v []byte) (event eventsourcing.Event, err error)
+}
+```
+
+and the serializer interface for the snapshot store
+
+```go
+type snapshotSerializer interface {
+	SerializeSnapshot(interface{}) ([]byte, error)
+	DeserializeSnapshot(data []byte, a interface{}) error
+}
+```
