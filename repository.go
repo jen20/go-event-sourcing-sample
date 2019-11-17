@@ -33,8 +33,7 @@ type aggregate interface {
 type Repository struct {
 	eventStore    eventStore
 	snapshotStore snapshotStore
-	events        observer.Property // A property to which all event changes for all event types are published
-
+	eventStream   *EventStream
 }
 
 // NewRepository factory function
@@ -42,7 +41,7 @@ func NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Reposito
 	return &Repository{
 		eventStore:    eventStore,
 		snapshotStore: snapshotStore,
-		events:        observer.NewProperty(nil),
+		eventStream:   NewEventStream(),
 	}
 }
 
@@ -52,12 +51,15 @@ func (r *Repository) Save(aggregate aggregate) error {
 	if err != nil {
 		return err
 	}
+
 	// publish the saved events to the events stream
 	for _, event := range aggregate.changes() {
-		r.events.Update(event)
+		r.eventStream.Update(event)
 	}
+
 	// aggregate are saved to the event store now its safe to update the internal aggregate state
 	aggregate.updateVersion()
+
 	return nil
 }
 
@@ -102,7 +104,12 @@ func (r *Repository) Get(id string, aggregate aggregate) error {
 	return nil
 }
 
-// EventStream returns a stream where all saved event will be published
-func (r *Repository) EventStream() observer.Stream {
-	return r.events.Observe()
+// EventStream returns a stream where saved event will be published
+// if all events are wanted use EventStream()
+// if only specific events are wanted use EventStream(...events)
+func (r *Repository) EventStream(events ...interface{}) observer.Stream {
+	if events == nil {
+		return r.eventStream.Subscribe()
+	}
+	return r.eventStream.Subscribe(events)
 }

@@ -13,7 +13,7 @@ func main() {
 	// Setup a memory based event store
 	eventStore := memory.Create(unsafe.New())
 	repo := eventsourcing.NewRepository(eventStore, nil)
-	stream := repo.EventStream()
+	stream := repo.EventStream(nil)
 
 	// Read the event stream async
 	go func() {

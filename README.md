@@ -209,15 +209,18 @@ The unsafe serializer stores the underlying memory representation of a struct di
 
 ### Event Stream
 
-The repository expose the `EventStream() observer.Stream` function that makes it possible to subscribe on saved events.
+The repository expose the `EventStream(events ...interface{}) observer.Stream` function that makes it possible to subscribe on saved events.
 The returned stream will collect all events that has occurred after the call to the function and its possible to iterate over them via the functions from the [go-observer](https://github.com/imkira/go-observer) pkg (that is the pkg we use to accomplish this).  
+
+If no events are included in the input `repo.EventStream()` all saved events will be present in the stream.
+When events `repo.EventStream(&FrequentFlierAccountCreated{}, &StatusMatched{})` only those events with that type will be present in the stream.
+There is no restrictions that the events need to come from the same aggregate type, you can mix and match as you please.
 
 The stream is realtime and events that are saved before the call to the EventStream function will not be present on the stream. If the application 
 depends on this functionality make sure to call the function before any events are saved. 
 
 The event stream enables the application to make use of the reactive patterns and to make it more decoupled. Check out the [Reactive Manifesto](https://www.reactivemanifesto.org/) 
 for more detailed information. 
-
 
 Example on how to setup the event stream and consume the event `FrequentFlierAccountCreated`
 

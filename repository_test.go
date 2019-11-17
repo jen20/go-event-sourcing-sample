@@ -148,6 +148,6 @@ outer:
 	}
 
 	if counter != 4 {
-		t.Errorf("Not all events was received from the stream, got %q", counter)
+		t.Errorf("No global events was received from the stream, got %q", counter)
 	}
 }
