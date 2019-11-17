@@ -243,40 +243,47 @@ go func() {
 
 ## Custom made components
 
-Hey parts of this repo either sucks or does not implement your preferred storage engine or serializer. Well, make your own.
+Parts of this package may not fulfill your application need, either it can be that the event or snapshot stores uses the wrong database for storage.
+Or that some other serializer is preferred other than the per existing one with JSON support. As the title implies its possible to create them by your own.  
 
-An event store must implements the following interface
+#### Event Store
+
+A custom made event store has to implements the following functions to fulfill the interface in the repository.  
 
 ```go
 type eventStore interface {
-	Save(events []Event) error
-	Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
+    Save(events []Event) error
+    Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
 }
 ```
 
-If the snapshot store is the thing you need to change here is the interface you need to uphold
+#### Snapshot Store
+
+If the snapshot store is the thing you need to change here is the interface you need to uphold.
 
 ```go
 type snapshotStore interface {
-	Get(id string, a interface{}) error
-	Save(id string, a interface{}) error
+    Get(id string, a interface{}) error
+    Save(id string, a interface{}) error
 }
 ```
 
-To make a custom made serializer the following interface is the one used in the existing event stores
+#### Serializer
+
+To make a custom made serializer the following interface is used in the event stores built in this package.
 
 ```go
 type EventSerializer interface {
-	SerializeEvent(event eventsourcing.Event) ([]byte, error)
-	DeserializeEvent(v []byte) (event eventsourcing.Event, err error)
+    SerializeEvent(event eventsourcing.Event) ([]byte, error)
+    DeserializeEvent(v []byte) (event eventsourcing.Event, err error)
 }
 ```
 
-and the serializer interface for the snapshot store
+The serializer interface in the snapshot store.
 
 ```go
 type snapshotSerializer interface {
-	SerializeSnapshot(interface{}) ([]byte, error)
-	DeserializeSnapshot(data []byte, a interface{}) error
+    SerializeSnapshot(interface{}) ([]byte, error)
+    DeserializeSnapshot(data []byte, a interface{}) error
 }
 ```
