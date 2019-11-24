@@ -3,7 +3,6 @@ package eventsourcing
 import (
 	"errors"
 	"github.com/hallgren/eventsourcing/snapshotstore"
-	"github.com/imkira/go-observer"
 	"reflect"
 )
 
@@ -52,10 +51,15 @@ func (r *Repository) Save(aggregate aggregate) error {
 		return err
 	}
 
-	// publish the saved events to the events stream
-	for _, event := range aggregate.changes() {
-		r.eventStream.Update(event)
-	}
+	// publish the saved events to subscribers
+	// in async to make sure subscribers not blocks the call to Save
+	events := aggregate.changes()
+	go func() {
+		for _, event := range events {
+			r.eventStream.Update(event)
+		}
+	}()
+
 
 	// aggregate are saved to the event store now its safe to update the internal aggregate state
 	aggregate.updateVersion()
@@ -104,12 +108,12 @@ func (r *Repository) Get(id string, aggregate aggregate) error {
 	return nil
 }
 
-// EventStream returns a stream where saved event will be published
-// if all events are wanted use EventStream()
-// if only specific events are wanted use EventStream(...events)
-func (r *Repository) EventStream(events ...interface{}) observer.Stream {
+// Subscribe binds the input func f to be called when events in the supplied slice is saved.
+// If the list is empty the function will be called for all events
+func (r *Repository) Subscribe(f func(e Event), events ...interface{}) {
 	if events == nil {
-		return r.eventStream.Subscribe()
+		r.eventStream.Subscribe(f)
+		return
 	}
-	return r.eventStream.Subscribe(events)
+	r.eventStream.Subscribe(f, events)
 }

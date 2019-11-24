@@ -5,6 +5,7 @@ import (
 	"github.com/hallgren/eventsourcing/eventstore/memory"
 	"github.com/hallgren/eventsourcing/serializer/json"
 	"github.com/hallgren/eventsourcing/snapshotstore"
+	"github.com/imkira/go-observer"
 	"testing"
 	"time"
 )
@@ -111,13 +112,17 @@ func TestSaveSnapshotWithoutSnapshotStore(t *testing.T) {
 	}
 }
 
-func TestEventStream(t *testing.T) {
+
+func TestSubscription(t *testing.T) {
+	prop := observer.NewProperty(nil)
+	stream := prop.Observe()
+	f := func(e eventsourcing.Event) {
+		prop.Update(e)
+	}
 	serializer := json.New()
 	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
-	snapshotstore := snapshotstore.New(serializer)
-	eventstore := memory.Create(serializer)
-	repo := eventsourcing.NewRepository(eventstore, snapshotstore)
-	stream := repo.EventStream()
+	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
+	repo.Subscribe(f)
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -141,7 +146,10 @@ outer:
 			// advance to next value
 			stream.Next()
 			counter++
-		case <-time.After(10 * time.Millisecond):
+			if counter == 4 {
+				return
+			}
+		case <-time.After(100 * time.Millisecond):
 			// The stream has 10 milliseconds to deliver the events
 			break outer
 		}
@@ -151,3 +159,4 @@ outer:
 		t.Errorf("No global events was received from the stream, got %q", counter)
 	}
 }
+
