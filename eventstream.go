@@ -1,52 +1,54 @@
 package eventsourcing
 
 import (
-	"github.com/imkira/go-observer"
 	"reflect"
 )
 
 type EventStream struct {
-	eventRegister map[reflect.Type][]observer.Property
-	global        observer.Property
+	specificEvents	 map[reflect.Type][]func(e Event)
+	allEvents        []func(e Event)
 }
 
 // NewEventStream factory function
 func NewEventStream() *EventStream {
 	return &EventStream{
-		eventRegister: make(map[reflect.Type][]observer.Property),
-		global:        observer.NewProperty(nil),
+		specificEvents: 	make(map[reflect.Type][]func(e Event)),
+		allEvents:        	[]func(e Event){},
 	}
 }
 
+// Update calls the functions that are subscribing to event
 func (e *EventStream) Update(event Event) {
-	// update streams that subscribe to the event
+	// call all functions that has registered for the specific event
 	t := reflect.TypeOf(event.Data)
-	if props, ok := e.eventRegister[t]; ok {
-		for _, prop := range props {
-			prop.Update(event)
+	if functions, ok := e.specificEvents[t]; ok {
+		for _, f := range functions {
+			f(event)
 		}
 	}
-	// update the global stream
-	e.global.Update(event)
+
+	// call all functions that has registered for all events
+	for _, f := range e.allEvents {
+		f(event)
+	}
 }
 
-func (e *EventStream) Subscribe(events ...interface{}) observer.Stream {
-	// subscribe to global event changes
+// Subscribe bind the f function to be called either when all or specific events are created in the system
+func (e *EventStream) Subscribe(f func(e Event), events ...interface{}) {
+	// subscribe to all event changes
 	if events == nil {
-		return e.global.Observe()
+		e.allEvents = append(e.allEvents, f)
+		return
 	}
-
-	// create new property and bind it to the events in the input
-	prop := observer.NewProperty(nil)
+	// subscribe to specified events
 	for _, event := range events {
 		t := reflect.TypeOf(event)
-		if e.eventRegister[t] == nil {
+		if e.specificEvents[t] == nil {
 			// add the event type and prop to the empty register key
-			e.eventRegister[t] = []observer.Property{prop}
+			e.specificEvents[t] = []func(e Event){f}
 		} else {
 			// adds one more property to the event type
-			e.eventRegister[t] = append(e.eventRegister[t], prop)
+			e.specificEvents[t] = append(e.specificEvents[t], f)
 		}
 	}
-	return prop.Observe()
 }
