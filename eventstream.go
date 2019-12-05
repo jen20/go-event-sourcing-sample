@@ -2,35 +2,43 @@ package eventsourcing
 
 import (
 	"reflect"
+	"sync"
 )
 
 type EventStream struct {
-	specificEvents	 map[reflect.Type][]func(e Event)
-	allEvents        []func(e Event)
+	specificEvents map[reflect.Type][]func(e Event)
+	allEvents      []func(e Event)
+	publishLock    sync.Mutex
 }
 
 // NewEventStream factory function
 func NewEventStream() *EventStream {
 	return &EventStream{
-		specificEvents: 	make(map[reflect.Type][]func(e Event)),
-		allEvents:        	[]func(e Event){},
+		specificEvents: make(map[reflect.Type][]func(e Event)),
+		allEvents:      []func(e Event){},
 	}
 }
 
 // Update calls the functions that are subscribing to event
-func (e *EventStream) Update(event Event) {
-	// call all functions that has registered for the specific event
-	t := reflect.TypeOf(event.Data)
-	if functions, ok := e.specificEvents[t]; ok {
-		for _, f := range functions {
+func (e *EventStream) Update(events []Event) {
+	// the lock prevent other event updates get mixed with this update
+	e.publishLock.Lock()
+	for _, event := range events {
+
+		// call all functions that has registered for the specific event
+		t := reflect.TypeOf(event.Data)
+		if functions, ok := e.specificEvents[t]; ok {
+			for _, f := range functions {
+				f(event)
+			}
+		}
+
+		// call all functions that has registered for all events
+		for _, f := range e.allEvents {
 			f(event)
 		}
 	}
-
-	// call all functions that has registered for all events
-	for _, f := range e.allEvents {
-		f(event)
-	}
+	e.publishLock.Unlock()
 }
 
 // Subscribe bind the f function to be called either when all or specific events are created in the system

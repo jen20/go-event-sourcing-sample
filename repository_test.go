@@ -112,7 +112,6 @@ func TestSaveSnapshotWithoutSnapshotStore(t *testing.T) {
 	}
 }
 
-
 func TestSubscription(t *testing.T) {
 	prop := observer.NewProperty(nil)
 	stream := prop.Observe()
@@ -159,4 +158,3 @@ outer:
 		t.Errorf("No global events was received from the stream, got %q", counter)
 	}
 }
-
