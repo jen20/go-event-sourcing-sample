@@ -142,38 +142,39 @@ func TestManySubscribers(t *testing.T) {
 func TestParallelUpdates(t *testing.T) {
 	streamEvent := make([]eventsourcing.Event, 0)
 	e := eventsourcing.NewEventStream()
-	lock := sync.Mutex{}
 
 	// functions to bind to event subscription
 	f1 := func(e eventsourcing.Event) {
-		lock.Lock()
 		streamEvent = append(streamEvent, e)
-		lock.Unlock()
 	}
 	f2 := func(e eventsourcing.Event) {
-		lock.Lock()
 		streamEvent = append(streamEvent, e)
-		lock.Unlock()
 	}
 	f3 := func(e eventsourcing.Event) {
-		lock.Lock()
 		streamEvent = append(streamEvent, e)
-		lock.Unlock()
 	}
 	e.Subscribe(f1, &AnEvent{})
 	e.Subscribe(f2, &AnotherEvent{})
 	e.Subscribe(f3)
 
+	wg := sync.WaitGroup{}
 	// concurrently update the event stream
 	for i := 1; i < 1000; i++ {
-		go e.Update([]eventsourcing.Event{otherEvent, otherEvent})
-		go e.Update([]eventsourcing.Event{event, event})
+		wg.Add(2)
+		go func() {
+			e.Update([]eventsourcing.Event{otherEvent, otherEvent})
+			wg.Done()
+		}()
+		go func() {
+			e.Update([]eventsourcing.Event{event, event})
+			wg.Done()
+		}()
 	}
+	wg.Wait()
 
 	var lastEvent eventsourcing.Event
 	// check that events comes coupled together in four due to the lock in the event stream that makes sure all registered
 	// functions are called together and that is not mixed with other events
-	lock.Lock()
 	for j, event := range streamEvent {
 		if j%4 == 0 {
 			lastEvent = event
@@ -183,5 +184,4 @@ func TestParallelUpdates(t *testing.T) {
 			}
 		}
 	}
-	lock.Unlock()
 }
