@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/etcd-io/bbolt"
+	"go.etcd.io/bbolt"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore"
 	"time"
