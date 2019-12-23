@@ -5,9 +5,7 @@ import (
 	"github.com/hallgren/eventsourcing/eventstore/memory"
 	"github.com/hallgren/eventsourcing/serializer/json"
 	"github.com/hallgren/eventsourcing/snapshotstore"
-	"github.com/imkira/go-observer"
 	"testing"
-	"time"
 )
 
 func TestSaveAndGetAggregate(t *testing.T) {
@@ -113,10 +111,9 @@ func TestSaveSnapshotWithoutSnapshotStore(t *testing.T) {
 }
 
 func TestSubscription(t *testing.T) {
-	prop := observer.NewProperty(nil)
-	stream := prop.Observe()
+	counter := 0
 	f := func(e eventsourcing.Event) {
-		prop.Update(e)
+		counter++
 	}
 	serializer := json.New()
 	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
@@ -135,25 +132,33 @@ func TestSubscription(t *testing.T) {
 	if err != nil {
 		t.Fatal("could not save aggregate")
 	}
-
-	counter := 0
-outer:
-	for {
-		select {
-		// wait for changes
-		case <-stream.Changes():
-			// advance to next value
-			stream.Next()
-			counter++
-			if counter == 4 {
-				return
-			}
-		case <-time.After(100 * time.Millisecond):
-			// The stream has 10 milliseconds to deliver the events
-			break outer
-		}
+	if counter != 4 {
+		t.Errorf("No global events was received from the stream, got %q", counter)
 	}
+}
 
+func TestSubscriptionSpecific(t *testing.T) {
+	counter := 0
+	f := func(e eventsourcing.Event) {
+		counter++
+	}
+	serializer := json.New()
+	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
+	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
+	repo.Subscribe(f, &Born{}, &AgedOneYear{})
+
+	person, err := CreatePerson("kalle")
+	if err != nil {
+		t.Fatal(err)
+	}
+	person.GrowOlder()
+	person.GrowOlder()
+	person.GrowOlder()
+
+	err = repo.Save(person)
+	if err != nil {
+		t.Fatal("could not save aggregate")
+	}
 	if counter != 4 {
 		t.Errorf("No global events was received from the stream, got %q", counter)
 	}
