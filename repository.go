@@ -108,5 +108,6 @@ func (r *Repository) Subscribe(f func(e Event), events ...interface{}) {
 		r.eventStream.Subscribe(f)
 		return
 	}
-	r.eventStream.Subscribe(f, events)
+
+	r.eventStream.Subscribe(f, events...)
 }
