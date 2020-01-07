@@ -51,14 +51,6 @@ func (state *AggregateRoot) TrackChange(a aggregate, data interface{}) error {
 // the current instance and also track it in order that it can be persisted later.
 // meta data is handled by this func to store none related application state
 func (state *AggregateRoot) TrackChangeWithMetaData(a aggregate, data interface{}, metaData map[string]interface{}) error {
-	// Make sure the aggregate and eventData is a pointer type
-	if reflect.ValueOf(a).Kind() != reflect.Ptr {
-		return ErrAggregateNotPointerType
-	}
-	if reflect.ValueOf(data).Kind() != reflect.Ptr {
-		return ErrEventDataNotPointerType
-	}
-
 	// This can be overwritten in the constructor of the aggregate
 	if state.AggregateID == emptyAggregateID {
 		state.setID(uuid.Must(uuid.NewV4()).String())
