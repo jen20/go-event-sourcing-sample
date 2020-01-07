@@ -33,38 +33,34 @@ type Event struct {
 var (
 	// ErrAggregateAlreadyExists returned if the AggregateID is set more than one time
 	ErrAggregateAlreadyExists = errors.New("its not possible to set id on already existing aggregate")
-	// ErrAggregateNotPointerType returned if aggregate is not pointer type
-	ErrAggregateNotPointerType = errors.New("aggregate is not a pointer type")
-	// ErrEventDataNotPointerType returned if event data is not pointer type
-	ErrEventDataNotPointerType = errors.New("eventData is not a pointer type")
-
+	
 	emptyAggregateID = AggregateRootID("")
 )
 
 // TrackChange is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
-func (state *AggregateRoot) TrackChange(a aggregate, eventData interface{}) error {
-	// Make sure the aggregate and eventData is a pointer type
-	if reflect.ValueOf(a).Kind() != reflect.Ptr {
-		return ErrAggregateNotPointerType
-	}
-	if reflect.ValueOf(eventData).Kind() != reflect.Ptr {
-		return ErrEventDataNotPointerType
-	}
+func (state *AggregateRoot) TrackChange(a aggregate, data interface{}) error {
+	return state.TrackChangeWithMetaData(a, data, nil)
+}
 
+// TrackChangeWithMetaData is used internally by behaviour methods to apply a state change to
+// the current instance and also track it in order that it can be persisted later.
+// meta data is handled by this func to store none related application state
+func (state *AggregateRoot) TrackChangeWithMetaData(a aggregate, data interface{}, metaData map[string]interface{}) error {
 	// This can be overwritten in the constructor of the aggregate
 	if state.AggregateID == emptyAggregateID {
 		state.setID(uuid.Must(uuid.NewV4()).String())
 	}
 
-	reason := reflect.TypeOf(eventData).Elem().Name()
+	reason := reflect.TypeOf(data).Elem().Name()
 	aggregateType := reflect.TypeOf(a).Elem().Name()
 	event := Event{
 		AggregateRootID: state.AggregateID,
 		Version:         state.nextVersion(),
 		Reason:          reason,
 		AggregateType:   aggregateType,
-		Data:            eventData,
+		Data:            data,
+		MetaData:        metaData,
 	}
 	state.AggregateEvents = append(state.AggregateEvents, event)
 	a.Transition(event)
