@@ -62,7 +62,7 @@ func TestSnapshot(t *testing.T) {
 	}
 	person.GrowOlder()
 
-	snapshot.Save(person.AggregateID.String(), person)
+	snapshot.Save(person.AggregateID, person)
 	// save the version we expect in the snapshot
 	personVersion := person.AggregateVersion
 
@@ -70,7 +70,7 @@ func TestSnapshot(t *testing.T) {
 	person.GrowOlder()
 	person.GrowOlder()
 	p := Person{}
-	err = snapshot.Get(person.AggregateID.String(), &p)
+	err = snapshot.Get(person.AggregateID, &p)
 	if err != nil {
 		t.Fatalf("could not get snapshot %v", err)
 	}

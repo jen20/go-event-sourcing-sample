@@ -95,7 +95,7 @@ The internal `Event` looks like this.
 ```go
 type Event struct {
     // aggregate identifier 
-    AggregateRootID AggregateRootID
+    AggregateRootID string
     // the aggregate version when this event was created
     Version         Version
     // name of the event (Born / AgedOneYear in the example above)
