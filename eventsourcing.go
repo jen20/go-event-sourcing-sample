@@ -33,11 +33,7 @@ type Event struct {
 var (
 	// ErrAggregateAlreadyExists returned if the AggregateID is set more than one time
 	ErrAggregateAlreadyExists = errors.New("its not possible to set id on already existing aggregate")
-	// ErrAggregateNotPointerType returned if aggregate is not pointer type
-	ErrAggregateNotPointerType = errors.New("aggregate is not a pointer type")
-	// ErrEventDataNotPointerType returned if event data is not pointer type
-	ErrEventDataNotPointerType = errors.New("eventData is not a pointer type")
-
+	
 	emptyAggregateID = AggregateRootID("")
 )
 
