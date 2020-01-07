@@ -106,7 +106,6 @@ func TestCreateNewPerson(t *testing.T) {
 		t.Fatal("event timestamp after current time")
 	}
 
-
 }
 
 func TestCreateNewPersonWithIDFromOutside(t *testing.T) {

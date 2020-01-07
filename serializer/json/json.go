@@ -24,7 +24,7 @@ type jsonEvent struct {
 	Reason          string
 	Version         int
 	AggregateRootID string
-	Timestamp 		time.Time
+	Timestamp       time.Time
 	Data            json.RawMessage
 	MetaData        map[string]interface{}
 }

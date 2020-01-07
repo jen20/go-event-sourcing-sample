@@ -57,7 +57,7 @@ func TestSerializeDeserialize(t *testing.T) {
 				AggregateType:   "SomeAggregate",
 				Reason:          "SomeData",
 				MetaData:        metaData,
-				Timestamp: 		 timestamp,
+				Timestamp:       timestamp,
 			})
 			if err != nil {
 				t.Fatalf("could not serialize event, %v", err)
