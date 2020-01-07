@@ -100,11 +100,13 @@ type Event struct {
     Version         Version
     // name of the event (Born / AgedOneYear in the example above)
     Reason          string
-     // aggregate type (Person in the example above)
+    // aggregate type (Person in the example above)
     AggregateType   string
-     // The specific event data specified in the application (Born{}, AgedOneYear{})
+    // UTC time when the event was created  
+    Timestamp       time.Time
+    // the specific event data specified in the application (Born{}, AgedOneYear{})
     Data            interface{}
-     // extra data that don´t belongs to the application state (could be correlation id or other request references)
+    // data that don´t belongs to the application state (could be correlation id or other request references)
     MetaData        map[string]interface{}
 }
 ```

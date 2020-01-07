@@ -6,6 +6,7 @@ import (
 	"github.com/hallgren/eventsourcing/serializer/unsafe"
 	"reflect"
 	"testing"
+	"time"
 )
 
 type serializer interface {
@@ -46,6 +47,7 @@ var metaData = make(map[string]interface{})
 func TestSerializeDeserialize(t *testing.T) {
 	serializers := initSerializers(t)
 	metaData["foo"] = "bar"
+	timestamp := time.Now().UTC()
 	for _, s := range serializers {
 		t.Run(reflect.TypeOf(s).Elem().Name(), func(t *testing.T) {
 			v, err := s.SerializeEvent(eventsourcing.Event{
@@ -55,6 +57,7 @@ func TestSerializeDeserialize(t *testing.T) {
 				AggregateType:   "SomeAggregate",
 				Reason:          "SomeData",
 				MetaData:        metaData,
+				Timestamp:       timestamp,
 			})
 			if err != nil {
 				t.Fatalf("could not serialize event, %v", err)
@@ -78,6 +81,10 @@ func TestSerializeDeserialize(t *testing.T) {
 
 			if event.Version != 1 {
 				t.Fatalf("wrong value in AggregateVersion")
+			}
+
+			if event.Timestamp != timestamp {
+				t.Fatalf("timestamp expected: %v got: %v", timestamp, event.Timestamp)
 			}
 
 			switch event.AggregateType {
