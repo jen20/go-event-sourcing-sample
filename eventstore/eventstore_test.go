@@ -40,12 +40,12 @@ type FlightTaken struct {
 	TierPointsAdded int
 }
 
-var aggregateID = eventsourcing.AggregateRootID("123")
-var aggregateID2 = eventsourcing.AggregateRootID("321")
+var aggregateID = "123"
+var aggregateID2 = "321"
 var aggregateType = "FrequentFlierAccount"
 var jsonSerializer = json.New()
 
-func testEventsWithID(aggregateID eventsourcing.AggregateRootID) []eventsourcing.Event {
+func testEventsWithID(aggregateID string) []eventsourcing.Event {
 	metaData := make(map[string]interface{})
 	metaData["test"] = "hello"
 	history := []eventsourcing.Event{
@@ -71,7 +71,7 @@ func testEventsPartTwo() []eventsourcing.Event {
 	return history
 }
 
-var aggregateIDOther = eventsourcing.AggregateRootID("666")
+var aggregateIDOther = "666"
 
 func testEventOtherAggregate() eventsourcing.Event {
 	return eventsourcing.Event{AggregateRootID: aggregateIDOther, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Data: FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}}

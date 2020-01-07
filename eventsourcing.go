@@ -11,19 +11,16 @@ import (
 // Version is the event version used in event and aggregateRoot
 type Version int
 
-// AggregateRootID is the identifier on the aggregate
-type AggregateRootID string
-
 // AggregateRoot to be included into aggregates
 type AggregateRoot struct {
-	AggregateID      AggregateRootID
+	AggregateID      string
 	AggregateVersion Version
 	AggregateEvents  []Event
 }
 
 // Event holding meta data and the application specific event in the Data property
 type Event struct {
-	AggregateRootID AggregateRootID
+	AggregateRootID string
 	Version         Version
 	Reason          string
 	AggregateType   string
@@ -35,8 +32,8 @@ type Event struct {
 var (
 	// ErrAggregateAlreadyExists returned if the AggregateID is set more than one time
 	ErrAggregateAlreadyExists = errors.New("its not possible to set id on already existing aggregate")
-	
-	emptyAggregateID = AggregateRootID("")
+
+	emptyAggregateID = ""
 )
 
 // TrackChange is used internally by behaviour methods to apply a state change to
@@ -100,7 +97,7 @@ func (state *AggregateRoot) changes() []Event {
 
 // setID is the internal method to set the aggregate id
 func (state *AggregateRoot) setID(id string) {
-	state.AggregateID = AggregateRootID(id)
+	state.AggregateID = id
 }
 
 func (state *AggregateRoot) version() Version {
@@ -120,11 +117,7 @@ func (state *AggregateRoot) SetID(id string) error {
 
 // ID returns the aggregate id as a string
 func (state *AggregateRoot) id() string {
-	return state.AggregateID.String()
-}
-
-func (id AggregateRootID) String() string {
-	return string(id)
+	return state.AggregateID
 }
 
 // CurrentVersion return the version based on events that are not stored

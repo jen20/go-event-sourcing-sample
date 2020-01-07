@@ -71,8 +71,8 @@ func (h *Handler) SerializeEvent(event eventsourcing.Event) ([]byte, error) {
 	e.Data = data
 	e.AggregateType = event.AggregateType
 	e.Version = int(event.Version)
-	e.AggregateRootID = string(event.AggregateRootID)
 	e.Timestamp = event.Timestamp
+	e.AggregateRootID = event.AggregateRootID
 	e.Reason = event.Reason
 	e.MetaData = event.MetaData
 
@@ -98,8 +98,8 @@ func (h *Handler) DeserializeEvent(v []byte) (event eventsourcing.Event, err err
 	event.Data = data
 	event.MetaData = jsonEvent.MetaData
 	event.Reason = jsonEvent.Reason
-	event.AggregateRootID = eventsourcing.AggregateRootID(jsonEvent.AggregateRootID)
 	event.Timestamp = jsonEvent.Timestamp
+	event.AggregateRootID = jsonEvent.AggregateRootID
 	event.Version = eventsourcing.Version(jsonEvent.Version)
 	event.AggregateType = jsonEvent.AggregateType
 	return
