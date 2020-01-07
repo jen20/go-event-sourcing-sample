@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/hallgren/eventsourcing"
 	"testing"
+	"time"
 )
 
 // Person aggregate
@@ -75,6 +76,7 @@ func (person *Person) Transition(event eventsourcing.Event) {
 }
 
 func TestCreateNewPerson(t *testing.T) {
+	timeBefore := time.Now().UTC()
 	person, err := CreatePerson("kalle")
 	if err != nil {
 		t.Fatal("Error when creating person", err.Error())
@@ -95,6 +97,16 @@ func TestCreateNewPerson(t *testing.T) {
 	if person.CurrentVersion() != 1 {
 		t.Fatal("Wrong version on the person aggregateRoot", person.AggregateVersion)
 	}
+
+	if person.AggregateEvents[0].Timestamp.Before(timeBefore) {
+		t.Fatal("event timestamp before timeBefore")
+	}
+
+	if person.AggregateEvents[0].Timestamp.After(time.Now().UTC()) {
+		t.Fatal("event timestamp after current time")
+	}
+
+
 }
 
 func TestCreateNewPersonWithIDFromOutside(t *testing.T) {

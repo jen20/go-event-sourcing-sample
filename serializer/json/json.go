@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"reflect"
+	"time"
 
 	"github.com/hallgren/eventsourcing"
 )
@@ -23,6 +24,7 @@ type jsonEvent struct {
 	Reason          string
 	Version         int
 	AggregateRootID string
+	Timestamp 		time.Time
 	Data            json.RawMessage
 	MetaData        map[string]interface{}
 }
@@ -70,6 +72,7 @@ func (h *Handler) SerializeEvent(event eventsourcing.Event) ([]byte, error) {
 	e.AggregateType = event.AggregateType
 	e.Version = int(event.Version)
 	e.AggregateRootID = string(event.AggregateRootID)
+	e.Timestamp = event.Timestamp
 	e.Reason = event.Reason
 	e.MetaData = event.MetaData
 
@@ -96,6 +99,7 @@ func (h *Handler) DeserializeEvent(v []byte) (event eventsourcing.Event, err err
 	event.MetaData = jsonEvent.MetaData
 	event.Reason = jsonEvent.Reason
 	event.AggregateRootID = eventsourcing.AggregateRootID(jsonEvent.AggregateRootID)
+	event.Timestamp = jsonEvent.Timestamp
 	event.Version = eventsourcing.Version(jsonEvent.Version)
 	event.AggregateType = jsonEvent.AggregateType
 	return

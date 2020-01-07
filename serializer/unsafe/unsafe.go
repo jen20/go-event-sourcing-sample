@@ -26,6 +26,7 @@ func (h *Handler) SerializeEvent(event eventsourcing.Event) ([]byte, error) {
 	t.MetaData = event.MetaData
 	t.Reason = event.Reason
 	t.Version = event.Version
+	t.Timestamp = event.Timestamp
 
 	return value, nil
 }

@@ -3,6 +3,7 @@ package eventsourcing
 import (
 	"errors"
 	"reflect"
+	"time"
 
 	uuid "github.com/gofrs/uuid"
 )
@@ -26,6 +27,7 @@ type Event struct {
 	Version         Version
 	Reason          string
 	AggregateType   string
+	Timestamp		time.Time
 	Data            interface{}
 	MetaData        map[string]interface{}
 }
@@ -59,6 +61,7 @@ func (state *AggregateRoot) TrackChangeWithMetaData(a aggregate, data interface{
 		Version:         state.nextVersion(),
 		Reason:          reason,
 		AggregateType:   aggregateType,
+		Timestamp: time.Now().UTC(),
 		Data:            data,
 		MetaData:        metaData,
 	}
