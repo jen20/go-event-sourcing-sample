@@ -43,12 +43,19 @@ var (
 
 // TrackChange is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
-func (state *AggregateRoot) TrackChange(a aggregate, eventData interface{}) error {
+func (state *AggregateRoot) TrackChange(a aggregate, data interface{}) error {
+	return state.TrackChangeWithMetaData(a, data, nil)
+}
+
+// TrackChangeWithMetaData is used internally by behaviour methods to apply a state change to
+// the current instance and also track it in order that it can be persisted later.
+// meta data is handled by this func to store none related application state
+func (state *AggregateRoot) TrackChangeWithMetaData(a aggregate, data interface{}, metaData map[string]interface{}) error {
 	// Make sure the aggregate and eventData is a pointer type
 	if reflect.ValueOf(a).Kind() != reflect.Ptr {
 		return ErrAggregateNotPointerType
 	}
-	if reflect.ValueOf(eventData).Kind() != reflect.Ptr {
+	if reflect.ValueOf(data).Kind() != reflect.Ptr {
 		return ErrEventDataNotPointerType
 	}
 
@@ -57,14 +64,15 @@ func (state *AggregateRoot) TrackChange(a aggregate, eventData interface{}) erro
 		state.setID(uuid.Must(uuid.NewV4()).String())
 	}
 
-	reason := reflect.TypeOf(eventData).Elem().Name()
+	reason := reflect.TypeOf(data).Elem().Name()
 	aggregateType := reflect.TypeOf(a).Elem().Name()
 	event := Event{
 		AggregateRootID: state.AggregateID,
 		Version:         state.nextVersion(),
 		Reason:          reason,
 		AggregateType:   aggregateType,
-		Data:            eventData,
+		Data:            data,
+		MetaData:        metaData,
 	}
 	state.AggregateEvents = append(state.AggregateEvents, event)
 	a.Transition(event)
