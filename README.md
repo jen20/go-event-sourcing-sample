@@ -87,6 +87,9 @@ func (person *Person) GrowOlder() error {
 
 Internally the `TrackChange` functions calls the `Transition` function on the aggregate to transform the aggregate based on the newly created event.
 
+To bind meta data to events use the `TrackChangeWithMetaData` function.
+  
+
 The internal `Event` looks like this.
 
 ```go
