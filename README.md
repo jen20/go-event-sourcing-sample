@@ -158,12 +158,6 @@ Save(events []eventsourcing.Event) error
 Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)
 ```
 
-Apart the manadatory `Get` and `Save`functions an event store could also implement the `GlobalGet` function for fetching events based on the order they were saved. This function makes it possible to build separate representations often called projections 
-
-```go
-GlobalGet(start uint64, count int) []eventsourcing.Event
-```
-
 Currently there are three implementations.
 
 * SQL

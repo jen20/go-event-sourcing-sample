@@ -107,21 +107,6 @@ func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.
 	return
 }
 
-// GlobalGet get global events from database
-func (sql *SQL) GlobalGet(start uint64, count int) []eventsourcing.Event {
-	selectStm := `Select data from events where id>=? order by id asc limit ?`
-	rows, err := sql.db.Query(selectStm, start, count)
-	if err != nil {
-		return nil
-	}
-	defer rows.Close()
-	events, err := sql.transform(rows)
-	if err != nil {
-		return nil
-	}
-	return events
-}
-
 func (sql *SQL) transform(rows *sql.Rows) (events []eventsourcing.Event, err error) {
 	events = make([]eventsourcing.Event, 0)
 	for rows.Next() {

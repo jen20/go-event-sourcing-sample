@@ -4,6 +4,10 @@ import (
 	sqldriver "database/sql"
 	"errors"
 	"fmt"
+	"os"
+	"reflect"
+	"testing"
+
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/bbolt"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
@@ -11,9 +15,6 @@ import (
 	"github.com/hallgren/eventsourcing/serializer/json"
 	"github.com/hallgren/eventsourcing/serializer/unsafe"
 	_ "github.com/mattn/go-sqlite3"
-	"os"
-	"reflect"
-	"testing"
 )
 
 // Status represents the Red, Silver or Gold tier level of a FrequentFlierAccount
@@ -124,7 +125,6 @@ func initEventStores() ([]eventstore, func(), error) {
 type eventstore interface {
 	Save(events []eventsourcing.Event) error
 	Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)
-	GlobalGet(start uint64, count int) []eventsourcing.Event
 }
 
 func TestSaveAndGetEvents(t *testing.T) {
@@ -315,59 +315,6 @@ func TestSaveEventsWithEmptyReason(t *testing.T) {
 			err := es.Save(events)
 			if err == nil {
 				t.Error("should not be able to save events with empty reason")
-			}
-		})
-	}
-}
-
-func TestGetGlobalEvents(t *testing.T) {
-	stores, closer, err := initEventStores()
-	if err != nil {
-		t.Fatalf("could not init event stores %v", err)
-	}
-	defer closer()
-
-	events := testEvents()
-	for _, es := range stores {
-		t.Run(reflect.TypeOf(es).Elem().Name(), func(t *testing.T) {
-
-			err := es.Save(events)
-			if err != nil {
-				t.Fatalf("%v could not save the events", err)
-			}
-			_ = es.Save([]eventsourcing.Event{{AggregateRootID: aggregateID2, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Data: FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}}})
-
-			fetchedEvents := es.GlobalGet(6, 2)
-
-			if len(fetchedEvents) != 2 {
-				t.Fatalf("fetched the wrong amount of events")
-			}
-
-			if fetchedEvents[0].Version != events[5].Version {
-				t.Fatalf("%v fetched the wrong events %v %v", es, fetchedEvents[0].Version, events[2].Version)
-			}
-		})
-	}
-}
-
-func TestGetGlobalEventsNotExisting(t *testing.T) {
-	stores, closer, err := initEventStores()
-	if err != nil {
-		t.Fatalf("could not init event stores %v", err)
-	}
-	defer closer()
-	events := testEvents()
-	for _, es := range stores {
-		t.Run(reflect.TypeOf(es).Elem().Name(), func(t *testing.T) {
-			err := es.Save(events)
-			if err != nil {
-				t.Error("could not save the events")
-			}
-
-			fetchedEvents := es.GlobalGet(100, 2)
-
-			if len(fetchedEvents) != 0 {
-				t.Error("fetched none existing events")
 			}
 		})
 	}
