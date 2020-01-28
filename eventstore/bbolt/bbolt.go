@@ -4,10 +4,11 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore"
 	"go.etcd.io/bbolt"
-	"time"
 )
 
 const (
@@ -164,34 +165,6 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 		events = append(events, event)
 	}
 	return events, nil
-}
-
-// GlobalGet returns events from the global order
-func (e *BBolt) GlobalGet(start uint64, count int) []eventsourcing.Event {
-	tx, err := e.db.Begin(false)
-	if err != nil {
-		return nil
-	}
-	defer tx.Rollback()
-
-	evBucket := tx.Bucket([]byte(globalEventOrderBucketName))
-	cursor := evBucket.Cursor()
-	events := make([]eventsourcing.Event, 0)
-	counter := 0
-
-	for k, obj := cursor.Seek(itob(start)); k != nil; k, obj = cursor.Next() {
-		event, err := e.serializer.DeserializeEvent(obj)
-		if err != nil {
-			return nil
-		}
-		events = append(events, event)
-		counter++
-
-		if counter >= count {
-			break
-		}
-	}
-	return events
 }
 
 // Close closes the event stream and the underlying database
