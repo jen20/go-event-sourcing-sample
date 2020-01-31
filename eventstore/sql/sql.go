@@ -106,19 +106,3 @@ func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.
 	}
 	return
 }
-
-func (sql *SQL) transform(rows *sql.Rows) (events []eventsourcing.Event, err error) {
-	events = make([]eventsourcing.Event, 0)
-	for rows.Next() {
-		var data string
-		if err = rows.Scan(&data); err != nil {
-			return nil, err
-		}
-		event, err := sql.serializer.DeserializeEvent([]byte(data))
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("could not deserialize event %v", err))
-		}
-		events = append(events, event)
-	}
-	return
-}
