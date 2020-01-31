@@ -5,6 +5,7 @@ import (
 	"sync"
 )
 
+// EventStream struct what handles event subscription
 type EventStream struct {
 	specificEvents map[reflect.Type][]func(e Event)
 	allEvents      []func(e Event)
