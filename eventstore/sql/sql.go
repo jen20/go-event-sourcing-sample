@@ -70,13 +70,13 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 		return errors.New(fmt.Sprintf("could not start a write transaction, %v", err))
 	}
 	defer tx.Rollback()
-	insert := `Insert into events (aggregate_id, version, reason, aggregate_type, data, meta_data) values ($1, $2, $3, $4, $5, $6)`
+	insert := `Insert into events (aggregate_id, version, reason, aggregate_type, data) values ($1, $2, $3, $4, $5)`
 	for _, event := range events {
 		d, err := sql.serializer.SerializeEvent(event)
 		if err != nil {
 			return err
 		}
-		_, err = tx.Exec(insert, event.AggregateRootID, event.Version, event.Reason, event.AggregateType, string(d), "")
+		_, err = tx.Exec(insert, event.AggregateRootID, event.Version, event.Reason, event.AggregateType, string(d))
 		if err != nil {
 			return err
 		}
