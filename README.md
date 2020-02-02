@@ -208,14 +208,16 @@ The unsafe serializer stores the underlying memory representation of a struct di
 
 ### Event Subscription
 
-The repository expose the `Subscribe(func(e eventsourcing.Event), events ...interface{})` function that makes it possible to subscribe on saved events in realtime.
-The function `func(e eventcourcing.Event)` will be called when and subscribed to event is saved in the repository. 
+The repository expose three possibilities to subscribe to events in realtime as they are stored to the repository.
 
-If no events are included in the input `repo.Subscribe(func(e eventsourcing.Event))` all saved events will be exposed via the `func(e eventsourcing.Event)` function.
-When events `repo.Subscribe(func(e eventsourcing.Event),&FrequentFlierAccountCreated{}, &StatusMatched{})` only those events with that type will be exposed via the function.
-There is no restrictions that the events need to come from the same aggregate type, you can mix and match as you please.
+`SubscribeAll(func (e Event))` all event.
 
-The subscription is realtime and events that are saved before the call to the Subscribe function will not be exposed via the `func(e eventsourcing.Event)` function. If the application 
+`SubscribeAggregate(func (e Event), a aggregate)` events bound to a specific aggregate. 
+ 
+`SubscribeSpecific(func (e Event), events ...interface{})` specific events. There is no restrictions that the events need
+to come from the same aggregate, you can mix and match as you please.
+
+The subscription is realtime and events that are saved before the call to the Subscribe function will not be exposed via the `func(e Event)` function. If the application 
 depends on this functionality make sure to call the `repo.Subscribe` function before any events are saved. 
 
 The event subscription enables the application to make use of the reactive patterns and to make it more decoupled. Check out the [Reactive Manifesto](https://www.reactivemanifesto.org/) 
@@ -235,7 +237,7 @@ f := func(e eventsourcing.Event) {
 }
 
 // subscribe to all events
-repo.Subscribe(f)
+repo.SubscribeAll(f)
 ```
 
 ## Custom made components
