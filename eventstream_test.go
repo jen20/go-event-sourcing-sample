@@ -16,16 +16,15 @@ type AnotherEvent struct{}
 var event = eventsourcing.Event{Version: 123, Data: &AnEvent{Name: "123"}, Reason: "AnEvent"}
 var otherEvent = eventsourcing.Event{Version: 123, Data: &AnotherEvent{}, Reason: "AnotherEvent"}
 
-func TestGlobal(t *testing.T) {
+func TestAll(t *testing.T) {
 	var streamEvent *eventsourcing.Event
 	e := eventsourcing.NewEventStream()
 	f := func(e eventsourcing.Event) {
 		streamEvent = &e
 	}
-	e.Subscribe(f)
+	e.SubscribeAll(f)
 	e.Update([]eventsourcing.Event{event})
 
-	//time.Sleep(1 * time.Second)
 	if streamEvent == nil {
 		t.Fatalf("should have received event")
 	}
@@ -40,7 +39,7 @@ func TestSpecific(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		streamEvent = &e
 	}
-	e.Subscribe(f, &AnEvent{})
+	e.SubscribeSpecific(f, &AnEvent{})
 	e.Update([]eventsourcing.Event{event})
 
 	if streamEvent == nil {
@@ -58,7 +57,7 @@ func TestManySpecific(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		streamEvents = append(streamEvents, &e)
 	}
-	e.Subscribe(f, &AnEvent{}, &AnotherEvent{})
+	e.SubscribeSpecific(f, &AnEvent{}, &AnotherEvent{})
 	e.Update([]eventsourcing.Event{event})
 	e.Update([]eventsourcing.Event{otherEvent})
 
@@ -88,7 +87,7 @@ func TestUpdateNoneSubscribedEvent(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		streamEvent = &e
 	}
-	e.Subscribe(f, &AnotherEvent{})
+	e.SubscribeSpecific(f, &AnotherEvent{})
 	e.Update([]eventsourcing.Event{event})
 
 	if streamEvent != nil {
@@ -115,10 +114,10 @@ func TestManySubscribers(t *testing.T) {
 	f4 := func(e eventsourcing.Event) {
 		streamEvent4 = append(streamEvent4, e)
 	}
-	e.Subscribe(f1, &AnotherEvent{})
-	e.Subscribe(f2, &AnotherEvent{}, &AnEvent{})
-	e.Subscribe(f3, &AnEvent{})
-	e.Subscribe(f4)
+	e.SubscribeSpecific(f1, &AnotherEvent{})
+	e.SubscribeSpecific(f2, &AnotherEvent{}, &AnEvent{})
+	e.SubscribeSpecific(f3, &AnEvent{})
+	e.SubscribeAll(f4)
 
 	e.Update([]eventsourcing.Event{event})
 
@@ -153,9 +152,9 @@ func TestParallelUpdates(t *testing.T) {
 	f3 := func(e eventsourcing.Event) {
 		streamEvent = append(streamEvent, e)
 	}
-	e.Subscribe(f1, &AnEvent{})
-	e.Subscribe(f2, &AnotherEvent{})
-	e.Subscribe(f3)
+	e.SubscribeSpecific(f1, &AnEvent{})
+	e.SubscribeSpecific(f2, &AnotherEvent{})
+	e.SubscribeAll(f3)
 
 	wg := sync.WaitGroup{}
 	// concurrently update the event stream

@@ -42,13 +42,13 @@ func (e *EventStream) Update(events []Event) {
 	e.publishLock.Unlock()
 }
 
-// Subscribe bind the f function to be called either when all or specific events are created in the system
-func (e *EventStream) Subscribe(f func(e Event), events ...interface{}) {
-	// subscribe to all event changes
-	if events == nil {
-		e.allEvents = append(e.allEvents, f)
-		return
-	}
+// SubscribeAll bind the f function to be called on all events independent on aggregate or event type
+func (e *EventStream) SubscribeAll(f func(e Event)) {
+	e.allEvents = append(e.allEvents, f)
+}
+
+// SubscribeSpecific bind the f function to be called when specific events are created
+func (e *EventStream) SubscribeSpecific(f func(e Event), events ...interface{}) {
 	// subscribe to specified events
 	for _, event := range events {
 		t := reflect.TypeOf(event)

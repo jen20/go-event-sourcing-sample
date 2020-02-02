@@ -105,9 +105,9 @@ func (r *Repository) Get(id string, aggregate aggregate) error {
 // If the list is empty the function will be called for all events
 func (r *Repository) Subscribe(f func(e Event), events ...interface{}) {
 	if events == nil {
-		r.eventStream.Subscribe(f)
+		r.eventStream.SubscribeAll(f)
 		return
 	}
 
-	r.eventStream.Subscribe(f, events...)
+	r.eventStream.SubscribeSpecific(f, events...)
 }
