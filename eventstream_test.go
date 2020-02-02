@@ -7,14 +7,21 @@ import (
 	"github.com/hallgren/eventsourcing"
 )
 
+type AnAggregate struct {
+	eventsourcing.AggregateRoot
+}
+
+func (a *AnAggregate) Transition(e eventsourcing.Event) {
+}
+
 type AnEvent struct {
 	Name string
 }
 
 type AnotherEvent struct{}
 
-var event = eventsourcing.Event{Version: 123, Data: &AnEvent{Name: "123"}, Reason: "AnEvent"}
-var otherEvent = eventsourcing.Event{Version: 123, Data: &AnotherEvent{}, Reason: "AnotherEvent"}
+var event = eventsourcing.Event{Version: 123, Data: &AnEvent{Name: "123"}, Reason: "AnEvent", AggregateType: "AnAggregate"}
+var otherEvent = eventsourcing.Event{Version: 123, Data: &AnotherEvent{}, Reason: "AnotherEvent", AggregateType: "AnotherAggregate"}
 
 func TestAll(t *testing.T) {
 	var streamEvent *eventsourcing.Event
@@ -40,6 +47,24 @@ func TestSpecific(t *testing.T) {
 		streamEvent = &e
 	}
 	e.SubscribeSpecific(f, &AnEvent{})
+	e.Update([]eventsourcing.Event{event})
+
+	if streamEvent == nil {
+		t.Fatalf("should have received event")
+	}
+
+	if streamEvent.Version != event.Version {
+		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, event.Version)
+	}
+}
+
+func TestSubscribeAggregate(t *testing.T) {
+	var streamEvent *eventsourcing.Event
+	e := eventsourcing.NewEventStream()
+	f := func(e eventsourcing.Event) {
+		streamEvent = &e
+	}
+	e.SubscribeAggregate(f, &AnAggregate{})
 	e.Update([]eventsourcing.Event{event})
 
 	if streamEvent == nil {
@@ -100,6 +125,7 @@ func TestManySubscribers(t *testing.T) {
 	streamEvent2 := make([]eventsourcing.Event, 0)
 	streamEvent3 := make([]eventsourcing.Event, 0)
 	streamEvent4 := make([]eventsourcing.Event, 0)
+	streamEvent5 := make([]eventsourcing.Event, 0)
 
 	e := eventsourcing.NewEventStream()
 	f1 := func(e eventsourcing.Event) {
@@ -114,10 +140,15 @@ func TestManySubscribers(t *testing.T) {
 	f4 := func(e eventsourcing.Event) {
 		streamEvent4 = append(streamEvent4, e)
 	}
+	f5 := func(e eventsourcing.Event) {
+		streamEvent5 = append(streamEvent5, e)
+	}
 	e.SubscribeSpecific(f1, &AnotherEvent{})
 	e.SubscribeSpecific(f2, &AnotherEvent{}, &AnEvent{})
 	e.SubscribeSpecific(f3, &AnEvent{})
 	e.SubscribeAll(f4)
+	e.SubscribeAggregate(f5, &AnAggregate{})
+
 
 	e.Update([]eventsourcing.Event{event})
 
@@ -135,6 +166,10 @@ func TestManySubscribers(t *testing.T) {
 
 	if len(streamEvent4) != 1 {
 		t.Fatalf("stream4 should have one event")
+	}
+
+	if len(streamEvent5) != 1 {
+		t.Fatalf("stream5 should have one event")
 	}
 }
 
