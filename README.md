@@ -212,13 +212,13 @@ The repository expose three possibilities to subscribe to events in realtime as 
 
 `SubscribeAll(func (e Event))` all event.
 
-`SubscribeAggregate(func (e Event), a aggregate)` events bound to a specific aggregate. 
+`SubscribeAggregate(func (e Event), aggregates ...aggregate)` events bound to specific aggregates. 
  
 `SubscribeSpecific(func (e Event), events ...interface{})` specific events. There is no restrictions that the events need
 to come from the same aggregate, you can mix and match as you please.
 
 The subscription is realtime and events that are saved before the call to the Subscribe function will not be exposed via the `func(e Event)` function. If the application 
-depends on this functionality make sure to call the `repo.Subscribe` function before any events are saved. 
+depends on this functionality make sure to call the subscribe function before any events are saved. 
 
 The event subscription enables the application to make use of the reactive patterns and to make it more decoupled. Check out the [Reactive Manifesto](https://www.reactivemanifesto.org/) 
 for more detailed information. 

@@ -56,14 +56,16 @@ func (e *EventStream) SubscribeAll(f func(e Event)) {
 }
 
 // SubscribeAggregate bind the f function to be called on events on the aggregate type
-func (e *EventStream) SubscribeAggregate(f func(e Event), a aggregate) {
-	aggregateType := reflect.TypeOf(a).Elem().Name()
-	if e.aggregateEvents[aggregateType] == nil {
-		// add the event type and prop to the empty register key
-		e.aggregateEvents[aggregateType] = []func(e Event){f}
-	} else {
-		// adds one more property to the event type
-		e.aggregateEvents[aggregateType] = append(e.aggregateEvents[aggregateType], f)
+func (e *EventStream) SubscribeAggregate(f func(e Event), aggregates ...aggregate) {
+	for _, a := range aggregates {
+		aggregateType := reflect.TypeOf(a).Elem().Name()
+		if e.aggregateEvents[aggregateType] == nil {
+			// add the event type and prop to the empty register key
+			e.aggregateEvents[aggregateType] = []func(e Event){f}
+		} else {
+			// adds one more property to the event type
+			e.aggregateEvents[aggregateType] = append(e.aggregateEvents[aggregateType], f)
+		}
 	}
 }
 
