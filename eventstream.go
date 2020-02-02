@@ -25,7 +25,6 @@ func (e *EventStream) Update(events []Event) {
 	// the lock prevent other event updates get mixed with this update
 	e.publishLock.Lock()
 	for _, event := range events {
-
 		// call all functions that has registered for the specific event
 		t := reflect.TypeOf(event.Data)
 		if functions, ok := e.specificEvents[t]; ok {
@@ -47,7 +46,7 @@ func (e *EventStream) SubscribeAll(f func(e Event)) {
 	e.allEvents = append(e.allEvents, f)
 }
 
-// SubscribeSpecific bind the f function to be called when specific events are created
+// SubscribeSpecific bind the f function to be called on specific events
 func (e *EventStream) SubscribeSpecific(f func(e Event), events ...interface{}) {
 	// subscribe to specified events
 	for _, event := range events {

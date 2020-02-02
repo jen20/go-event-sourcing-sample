@@ -101,13 +101,12 @@ func (r *Repository) Get(id string, aggregate aggregate) error {
 	return nil
 }
 
-// Subscribe binds the input func f to be called when events in the supplied slice is saved.
-// If the list is empty the function will be called for all events
-func (r *Repository) Subscribe(f func(e Event), events ...interface{}) {
-	if events == nil {
-		r.eventStream.SubscribeAll(f)
-		return
-	}
+// SubscribeAll calls the f on every event saved
+func (r *Repository) SubscribeAll(f func(e Event)) {
+	r.eventStream.SubscribeAll(f)
+}
 
+// SubscribeSpecific binds the input func f to be called when supplied events are saved.
+func (r *Repository) SubscribeSpecific(f func(e Event), events ...interface{}) {
 	r.eventStream.SubscribeSpecific(f, events...)
 }
