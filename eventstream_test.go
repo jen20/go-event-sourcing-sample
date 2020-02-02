@@ -149,7 +149,6 @@ func TestManySubscribers(t *testing.T) {
 	e.SubscribeAll(f4)
 	e.SubscribeAggregate(f5, &AnAggregate{})
 
-
 	e.Update([]eventsourcing.Event{event})
 
 	if len(streamEvent1) != 0 {
