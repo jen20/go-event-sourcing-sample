@@ -60,10 +60,10 @@ func (e *EventStream) SubscribeAggregate(f func(e Event), aggregates ...aggregat
 	for _, a := range aggregates {
 		aggregateType := reflect.TypeOf(a).Elem().Name()
 		if e.aggregateEvents[aggregateType] == nil {
-			// add the event type and prop to the empty register key
+			// add the name of the aggregate and function to call to the empty register key
 			e.aggregateEvents[aggregateType] = []func(e Event){f}
 		} else {
-			// adds one more property to the event type
+			// adds one more function to the aggregate
 			e.aggregateEvents[aggregateType] = append(e.aggregateEvents[aggregateType], f)
 		}
 	}
