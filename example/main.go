@@ -19,7 +19,7 @@ func main() {
 		// Here we use the go-observer pkg to store the events in a stream to be consumed async
 		c <- e
 	}
-	repo.Subscribe(f)
+	repo.SubscribeAll(f)
 
 	// Read the event stream async
 	go func() {

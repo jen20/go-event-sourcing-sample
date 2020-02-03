@@ -110,7 +110,7 @@ func TestSaveSnapshotWithoutSnapshotStore(t *testing.T) {
 	}
 }
 
-func TestSubscription(t *testing.T) {
+func TestSubscriptionAllEvent(t *testing.T) {
 	counter := 0
 	f := func(e eventsourcing.Event) {
 		counter++
@@ -118,7 +118,7 @@ func TestSubscription(t *testing.T) {
 	serializer := json.New()
 	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
 	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
-	repo.Subscribe(f)
+	repo.SubscribeAll(f)
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -145,7 +145,34 @@ func TestSubscriptionSpecific(t *testing.T) {
 	serializer := json.New()
 	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
 	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
-	repo.Subscribe(f, &Born{}, &AgedOneYear{})
+	repo.SubscribeSpecific(f, &Born{}, &AgedOneYear{})
+
+	person, err := CreatePerson("kalle")
+	if err != nil {
+		t.Fatal(err)
+	}
+	person.GrowOlder()
+	person.GrowOlder()
+	person.GrowOlder()
+
+	err = repo.Save(person)
+	if err != nil {
+		t.Fatal("could not save aggregate")
+	}
+	if counter != 4 {
+		t.Errorf("No global events was received from the stream, got %q", counter)
+	}
+}
+
+func TestSubscriptionAggregate(t *testing.T) {
+	counter := 0
+	f := func(e eventsourcing.Event) {
+		counter++
+	}
+	serializer := json.New()
+	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
+	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
+	repo.SubscribeAggregate(f, &Person{})
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
