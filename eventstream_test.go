@@ -11,17 +11,22 @@ type AnAggregate struct {
 	eventsourcing.AggregateRoot
 }
 
-func (a *AnAggregate) Transition(e eventsourcing.Event) {
-}
+func (a *AnAggregate) Transition(e eventsourcing.Event) {}
 
 type AnEvent struct {
 	Name string
 }
 
+type AnotherAggregate struct {
+	eventsourcing.AggregateRoot
+}
+
+func (a *AnotherAggregate) Transition(e eventsourcing.Event) {}
+
 type AnotherEvent struct{}
 
 var event = eventsourcing.Event{Version: 123, Data: &AnEvent{Name: "123"}, Reason: "AnEvent", AggregateType: "AnAggregate"}
-var otherEvent = eventsourcing.Event{Version: 123, Data: &AnotherEvent{}, Reason: "AnotherEvent", AggregateType: "AnotherAggregate"}
+var otherEvent = eventsourcing.Event{Version: 456, Data: &AnotherEvent{}, Reason: "AnotherEvent", AggregateType: "AnotherAggregate"}
 
 func TestAll(t *testing.T) {
 	var streamEvent *eventsourcing.Event
@@ -64,15 +69,21 @@ func TestSubscribeAggregate(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		streamEvent = &e
 	}
-	e.SubscribeAggregate(f, &AnAggregate{})
-	e.Update([]eventsourcing.Event{event})
+	e.SubscribeAggregate(f, &AnAggregate{}, &AnotherAggregate{})
 
+	// update with event from the AnAggregate aggregate
+	e.Update([]eventsourcing.Event{event})
 	if streamEvent == nil {
 		t.Fatalf("should have received event")
 	}
-
 	if streamEvent.Version != event.Version {
 		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, event.Version)
+	}
+
+	// update with event from the AnotherAggregate aggregate
+	e.Update([]eventsourcing.Event{otherEvent})
+	if streamEvent.Version != otherEvent.Version {
+		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, otherEvent.Version)
 	}
 }
 
