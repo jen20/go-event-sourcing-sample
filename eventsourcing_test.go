@@ -30,10 +30,7 @@ func CreatePerson(name string) (*Person, error) {
 		return nil, errors.New("name can't be blank")
 	}
 	person := Person{}
-	err := person.TrackChange(&person, &Born{Name: name})
-	if err != nil {
-		return nil, err
-	}
+	person.TrackChange(&person, &Born{Name: name})
 	return &person, nil
 }
 
@@ -50,18 +47,15 @@ func CreatePersonWithID(id, name string) (*Person, error) {
 	} else if err != nil {
 		return nil, err
 	}
-	err = person.TrackChange(&person, &Born{Name: name})
-	if err != nil {
-		return nil, err
-	}
+	person.TrackChange(&person, &Born{Name: name})
 	return &person, nil
 }
 
 // GrowOlder command
-func (person *Person) GrowOlder() error {
+func (person *Person) GrowOlder() {
 	metaData := make(map[string]interface{})
 	metaData["foo"] = "bar"
-	return person.TrackChangeWithMetaData(person, &AgedOneYear{}, metaData)
+	person.TrackChangeWithMetaData(person, &AgedOneYear{}, metaData)
 }
 
 // Transition the person state dependent on the events

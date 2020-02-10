@@ -38,14 +38,14 @@ var (
 
 // TrackChange is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
-func (state *AggregateRoot) TrackChange(a aggregate, data interface{}) error {
-	return state.TrackChangeWithMetaData(a, data, nil)
+func (state *AggregateRoot) TrackChange(a aggregate, data interface{}) {
+	state.TrackChangeWithMetaData(a, data, nil)
 }
 
 // TrackChangeWithMetaData is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
 // meta data is handled by this func to store none related application state
-func (state *AggregateRoot) TrackChangeWithMetaData(a aggregate, data interface{}, metaData map[string]interface{}) error {
+func (state *AggregateRoot) TrackChangeWithMetaData(a aggregate, data interface{}, metaData map[string]interface{}) {
 	// This can be overwritten in the constructor of the aggregate
 	if state.AggregateID == emptyAggregateID {
 		state.setID(uuid.Must(uuid.NewV4()).String())
@@ -64,7 +64,6 @@ func (state *AggregateRoot) TrackChangeWithMetaData(a aggregate, data interface{
 	}
 	state.AggregateEvents = append(state.AggregateEvents, event)
 	a.Transition(event)
-	return nil
 }
 
 // BuildFromHistory builds the aggregate state from events

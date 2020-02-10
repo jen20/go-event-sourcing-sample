@@ -77,21 +77,14 @@ func NewFrequentFlierAccountFromHistory(events []eventsourcing.Event) *FrequentF
 // If recording this flight takes the account over a status boundary, it will
 // automatically upgrade the account to the new status level.
 func (f *FrequentFlierAccountAggregate) RecordFlightTaken(miles int, tierPoints int) {
-	err := f.TrackChange(f, &FlightTaken{MilesAdded: miles, TierPointsAdded: tierPoints})
-	if err != nil {
-		panic(err)
-	}
+	f.TrackChange(f, &FlightTaken{MilesAdded: miles, TierPointsAdded: tierPoints})
 
 	if f.tierPoints > 10 && f.status != StatusSilver {
-		err = f.TrackChange(f, &StatusMatched{NewStatus: StatusSilver})
-		if err != nil {
-			panic(err)
-		}
+		f.TrackChange(f, &StatusMatched{NewStatus: StatusSilver})
 	}
 
 	if f.tierPoints > 20 && f.status != StatusGold {
-		err := f.TrackChange(f, &PromotedToGoldStatus{})
-		panic(err)
+		f.TrackChange(f, &PromotedToGoldStatus{})
 	}
 }
 

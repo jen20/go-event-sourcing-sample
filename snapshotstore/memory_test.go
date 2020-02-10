@@ -31,16 +31,13 @@ func CreatePerson(name string) (*Person, error) {
 		return nil, errors.New("name can't be blank")
 	}
 	person := Person{}
-	err := person.TrackChange(&person, &Born{Name: name})
-	if err != nil {
-		return nil, err
-	}
+	person.TrackChange(&person, &Born{Name: name})
 	return &person, nil
 }
 
 // GrowOlder command
-func (person *Person) GrowOlder() error {
-	return person.TrackChange(person, &AgedOneYear{})
+func (person *Person) GrowOlder() {
+	person.TrackChange(person, &AgedOneYear{})
 }
 
 // Transition the person state dependent on the events
@@ -50,7 +47,7 @@ func (person *Person) Transition(event eventsourcing.Event) {
 		person.Age = 0
 		person.Name = e.Name
 	case *AgedOneYear:
-		person.Age += 1
+		person.Age++
 	}
 }
 
