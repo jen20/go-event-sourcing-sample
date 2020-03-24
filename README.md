@@ -68,10 +68,7 @@ func CreatePerson(name string) (*Person, error) {
 		return nil, errors.New("name can't be blank")
 	}
 	person := Person{}
-	err := person.TrackChange(&person, &Born{Name: name})
-	if err != nil {
-		return nil, err
-	}
+	person.TrackChange(&person, &Born{Name: name})
 	return &person, nil
 }
 ```
@@ -80,8 +77,8 @@ When a person is created, more events could be created via functions on the `Per
 
 ```go
 // GrowOlder command
-func (person *Person) GrowOlder() error {
-	return person.TrackChange(person, &AgedOneYear{})
+func (person *Person) GrowOlder() {
+	person.TrackChange(person, &AgedOneYear{})
 }
 ```
 
