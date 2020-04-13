@@ -1,7 +1,6 @@
 package suite
 
 import (
-	"fmt"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/serializer/json"
 	"testing"
@@ -38,6 +37,7 @@ func Test(t *testing.T, esFunc eventstoreFunc) {
 		})
 	}
 }
+
 // Status represents the Red, Silver or Gold tier level of a FrequentFlierAccount
 type Status int
 
@@ -67,7 +67,6 @@ var aggregateID2 = "321"
 var aggregateType = "FrequentFlierAccount"
 var jsonSerializer = json.New()
 var aggregateIDOther = "666"
-
 
 func testEventsWithID(aggregateID string) []eventsourcing.Event {
 	metaData := make(map[string]interface{})
@@ -169,7 +168,6 @@ func getEventsAfterVersion(t *testing.T, es Eventstore) {
 	if len(fetchedEvents) != len(testEvents())-1 {
 		t.Fatal("wrong number of events returned")
 	}
-	fmt.Println(fetchedEvents)
 	// first event version should be 2
 	if fetchedEvents[0].Version != 2 {
 		t.Fatal("wrong events returned")

@@ -11,3 +11,19 @@ func (sql *SQL) Migrate() error {
 	_, err := sql.db.Exec(sqlStmt)
 	return err
 }
+
+// MigrateTest remove the index that the test sql driver does not support
+func (sql *SQL) MigrateTest() error {
+	sqlStmt := []string{
+		`create table events (id INTEGER PRIMARY KEY AUTOINCREMENT, aggregate_id varchar not null, version integer, reason varchar, aggregate_type varchar, data BLOB);`,
+		`delete from events;`,
+	}
+
+	for _, b := range sqlStmt {
+		_, err := sql.db.Exec(b)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
