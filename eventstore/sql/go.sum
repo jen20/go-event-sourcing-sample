@@ -1,0 +1,8 @@
+github.com/go-gorp/gorp v2.0.0+incompatible/go.mod h1:7IfkAQnO7jfT/9IQ3R9wL1dFhukN6aQxzKTHnkxzA/E=
+github.com/gofrs/uuid v3.2.0+incompatible h1:y12jRkkFxsd7GpqdSZ+/KCs/fJbqpEXSGd4+jfEaewE=
+github.com/gofrs/uuid v3.2.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
+github.com/hallgren/eventsourcing v0.0.7-0.20200412210537-00fb0aa14f13 h1:cRFBOOhLhVVasEcV0qeui+UNBPnrM919nASgD1vcCG4=
+github.com/hallgren/eventsourcing v0.0.7-0.20200412210537-00fb0aa14f13/go.mod h1:izcXwHWPZMV09PS2bZl7oHDcOvLV18INpxAoqbppp28=
+github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
+github.com/proullon/ramsql v0.0.0-20181213202341-817cee58a244 h1:fdX2U+a2Rmc4BjRYcOKzjYXtYTE4ga1B2lb8i7BlefU=
+github.com/proullon/ramsql v0.0.0-20181213202341-817cee58a244/go.mod h1:jG8oAQG0ZPHPyxg5QlMERS31airDC+ZuqiAe8DUvFVo=
