@@ -9,6 +9,9 @@ jobs:
       script:
         - go get ./...
         - go test ./... -race -coverprofile=coverage.txt -covermode=atomic
+        - cd eventstore/bbolt
+        - go get ./...
+        - go test ./... -race -coverprofile=coverage.txt -covermode=atomic
       after_success:
         - bash <(curl -s https://codecov.io/bash)
       deploy:
