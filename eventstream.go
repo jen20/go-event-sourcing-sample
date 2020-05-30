@@ -7,16 +7,20 @@ import (
 
 // EventStream struct what handles event subscription
 type EventStream struct {
-	aggregateEvents map[string][]func(e Event)
+	// holds subscribers of aggregate types events
+	aggregateTypes map[string][]func(e Event)
+	// holds subscribers of specific events
 	specificEvents  map[reflect.Type][]func(e Event)
+	// holds subscribers of all events
 	allEvents       []func(e Event)
+	// makes sure events are delivered in order
 	publishLock     sync.Mutex
 }
 
 // NewEventStream factory function
 func NewEventStream() *EventStream {
 	return &EventStream{
-		aggregateEvents: make(map[string][]func(e Event)),
+		aggregateTypes: make(map[string][]func(e Event)),
 		specificEvents:  make(map[reflect.Type][]func(e Event)),
 		allEvents:       []func(e Event){},
 	}
@@ -36,7 +40,7 @@ func (e *EventStream) Update(events []Event) {
 		}
 
 		// call all functions that has registered for the aggregate events
-		if functions, ok := e.aggregateEvents[event.AggregateType]; ok {
+		if functions, ok := e.aggregateTypes[event.AggregateType]; ok {
 			for _, f := range functions {
 				f(event)
 			}
@@ -59,12 +63,12 @@ func (e *EventStream) SubscribeAll(f func(e Event)) {
 func (e *EventStream) SubscribeAggregateTypes(f func(e Event), aggregates ...aggregate) {
 	for _, a := range aggregates {
 		aggregateType := reflect.TypeOf(a).Elem().Name()
-		if e.aggregateEvents[aggregateType] == nil {
+		if e.aggregateTypes[aggregateType] == nil {
 			// add the name of the aggregate and function to call to the empty register key
-			e.aggregateEvents[aggregateType] = []func(e Event){f}
+			e.aggregateTypes[aggregateType] = []func(e Event){f}
 		} else {
 			// adds one more function to the aggregate
-			e.aggregateEvents[aggregateType] = append(e.aggregateEvents[aggregateType], f)
+			e.aggregateTypes[aggregateType] = append(e.aggregateTypes[aggregateType], f)
 		}
 	}
 }
