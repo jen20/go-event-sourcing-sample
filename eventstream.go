@@ -55,8 +55,8 @@ func (e *EventStream) SubscribeAll(f func(e Event)) {
 	e.allEvents = append(e.allEvents, f)
 }
 
-// SubscribeAggregate bind the f function to be called on events on the aggregate type
-func (e *EventStream) SubscribeAggregate(f func(e Event), aggregates ...aggregate) {
+// SubscribeAggregateTypes bind the f function to be called on events on the aggregate type
+func (e *EventStream) SubscribeAggregateTypes(f func(e Event), aggregates ...aggregate) {
 	for _, a := range aggregates {
 		aggregateType := reflect.TypeOf(a).Elem().Name()
 		if e.aggregateEvents[aggregateType] == nil {
@@ -69,8 +69,8 @@ func (e *EventStream) SubscribeAggregate(f func(e Event), aggregates ...aggregat
 	}
 }
 
-// SubscribeSpecific bind the f function to be called on specific events
-func (e *EventStream) SubscribeSpecific(f func(e Event), events ...interface{}) {
+// SubscribeSpecificEvents bind the f function to be called on specific events
+func (e *EventStream) SubscribeSpecificEvents(f func(e Event), events ...interface{}) {
 	// subscribe to specified events
 	for _, event := range events {
 		t := reflect.TypeOf(event)

@@ -145,7 +145,7 @@ func TestSubscriptionSpecific(t *testing.T) {
 	serializer := json.New()
 	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
 	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
-	repo.SubscribeSpecific(f, &Born{}, &AgedOneYear{})
+	repo.SubscribeSpecificEvents(f, &Born{}, &AgedOneYear{})
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -172,7 +172,7 @@ func TestSubscriptionAggregate(t *testing.T) {
 	serializer := json.New()
 	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
 	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
-	repo.SubscribeAggregate(f, &Person{})
+	repo.SubscribeAggregateType(f, &Person{})
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
