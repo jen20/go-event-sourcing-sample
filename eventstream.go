@@ -52,7 +52,7 @@ func (e *EventStream) Update(events []Event) {
 
 		// call all functions that has registered for the aggregate type and id events
 		ref := fmt.Sprintf("%s_%s", event.AggregateType, event.AggregateRootID)
-		if functions, ok := e.aggregateTypes[ref]; ok {
+		if functions, ok := e.specificAggregates[ref]; ok {
 			for _, f := range functions {
 				f(event)
 			}
@@ -76,12 +76,12 @@ func (e *EventStream) SubscribeSpecificAggregate(f func(e Event), aggregates ...
 	for _, a := range aggregates {
 		aggregateType := reflect.TypeOf(a).Elem().Name()
 		ref := fmt.Sprintf("%s_%s", aggregateType, a.id())
-		if e.aggregateTypes[ref] == nil {
+		if e.specificAggregates[ref] == nil {
 			// add the name and id of the aggregate and function to call to the empty register key
-			e.aggregateTypes[ref] = []func(e Event){f}
+			e.specificAggregates[ref] = []func(e Event){f}
 		} else {
 			// adds one more function to the aggregate
-			e.aggregateTypes[ref] = append(e.aggregateTypes[ref], f)
+			e.specificAggregates[ref] = append(e.specificAggregates[ref], f)
 		}
 	}
 }
