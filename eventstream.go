@@ -73,8 +73,8 @@ func (e *EventStream) SubscribeAggregateTypes(f func(e Event), aggregates ...agg
 	}
 }
 
-// SubscribeSpecificEvents bind the f function to be called on specific events
-func (e *EventStream) SubscribeSpecificEvents(f func(e Event), events ...interface{}) {
+// SubscribeSpecificEvent bind the f function to be called on specific events
+func (e *EventStream) SubscribeSpecificEvent(f func(e Event), events ...interface{}) {
 	// subscribe to specified events
 	for _, event := range events {
 		t := reflect.TypeOf(event)
