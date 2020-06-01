@@ -75,8 +75,7 @@ func (e *EventStream) SubscribeAll(f func(e Event)) {
 func (e *EventStream) SubscribeSpecificAggregate(f func(e Event), aggregates ...aggregate) {
 	for _, a := range aggregates {
 		aggregateType := reflect.TypeOf(a).Elem().Name()
-		id := a.id()
-		ref := fmt.Sprintf("%s_%s", aggregateType, id)
+		ref := fmt.Sprintf("%s_%s", aggregateType, a.id())
 		if e.aggregateTypes[ref] == nil {
 			// add the name and id of the aggregate and function to call to the empty register key
 			e.aggregateTypes[ref] = []func(e Event){f}
