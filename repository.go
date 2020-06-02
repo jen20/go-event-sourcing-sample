@@ -53,7 +53,7 @@ func (r *Repository) Save(aggregate aggregate) error {
 
 	// publish the saved events to subscribers
 	events := aggregate.changes()
-	r.eventStream.Update(events)
+	r.eventStream.Update(aggregate, events)
 
 	// aggregate are saved to the event store now its safe to update the internal aggregate state
 	aggregate.updateVersion()
