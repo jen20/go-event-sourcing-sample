@@ -211,16 +211,18 @@ The unsafe serializer stores the underlying memory representation of a struct di
 
 ### Event Subscription
 
-The repository expose three possibilities to subscribe to events in realtime as they are stored to the repository.
+The repository expose four possibilities to subscribe to events in realtime as they are saved to the repository.
 
 `SubscribeAll(func (e Event))` all event.
 
-`SubscribeAggregate(func (e Event), aggregates ...aggregate)` events bound to specific aggregates. 
+`SubscribeAggregateType(func (e Event), aggregates ...aggregate)` events bound to specific aggregate types. 
  
-`SubscribeSpecific(func (e Event), events ...interface{})` specific events. There is no restrictions that the events need
+`SubscribeSpecificEvent(func (e Event), events ...interface{})` specific events. There is no restrictions that the events need
 to come from the same aggregate, you can mix and match as you please.
 
-The subscription is realtime and events that are saved before the call to the Subscribe function will not be exposed via the `func(e Event)` function. If the application 
+`SubscribeSpecificAggregate(func (e Event), events ...aggregate)` events bound to specific aggregate based on type and identity. This makes it possible to get events pinpointed to one specific aggregate instance. 
+
+The subscription is realtime and events that are saved before the call to one of the subscribers will not be exposed via the `func(e Event)` function. If the application 
 depends on this functionality make sure to call the subscribe function before any events are saved. 
 
 The event subscription enables the application to make use of the reactive patterns and to make it more decoupled. Check out the [Reactive Manifesto](https://www.reactivemanifesto.org/) 

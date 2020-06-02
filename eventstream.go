@@ -1,32 +1,47 @@
 package eventsourcing
 
 import (
+	"fmt"
 	"reflect"
 	"sync"
 )
 
 // EventStream struct what handles event subscription
 type EventStream struct {
-	aggregateEvents map[string][]func(e Event)
-	specificEvents  map[reflect.Type][]func(e Event)
-	allEvents       []func(e Event)
-	publishLock     sync.Mutex
+	// holds subscribers of aggregate types events
+	aggregateTypes map[string][]func(e Event)
+	// holds subscribers of specific aggregates (type and identifier)
+	specificAggregates map[string][]func(e Event)
+	// holds subscribers of specific events
+	specificEvents map[reflect.Type][]func(e Event)
+	// holds subscribers of all events
+	allEvents []func(e Event)
+	// makes sure events are delivered in order
+	publishLock sync.Mutex
 }
 
 // NewEventStream factory function
 func NewEventStream() *EventStream {
 	return &EventStream{
-		aggregateEvents: make(map[string][]func(e Event)),
-		specificEvents:  make(map[reflect.Type][]func(e Event)),
-		allEvents:       []func(e Event){},
+		aggregateTypes:     make(map[string][]func(e Event)),
+		specificAggregates: make(map[string][]func(e Event)),
+		specificEvents:     make(map[reflect.Type][]func(e Event)),
+		allEvents:          []func(e Event){},
 	}
 }
 
 // Update calls the functions that are subscribing to event
-func (e *EventStream) Update(events []Event) {
+func (e *EventStream) Update(agg aggregate, events []Event) {
 	// the lock prevent other event updates get mixed with this update
 	e.publishLock.Lock()
+	defer e.publishLock.Unlock()
+	
 	for _, event := range events {
+		// call all functions that has registered for all events
+		for _, f := range e.allEvents {
+			f(event)
+		}
+
 		// call all functions that has registered for the specific event
 		t := reflect.TypeOf(event.Data)
 		if functions, ok := e.specificEvents[t]; ok {
@@ -35,19 +50,23 @@ func (e *EventStream) Update(events []Event) {
 			}
 		}
 
-		// call all functions that has registered for the aggregate events
-		if functions, ok := e.aggregateEvents[event.AggregateType]; ok {
+		ref := fmt.Sprintf("%s_%s", agg.path(), event.AggregateType)
+		// call all functions that has registered for the aggregate type events
+		if functions, ok := e.aggregateTypes[ref]; ok {
 			for _, f := range functions {
 				f(event)
 			}
 		}
 
-		// call all functions that has registered for all events
-		for _, f := range e.allEvents {
-			f(event)
+		// call all functions that has registered for the aggregate type and id events
+		// ref also include the package name ensuring that Aggregate Types can have the same name.
+		ref = fmt.Sprintf("%s_%s", ref, agg.id())
+		if functions, ok := e.specificAggregates[ref]; ok {
+			for _, f := range functions {
+				f(event)
+			}
 		}
 	}
-	e.publishLock.Unlock()
 }
 
 // SubscribeAll bind the f function to be called on all events independent on aggregate or event type
@@ -55,22 +74,39 @@ func (e *EventStream) SubscribeAll(f func(e Event)) {
 	e.allEvents = append(e.allEvents, f)
 }
 
-// SubscribeAggregate bind the f function to be called on events on the aggregate type
-func (e *EventStream) SubscribeAggregate(f func(e Event), aggregates ...aggregate) {
+// SubscribeSpecificAggregate bind the f function to be called on events that belongs to aggregate based on type and id
+func (e *EventStream) SubscribeSpecificAggregate(f func(e Event), aggregates ...aggregate) {
 	for _, a := range aggregates {
-		aggregateType := reflect.TypeOf(a).Elem().Name()
-		if e.aggregateEvents[aggregateType] == nil {
-			// add the name of the aggregate and function to call to the empty register key
-			e.aggregateEvents[aggregateType] = []func(e Event){f}
+		name := reflect.TypeOf(a).Elem().Name()
+		ref := fmt.Sprintf("%s_%s_%s", a.path(), name, a.id())
+		if e.specificAggregates[ref] == nil {
+			// add the name and id of the aggregate and function to call to the empty register key
+			e.specificAggregates[ref] = []func(e Event){f}
 		} else {
 			// adds one more function to the aggregate
-			e.aggregateEvents[aggregateType] = append(e.aggregateEvents[aggregateType], f)
+			e.specificAggregates[ref] = append(e.specificAggregates[ref], f)
 		}
 	}
 }
 
-// SubscribeSpecific bind the f function to be called on specific events
-func (e *EventStream) SubscribeSpecific(f func(e Event), events ...interface{}) {
+// SubscribeAggregateTypes bind the f function to be called on events on the aggregate type
+func (e *EventStream) SubscribeAggregateTypes(f func(e Event), aggregates ...aggregate) {
+	for _, a := range aggregates {
+		name := reflect.TypeOf(a).Elem().Name()
+		ref := fmt.Sprintf("%s_%s",a.path(), name)
+
+		if e.aggregateTypes[ref] == nil {
+			// add the name of the aggregate and function to call to the empty register key
+			e.aggregateTypes[ref] = []func(e Event){f}
+		} else {
+			// adds one more function to the aggregate
+			e.aggregateTypes[ref] = append(e.aggregateTypes[ref], f)
+		}
+	}
+}
+
+// SubscribeSpecificEvent bind the f function to be called on specific events
+func (e *EventStream) SubscribeSpecificEvent(f func(e Event), events ...interface{}) {
 	// subscribe to specified events
 	for _, event := range events {
 		t := reflect.TypeOf(event)

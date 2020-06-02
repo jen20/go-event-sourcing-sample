@@ -52,12 +52,12 @@ func (state *AggregateRoot) TrackChangeWithMetaData(a aggregate, data interface{
 	}
 
 	reason := reflect.TypeOf(data).Elem().Name()
-	aggregateType := reflect.TypeOf(a).Elem().Name()
+	name := reflect.TypeOf(a).Elem().Name()
 	event := Event{
 		AggregateRootID: state.AggregateID,
 		Version:         state.nextVersion(),
 		Reason:          reason,
-		AggregateType:   aggregateType,
+		AggregateType:   name,
 		Timestamp:       time.Now().UTC(),
 		Data:            data,
 		MetaData:        metaData,
@@ -114,9 +114,15 @@ func (state *AggregateRoot) SetID(id string) error {
 	return nil
 }
 
-// ID returns the aggregate id as a string
+// id returns the aggregate id as a string
 func (state *AggregateRoot) id() string {
 	return state.AggregateID
+}
+
+// path return the full name of the aggregate making it unique to other aggregates with
+// the same name but placed in other packages.
+func (state *AggregateRoot) path() string {
+	return reflect.TypeOf(state).Elem().PkgPath()
 }
 
 // CurrentVersion return the version based on events that are not stored

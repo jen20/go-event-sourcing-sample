@@ -21,6 +21,7 @@ type snapshotStore interface {
 // aggregate interface to use the aggregate root specific methods
 type aggregate interface {
 	id() string
+	path() string
 	BuildFromHistory(a aggregate, events []Event)
 	Transition(event Event)
 	changes() []Event
@@ -53,7 +54,7 @@ func (r *Repository) Save(aggregate aggregate) error {
 
 	// publish the saved events to subscribers
 	events := aggregate.changes()
-	r.eventStream.Update(events)
+	r.eventStream.Update(aggregate, events)
 
 	// aggregate are saved to the event store now its safe to update the internal aggregate state
 	aggregate.updateVersion()
@@ -106,12 +107,17 @@ func (r *Repository) SubscribeAll(f func(e Event)) {
 	r.eventStream.SubscribeAll(f)
 }
 
-// SubscribeSpecific binds the input func f to be called when supplied events are saved.
-func (r *Repository) SubscribeSpecific(f func(e Event), events ...interface{}) {
-	r.eventStream.SubscribeSpecific(f, events...)
+// SubscribeSpecificEvents binds the input func f to be called when supplied events are saved.
+func (r *Repository) SubscribeSpecificEvents(f func(e Event), events ...interface{}) {
+	r.eventStream.SubscribeSpecificEvent(f, events...)
 }
 
-// SubscribeAggregate binds the input func f to be called on all events bound to supplied aggregates
-func (r *Repository) SubscribeAggregate(f func(e Event), aggregates ...aggregate) {
-	r.eventStream.SubscribeAggregate(f, aggregates...)
+// SubscribeAggregateType binds the input func f to be called on all events bound to supplied aggregates by type
+func (r *Repository) SubscribeAggregateType(f func(e Event), aggregates ...aggregate) {
+	r.eventStream.SubscribeAggregateTypes(f, aggregates...)
+}
+
+// SubscribeSpecificAggregate binds the input func f to be called on all events bound to supplied aggregates by type and identifier
+func (r *Repository) SubscribeSpecificAggregate(f func(e Event), aggregates ...aggregate) {
+	r.eventStream.SubscribeSpecificAggregate(f, aggregates...)
 }
