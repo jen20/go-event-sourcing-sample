@@ -21,6 +21,7 @@ type snapshotStore interface {
 // aggregate interface to use the aggregate root specific methods
 type aggregate interface {
 	id() string
+	path() string
 	BuildFromHistory(a aggregate, events []Event)
 	Transition(event Event)
 	changes() []Event

@@ -42,19 +42,18 @@ func (e *EventStream) Update(agg aggregate, events []Event) {
 
 		// call all functions that has registered for the specific event
 		t := reflect.TypeOf(event.Data)
-
 		if functions, ok := e.specificEvents[t]; ok {
 			for _, f := range functions {
 				f(event)
 			}
 		}
 
-		var pkgPath string
+		var aggPath string
 		if agg != nil {
-			pkgPath = reflect.TypeOf(agg).Elem().PkgPath()
+			aggPath = agg.path()
 		}
 
-		ref := fmt.Sprintf("%s_%s",pkgPath, event.AggregateType)
+		ref := fmt.Sprintf("%s_%s", aggPath, event.AggregateType)
 		// call all functions that has registered for the aggregate type events
 		if functions, ok := e.aggregateTypes[ref]; ok {
 			for _, f := range functions {
@@ -84,9 +83,8 @@ func (e *EventStream) SubscribeAll(f func(e Event)) {
 // SubscribeSpecificAggregate bind the f function to be called on events that belongs to aggregate based on type and id
 func (e *EventStream) SubscribeSpecificAggregate(f func(e Event), aggregates ...aggregate) {
 	for _, a := range aggregates {
-		pkgPath := reflect.TypeOf(a).Elem().PkgPath()
-		aggregateType := reflect.TypeOf(a).Elem().Name()
-		ref := fmt.Sprintf("%s_%s_%s", pkgPath, aggregateType, a.id())
+		name := reflect.TypeOf(a).Elem().Name()
+		ref := fmt.Sprintf("%s_%s_%s", a.path(), name, a.id())
 		if e.specificAggregates[ref] == nil {
 			// add the name and id of the aggregate and function to call to the empty register key
 			e.specificAggregates[ref] = []func(e Event){f}
@@ -100,9 +98,8 @@ func (e *EventStream) SubscribeSpecificAggregate(f func(e Event), aggregates ...
 // SubscribeAggregateTypes bind the f function to be called on events on the aggregate type
 func (e *EventStream) SubscribeAggregateTypes(f func(e Event), aggregates ...aggregate) {
 	for _, a := range aggregates {
-		pkgPath := reflect.TypeOf(a).Elem().PkgPath()
 		name := reflect.TypeOf(a).Elem().Name()
-		ref := fmt.Sprintf("%s_%s",pkgPath, name)
+		ref := fmt.Sprintf("%s_%s",a.path(), name)
 
 		if e.aggregateTypes[ref] == nil {
 			// add the name of the aggregate and function to call to the empty register key
