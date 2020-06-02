@@ -35,7 +35,7 @@ func TestAll(t *testing.T) {
 		streamEvent = &e
 	}
 	e.SubscribeAll(f)
-	e.Update(&AnAggregate{},[]eventsourcing.Event{event})
+	e.Update(&AnAggregate{}, []eventsourcing.Event{event})
 
 	if streamEvent == nil {
 		t.Fatalf("should have received event")
@@ -52,7 +52,7 @@ func TestSubscribeOneEvent(t *testing.T) {
 		streamEvent = &e
 	}
 	e.SubscribeSpecificEvent(f, &AnEvent{})
-	e.Update(&AnAggregate{},[]eventsourcing.Event{event})
+	e.Update(&AnAggregate{}, []eventsourcing.Event{event})
 
 	if streamEvent == nil {
 		t.Fatalf("should have received event")
@@ -66,9 +66,8 @@ func TestSubscribeOneEvent(t *testing.T) {
 func TestSubscribeSpecificAggregate(t *testing.T) {
 
 	// setup aggregates with identifiers
-	anAggregate := AnAggregate{ eventsourcing.AggregateRoot{AggregateID: "123"}}
-	anOtherAggregate := AnotherAggregate{ eventsourcing.AggregateRoot{AggregateID: "456"}}
-
+	anAggregate := AnAggregate{eventsourcing.AggregateRoot{AggregateID: "123"}}
+	anOtherAggregate := AnotherAggregate{eventsourcing.AggregateRoot{AggregateID: "456"}}
 
 	var streamEvent *eventsourcing.Event
 	e := eventsourcing.NewEventStream()
@@ -78,7 +77,7 @@ func TestSubscribeSpecificAggregate(t *testing.T) {
 	e.SubscribeSpecificAggregate(f, &anAggregate, &anOtherAggregate)
 
 	// update with event from the AnAggregate aggregate
-	e.Update(&anAggregate,[]eventsourcing.Event{event})
+	e.Update(&anAggregate, []eventsourcing.Event{event})
 	if streamEvent == nil {
 		t.Fatalf("should have received event")
 	}
@@ -87,7 +86,7 @@ func TestSubscribeSpecificAggregate(t *testing.T) {
 	}
 
 	// update with event from the AnotherAggregate aggregate
-	e.Update(&anOtherAggregate,[]eventsourcing.Event{otherEvent})
+	e.Update(&anOtherAggregate, []eventsourcing.Event{otherEvent})
 	if streamEvent.Version != otherEvent.Version {
 		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, otherEvent.Version)
 	}
@@ -98,10 +97,10 @@ func TestSubscribeAggregateType(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		streamEvent = &e
 	}
-	e.SubscribeAggregateTypes(f, &AnAggregate{}, &AnotherAggregate{})
+	e.SubscribeAggregateType(f, &AnAggregate{}, &AnotherAggregate{})
 
 	// update with event from the AnAggregate aggregate
-	e.Update(&AnAggregate{},[]eventsourcing.Event{event})
+	e.Update(&AnAggregate{}, []eventsourcing.Event{event})
 	if streamEvent == nil {
 		t.Fatalf("should have received event")
 	}
@@ -110,7 +109,7 @@ func TestSubscribeAggregateType(t *testing.T) {
 	}
 
 	// update with event from the AnotherAggregate aggregate
-	e.Update(&AnotherAggregate{},[]eventsourcing.Event{otherEvent})
+	e.Update(&AnotherAggregate{}, []eventsourcing.Event{otherEvent})
 	if streamEvent.Version != otherEvent.Version {
 		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, otherEvent.Version)
 	}
@@ -123,8 +122,8 @@ func TestSubscribeToManyEvents(t *testing.T) {
 		streamEvents = append(streamEvents, &e)
 	}
 	e.SubscribeSpecificEvent(f, &AnEvent{}, &AnotherEvent{})
-	e.Update(&AnAggregate{},[]eventsourcing.Event{event})
-	e.Update(&AnotherAggregate{},[]eventsourcing.Event{otherEvent})
+	e.Update(&AnAggregate{}, []eventsourcing.Event{event})
+	e.Update(&AnotherAggregate{}, []eventsourcing.Event{otherEvent})
 
 	if streamEvents == nil {
 		t.Fatalf("should have received event")
@@ -153,7 +152,7 @@ func TestUpdateNoneSubscribedEvent(t *testing.T) {
 		streamEvent = &e
 	}
 	e.SubscribeSpecificEvent(f, &AnotherEvent{})
-	e.Update(&AnAggregate{},[]eventsourcing.Event{event})
+	e.Update(&AnAggregate{}, []eventsourcing.Event{event})
 
 	if streamEvent != nil {
 		t.Fatalf("should not have received event %q", streamEvent)
@@ -187,7 +186,7 @@ func TestManySubscribers(t *testing.T) {
 	e.SubscribeSpecificEvent(f2, &AnotherEvent{}, &AnEvent{})
 	e.SubscribeSpecificEvent(f3, &AnEvent{})
 	e.SubscribeAll(f4)
-	e.SubscribeAggregateTypes(f5, &AnAggregate{})
+	e.SubscribeAggregateType(f5, &AnAggregate{})
 
 	e.Update(&AnAggregate{}, []eventsourcing.Event{event})
 
@@ -235,11 +234,11 @@ func TestParallelUpdates(t *testing.T) {
 	for i := 1; i < 1000; i++ {
 		wg.Add(2)
 		go func() {
-			e.Update(&AnotherAggregate{},[]eventsourcing.Event{otherEvent, otherEvent})
+			e.Update(&AnotherAggregate{}, []eventsourcing.Event{otherEvent, otherEvent})
 			wg.Done()
 		}()
 		go func() {
-			e.Update(&AnAggregate{},[]eventsourcing.Event{event, event})
+			e.Update(&AnAggregate{}, []eventsourcing.Event{event, event})
 			wg.Done()
 		}()
 	}

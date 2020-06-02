@@ -107,14 +107,14 @@ func (r *Repository) SubscribeAll(f func(e Event)) {
 	r.eventStream.SubscribeAll(f)
 }
 
-// SubscribeSpecificEvents binds the input func f to be called when supplied events are saved.
-func (r *Repository) SubscribeSpecificEvents(f func(e Event), events ...interface{}) {
+// SubscribeSpecificEvent binds the input func f to be called when supplied events are saved.
+func (r *Repository) SubscribeSpecificEvent(f func(e Event), events ...interface{}) {
 	r.eventStream.SubscribeSpecificEvent(f, events...)
 }
 
 // SubscribeAggregateType binds the input func f to be called on all events bound to supplied aggregates by type
 func (r *Repository) SubscribeAggregateType(f func(e Event), aggregates ...aggregate) {
-	r.eventStream.SubscribeAggregateTypes(f, aggregates...)
+	r.eventStream.SubscribeAggregateType(f, aggregates...)
 }
 
 // SubscribeSpecificAggregate binds the input func f to be called on all events bound to supplied aggregates by type and identifier

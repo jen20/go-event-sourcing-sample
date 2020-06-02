@@ -35,7 +35,7 @@ func (e *EventStream) Update(agg aggregate, events []Event) {
 	// the lock prevent other event updates get mixed with this update
 	e.publishLock.Lock()
 	defer e.publishLock.Unlock()
-	
+
 	for _, event := range events {
 		// call all functions that has registered for all events
 		for _, f := range e.allEvents {
@@ -89,11 +89,11 @@ func (e *EventStream) SubscribeSpecificAggregate(f func(e Event), aggregates ...
 	}
 }
 
-// SubscribeAggregateTypes bind the f function to be called on events on the aggregate type
-func (e *EventStream) SubscribeAggregateTypes(f func(e Event), aggregates ...aggregate) {
+// SubscribeAggregateType bind the f function to be called on events on the aggregate type
+func (e *EventStream) SubscribeAggregateType(f func(e Event), aggregates ...aggregate) {
 	for _, a := range aggregates {
 		name := reflect.TypeOf(a).Elem().Name()
-		ref := fmt.Sprintf("%s_%s",a.path(), name)
+		ref := fmt.Sprintf("%s_%s", a.path(), name)
 
 		if e.aggregateTypes[ref] == nil {
 			// add the name of the aggregate and function to call to the empty register key

@@ -145,7 +145,7 @@ func TestSubscriptionSpecificEvent(t *testing.T) {
 	serializer := json.New()
 	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
 	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
-	repo.SubscribeSpecificEvents(f, &Born{}, &AgedOneYear{})
+	repo.SubscribeSpecificEvent(f, &Born{}, &AgedOneYear{})
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -225,7 +225,7 @@ func TestEventChainDoesNotHang(t *testing.T) {
 	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
 
 	// eventChan can hold 5 events before it get full and blocks.
-	eventChan := make(chan eventsourcing.Event,5)
+	eventChan := make(chan eventsourcing.Event, 5)
 	doneChan := make(chan struct{})
 	f := func(e eventsourcing.Event) {
 		eventChan <- e
@@ -233,7 +233,7 @@ func TestEventChainDoesNotHang(t *testing.T) {
 
 	// for every AgedOnYear create a new person and make it grow one year older
 	go func() {
-		for e :=  range eventChan {
+		for e := range eventChan {
 			switch e.Data.(type) {
 			case *AgedOneYear:
 				person, err := CreatePerson("kalle")
