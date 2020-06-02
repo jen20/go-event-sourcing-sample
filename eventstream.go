@@ -34,6 +34,8 @@ func NewEventStream() *EventStream {
 func (e *EventStream) Update(agg aggregate, events []Event) {
 	// the lock prevent other event updates get mixed with this update
 	e.publishLock.Lock()
+	defer e.publishLock.Unlock()
+	
 	for _, event := range events {
 		// call all functions that has registered for all events
 		for _, f := range e.allEvents {
@@ -48,12 +50,7 @@ func (e *EventStream) Update(agg aggregate, events []Event) {
 			}
 		}
 
-		var aggPath string
-		if agg != nil {
-			aggPath = agg.path()
-		}
-
-		ref := fmt.Sprintf("%s_%s", aggPath, event.AggregateType)
+		ref := fmt.Sprintf("%s_%s", agg.path(), event.AggregateType)
 		// call all functions that has registered for the aggregate type events
 		if functions, ok := e.aggregateTypes[ref]; ok {
 			for _, f := range functions {
@@ -69,10 +66,7 @@ func (e *EventStream) Update(agg aggregate, events []Event) {
 				f(event)
 			}
 		}
-
-
 	}
-	e.publishLock.Unlock()
 }
 
 // SubscribeAll bind the f function to be called on all events independent on aggregate or event type
