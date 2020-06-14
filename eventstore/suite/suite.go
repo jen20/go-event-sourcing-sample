@@ -25,6 +25,7 @@ func Test(t *testing.T, esFunc eventstoreFunc) {
 		{"should not save events in wrong order", saveEventsInWrongOrder},
 		{"should not save events in wrong version", saveEventsInWrongVersion},
 		{"should not save event with no reason", saveEventsWithEmptyReason},
+		{"should save event concurrently", saveEventsConcurrently},
 	}
 	for _, test := range tests {
 		t.Run(test.title, func(t *testing.T) {
@@ -214,5 +215,14 @@ func saveEventsWithEmptyReason(t *testing.T, es Eventstore) {
 	err := es.Save(events)
 	if err == nil {
 		t.Error("should not be able to save events with empty reason")
+	}
+}
+
+func saveEventsConcurrently(t *testing.T, es Eventstore) {
+	events := testEvents()
+	for _, event := range events {
+		e := make([]eventsourcing.Event, 1)
+		e[0] = event
+		go es.Save(e)
 	}
 }
