@@ -3,6 +3,7 @@ package memory
 import (
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore"
+	"sync"
 )
 
 // Memory is a handler for event streaming
@@ -10,6 +11,7 @@ type Memory struct {
 	aggregateEvents map[string][][]byte // The memory structure where we store aggregate events
 	eventsInOrder   [][]byte            // The global event order
 	serializer      eventstore.EventSerializer
+	lock            sync.Mutex
 }
 
 // Create in memory event store
@@ -27,6 +29,10 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	if len(events) == 0 {
 		return nil
 	}
+
+	// make sure the Save is thread safe
+	e.lock.Lock()
+	defer e.lock.Unlock()
 
 	// get bucket name from first event
 	aggregateType := events[0].AggregateType
