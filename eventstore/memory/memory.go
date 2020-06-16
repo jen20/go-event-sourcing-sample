@@ -30,7 +30,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 		return nil
 	}
 
-	// make sure the Save is thread safe
+	// make sure its thread safe
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
@@ -77,6 +77,11 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 // Get aggregate events
 func (e *Memory) Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) {
 	var events []eventsourcing.Event
+
+	// make sure its thread safe
+	e.lock.Lock()
+	e.lock.Unlock()
+
 	eventsSerialized := e.aggregateEvents[aggregateKey(aggregateType, id)]
 	for _, eventSerialized := range eventsSerialized {
 		event, err := e.serializer.DeserializeEvent(eventSerialized)
