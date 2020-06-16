@@ -6,9 +6,13 @@ github.com/hallgren/eventsourcing v0.0.7 h1:3DXs8KZKc7utgEgrn1zZlRwdQsj3oKzebajB
 github.com/hallgren/eventsourcing v0.0.7/go.mod h1:izcXwHWPZMV09PS2bZl7oHDcOvLV18INpxAoqbppp28=
 github.com/hallgren/eventsourcing v0.0.9 h1:cZYZDxEbAecrKgmsna7UsJ80mJksFvYdgzJK+FTSKg8=
 github.com/hallgren/eventsourcing v0.0.9/go.mod h1:izcXwHWPZMV09PS2bZl7oHDcOvLV18INpxAoqbppp28=
+github.com/hallgren/eventsourcing v0.0.10 h1:PVIxXjxFWxNn0L7hIEYidIJnGZRl+zBppjABcVFr2Lg=
+github.com/hallgren/eventsourcing v0.0.10/go.mod h1:ZJXLttfzuPo/43fbnMv/DNuerXpX6CaLJn2gbTWNkV0=
 go.etcd.io/bbolt v1.3.4 h1:hi1bXHMVrlQh6WwxAy+qZCV/SYIlqo+Ushwdpa4tAKg=
 go.etcd.io/bbolt v1.3.4/go.mod h1:G5EMThwa9y8QZGBClrRx5EY+Yw9kAhnjy3bSjsnlVTQ=
 golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5 h1:LfCXLvNmTYH9kEmVgqbnsWfruoXZIrh4YBgqVHtDvw0=
 golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200610111108-226ff32320da h1:bGb80FudwxpeucJUjPYJXuJ8Hk91vNtfvrymzwiei38=
 golang.org/x/sys v0.0.0-20200610111108-226ff32320da/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1 h1:ogLJMz+qpzav7lGMh10LMvAkM/fAoGlaiiHYiFYdm80=
+golang.org/x/sys v0.0.0-20200615200032-f1bc736245b1/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
