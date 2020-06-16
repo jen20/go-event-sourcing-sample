@@ -1,8 +1,10 @@
 package suite
 
 import (
+	"fmt"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/serializer/json"
+	"sync"
 	"testing"
 )
 
@@ -25,7 +27,7 @@ func Test(t *testing.T, esFunc eventstoreFunc) {
 		{"should not save events in wrong order", saveEventsInWrongOrder},
 		{"should not save events in wrong version", saveEventsInWrongVersion},
 		{"should not save event with no reason", saveEventsWithEmptyReason},
-		{"should save event concurrently", saveEventsConcurrently},
+		{"should save and get event concurrently", saveAndGetEventsConcurrently},
 	}
 	for _, test := range tests {
 		t.Run(test.title, func(t *testing.T) {
@@ -218,11 +220,34 @@ func saveEventsWithEmptyReason(t *testing.T, es Eventstore) {
 	}
 }
 
-func saveEventsConcurrently(t *testing.T, es Eventstore) {
-	events := testEvents()
-	for _, event := range events {
-		e := make([]eventsourcing.Event, 1)
-		e[0] = event
-		go es.Save(e)
+func saveAndGetEventsConcurrently(t *testing.T, es Eventstore) {
+	wg := sync.WaitGroup{}
+
+	wg.Add(10)
+	for i := 0; i < 10; i++ {
+		events := testEventsWithID(fmt.Sprintf("id-%d", i))
+		go func() {
+			err := es.Save(events)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wg.Done()
+		}()
 	}
+	wg.Wait()
+	wg.Add(10)
+	for i := 0; i < 10; i++ {
+		eventID := fmt.Sprintf("id-%d", i)
+		go func() {
+			events, err := es.Get(eventID, aggregateType, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(events) != 6 {
+				t.Fatalf("wrong number of events fetched, expecting 6 got %d", len(events))
+			}
+			wg.Done()
+		}()
+	}
+	wg.Wait()
 }
