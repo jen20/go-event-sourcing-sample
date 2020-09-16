@@ -270,3 +270,32 @@ func TestParallelUpdates(t *testing.T) {
 		}
 	}
 }
+
+func TestClose(t *testing.T) {
+	count := 0
+	e := eventsourcing.NewEventStream()
+	f := func(e eventsourcing.Event) {
+		count++
+	}
+	s1 := e.SubscribeAll(f)
+	s2 := e.SubscribeSpecificEvent(f, &AnEvent{})
+	s3 := e.SubscribeAggregateType(f, &AnAggregate{})
+	s4 := e.SubscribeSpecificAggregate(f, &AnAggregate{})
+
+	// trigger all 4 subscriptions
+	e.Update(&AnAggregate{}, []eventsourcing.Event{event})
+	if count != 4 {
+		t.Fatalf("should have received four event")
+	}
+	// close all subscriptions
+	s1.Close()
+	s2.Close()
+	s3.Close()
+	s4.Close()
+
+	// new event should not trigger closed subscriptions
+	e.Update(&AnAggregate{}, []eventsourcing.Event{event})
+	if count != 4 {
+		t.Fatalf("should not have received event after subscriptions are closed")
+	}
+}
