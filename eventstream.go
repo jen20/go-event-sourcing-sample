@@ -90,7 +90,7 @@ func (e *EventStream) Update(agg aggregate, events []Event) {
 // SubscriberAll bind the f function to be called on all events independent on aggregate or event type
 func (e *EventStream) SubscriberAll(f func(e Event)) *Subscription {
 	s := Subscription{
-		f : f,
+		f: f,
 	}
 	s.unsubF = func() {
 		e.lock.Lock()
@@ -115,7 +115,7 @@ func (e *EventStream) SubscriberAll(f func(e Event)) *Subscription {
 // SubscriberSpecificAggregate bind the f function to be called on events that belongs to aggregate based on type and id
 func (e *EventStream) SubscriberSpecificAggregate(f func(e Event), aggregates ...aggregate) *Subscription {
 	s := Subscription{
-		f : f,
+		f: f,
 	}
 	s.unsubF = func() {
 		e.lock.Lock()
@@ -150,7 +150,7 @@ func (e *EventStream) SubscriberSpecificAggregate(f func(e Event), aggregates ..
 // SubscriberAggregateType bind the f function to be called on events on the aggregate type
 func (e *EventStream) SubscriberAggregateType(f func(e Event), aggregates ...aggregate) *Subscription {
 	s := Subscription{
-		f : f,
+		f: f,
 	}
 	s.unsubF = func() {
 		e.lock.Lock()
@@ -185,7 +185,7 @@ func (e *EventStream) SubscriberAggregateType(f func(e Event), aggregates ...agg
 // SubscriberSpecificEvent bind the f function to be called on specific events
 func (e *EventStream) SubscriberSpecificEvent(f func(e Event), events ...interface{}) *Subscription {
 	s := Subscription{
-		f : f,
+		f: f,
 	}
 	s.unsubF = func() {
 		e.lock.Lock()

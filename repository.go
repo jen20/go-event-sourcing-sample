@@ -41,7 +41,7 @@ func NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Reposito
 	return &Repository{
 		eventStore:    eventStore,
 		snapshotStore: snapshotStore,
-		EventStream: NewEventStream(),
+		EventStream:   NewEventStream(),
 	}
 }
 
