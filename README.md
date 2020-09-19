@@ -213,14 +213,14 @@ The unsafe serializer stores the underlying memory representation of a struct di
 
 The repository expose four possibilities to subscribe to events in realtime as they are saved to the repository.
 
-`SubscribeAll(func (e Event)) *Subscription` all event.
+`SubscriberAll(func (e Event)) *Subscription` all event.
 
-`SubscribeAggregateType(func (e Event), aggregates ...aggregate) *Subscription` events bound to specific aggregate types. 
+`SubscriberAggregateType(func (e Event), aggregates ...aggregate) *Subscription` events bound to specific aggregate types. 
  
-`SubscribeSpecificEvent(func (e Event), events ...interface{}) *Subscription` specific events. There is no restrictions that the events need
+`SubscriberSpecificEvent(func (e Event), events ...interface{}) *Subscription` specific events. There are no restrictions that the events need
 to come from the same aggregate, you can mix and match as you please.
 
-`SubscribeSpecificAggregate(func (e Event), events ...aggregate) *Subscription` events bound to specific aggregate based on type and identity. This makes it possible to get events pinpointed to one specific aggregate instance. 
+`SubscriberSpecificAggregate(func (e Event), events ...aggregate) *Subscription` events bound to specific aggregate based on type and identity. This makes it possible to get events pinpointed to one specific aggregate instance. 
 
 The subscription is realtime and events that are saved before the call to one of the subscribers will not be exposed via the `func(e Event)` function. If the application 
 depends on this functionality make sure to call the subscribe function before any events are saved. 
@@ -233,19 +233,22 @@ Example on how to set up the event subscription and consume the event `FrequentF
 ```go
 // Setup a memory based repository
 repo := eventsourcing.NewRepository(memory.Create(unsafe.New()), nil)
-f := func(e eventsourcing.Event) {
-	switch e := event.Data.(type) {
-       	case *FrequentFlierAccountCreated:
-        	// e now have type info
-        	fmt.Println(e)
-       }
-}
 
-// subscribe to all events
-s := repo.SubscribeAll(f)
+// subscriber that will trigger on every saved events
+s := repo.SubscribeAll(func(e eventsourcing.Event) {
+    switch e := event.Data.(type) {
+        case *FrequentFlierAccountCreated:
+            // e now have type info
+            fmt.Println(e)
+        }
+    }
+)
 
-// stop the subscription
-defer s.Close() 
+// start subscription
+s.Subscribe()
+
+// stop subscription
+s.Unsubscribe() 
 ```
 
 ## Custom made components

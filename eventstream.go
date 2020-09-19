@@ -16,17 +16,26 @@ type EventStream struct {
 	specificEvents map[reflect.Type][]*Subscription
 	// holds subscribers of all events
 	allEvents []*Subscription
-	// makes sure events are delivered in order
-	publishLock sync.Mutex
+	// makes sure events are delivered in order and subscriptions are persistent
+	lock sync.Mutex
 }
 
+// Subscription holding the subscribe / unsubscribe / and func to be called when
+// event matches the subscription
 type Subscription struct {
-	f func(e Event)
-	closeF func()
+	f      func(e Event)
+	unsubF func()
+	subF   func()
 }
 
-func (s *Subscription) Close() {
-	s.closeF()
+// Unsubscribe stops the subscription
+func (s *Subscription) Unsubscribe() {
+	s.unsubF()
+}
+
+// Subscribe starts the subscription
+func (s *Subscription) Subscribe() {
+	s.subF()
 }
 
 // NewEventStream factory function
@@ -42,8 +51,8 @@ func NewEventStream() *EventStream {
 // Update calls the functions that are subscribing to event
 func (e *EventStream) Update(agg aggregate, events []Event) {
 	// the lock prevent other event updates get mixed with this update
-	e.publishLock.Lock()
-	defer e.publishLock.Unlock()
+	e.lock.Lock()
+	defer e.lock.Unlock()
 
 	for _, event := range events {
 		// call all functions that has registered for all events
@@ -78,12 +87,15 @@ func (e *EventStream) Update(agg aggregate, events []Event) {
 	}
 }
 
-// SubscribeAll bind the f function to be called on all events independent on aggregate or event type
-func (e *EventStream) SubscribeAll(f func(e Event)) *Subscription {
+// SubscriberAll bind the f function to be called on all events independent on aggregate or event type
+func (e *EventStream) SubscriberAll(f func(e Event)) *Subscription {
 	s := Subscription{
 		f : f,
 	}
-	s.closeF = func() {
+	s.unsubF = func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
+
 		for i, sub := range e.allEvents {
 			if &s == sub {
 				e.allEvents = append(e.allEvents[:i], e.allEvents[i+1:]...)
@@ -91,16 +103,24 @@ func (e *EventStream) SubscribeAll(f func(e Event)) *Subscription {
 			}
 		}
 	}
-	e.allEvents = append(e.allEvents, &s)
+	s.subF = func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
+
+		e.allEvents = append(e.allEvents, &s)
+	}
 	return &s
 }
 
-// SubscribeSpecificAggregate bind the f function to be called on events that belongs to aggregate based on type and id
-func (e *EventStream) SubscribeSpecificAggregate(f func(e Event), aggregates ...aggregate) *Subscription {
+// SubscriberSpecificAggregate bind the f function to be called on events that belongs to aggregate based on type and id
+func (e *EventStream) SubscriberSpecificAggregate(f func(e Event), aggregates ...aggregate) *Subscription {
 	s := Subscription{
 		f : f,
 	}
-	s.closeF = func() {
+	s.unsubF = func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
+
 		for _, a := range aggregates {
 			name := reflect.TypeOf(a).Elem().Name()
 			ref := fmt.Sprintf("%s_%s_%s", a.path(), name, a.id())
@@ -112,22 +132,30 @@ func (e *EventStream) SubscribeSpecificAggregate(f func(e Event), aggregates ...
 			}
 		}
 	}
-	for _, a := range aggregates {
-		name := reflect.TypeOf(a).Elem().Name()
-		ref := fmt.Sprintf("%s_%s_%s", a.path(), name, a.id())
+	s.subF = func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
 
-		// adds one more function to the aggregate
-		e.specificAggregates[ref] = append(e.specificAggregates[ref], &s)
+		for _, a := range aggregates {
+			name := reflect.TypeOf(a).Elem().Name()
+			ref := fmt.Sprintf("%s_%s_%s", a.path(), name, a.id())
+
+			// adds one more function to the aggregate
+			e.specificAggregates[ref] = append(e.specificAggregates[ref], &s)
+		}
 	}
 	return &s
 }
 
-// SubscribeAggregateType bind the f function to be called on events on the aggregate type
-func (e *EventStream) SubscribeAggregateType(f func(e Event), aggregates ...aggregate) *Subscription {
+// SubscriberAggregateType bind the f function to be called on events on the aggregate type
+func (e *EventStream) SubscriberAggregateType(f func(e Event), aggregates ...aggregate) *Subscription {
 	s := Subscription{
 		f : f,
 	}
-	s.closeF = func() {
+	s.unsubF = func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
+
 		for _, a := range aggregates {
 			name := reflect.TypeOf(a).Elem().Name()
 			ref := fmt.Sprintf("%s_%s", a.path(), name)
@@ -139,22 +167,30 @@ func (e *EventStream) SubscribeAggregateType(f func(e Event), aggregates ...aggr
 			}
 		}
 	}
-	for _, a := range aggregates {
-		name := reflect.TypeOf(a).Elem().Name()
-		ref := fmt.Sprintf("%s_%s", a.path(), name)
+	s.subF = func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
 
-		// adds one more function to the aggregate
-		e.aggregateTypes[ref] = append(e.aggregateTypes[ref], &s)
+		for _, a := range aggregates {
+			name := reflect.TypeOf(a).Elem().Name()
+			ref := fmt.Sprintf("%s_%s", a.path(), name)
+
+			// adds one more function to the aggregate
+			e.aggregateTypes[ref] = append(e.aggregateTypes[ref], &s)
+		}
 	}
 	return &s
 }
 
-// SubscribeSpecificEvent bind the f function to be called on specific events
-func (e *EventStream) SubscribeSpecificEvent(f func(e Event), events ...interface{}) *Subscription {
+// SubscriberSpecificEvent bind the f function to be called on specific events
+func (e *EventStream) SubscriberSpecificEvent(f func(e Event), events ...interface{}) *Subscription {
 	s := Subscription{
 		f : f,
 	}
-	s.closeF = func() {
+	s.unsubF = func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
+
 		for _, event := range events {
 			t := reflect.TypeOf(event)
 			for i, sub := range e.specificEvents[t] {
@@ -165,12 +201,16 @@ func (e *EventStream) SubscribeSpecificEvent(f func(e Event), events ...interfac
 			}
 		}
 	}
+	s.subF = func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
 
-	// subscribe to specified events
-	for _, event := range events {
-		t := reflect.TypeOf(event)
-		// adds one more property to the event type
-		e.specificEvents[t] = append(e.specificEvents[t], &s)
+		// subscribe to specified events
+		for _, event := range events {
+			t := reflect.TypeOf(event)
+			// adds one more property to the event type
+			e.specificEvents[t] = append(e.specificEvents[t], &s)
+		}
 	}
 	return &s
 }
