@@ -223,7 +223,7 @@ to come from the same aggregate, you can mix and match as you please.
 `SubscriberSpecificAggregate(func (e Event), events ...aggregate) *Subscription` events bound to specific aggregate based on type and identity. This makes it possible to get events pinpointed to one specific aggregate instance. 
 
 The subscription is realtime and events that are saved before the call to one of the subscribers will not be exposed via the `func(e Event)` function. If the application 
-depends on this functionality make sure to call the subscribe function before any events are saved. 
+depends on this functionality make sure to call Subscribe() function on the subscriber before storing events in the repository. 
 
 The event subscription enables the application to make use of the reactive patterns and to make it more decoupled. Check out the [Reactive Manifesto](https://www.reactivemanifesto.org/) 
 for more detailed information. 
