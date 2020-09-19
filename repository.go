@@ -31,9 +31,9 @@ type aggregate interface {
 
 // Repository is the returned instance from the factory function
 type Repository struct {
+	*EventStream
 	eventStore    eventStore
 	snapshotStore snapshotStore
-	eventStream   *EventStream
 }
 
 // NewRepository factory function
@@ -41,7 +41,7 @@ func NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Reposito
 	return &Repository{
 		eventStore:    eventStore,
 		snapshotStore: snapshotStore,
-		eventStream:   NewEventStream(),
+		EventStream:   NewEventStream(),
 	}
 }
 
@@ -54,7 +54,7 @@ func (r *Repository) Save(aggregate aggregate) error {
 
 	// publish the saved events to subscribers
 	events := aggregate.changes()
-	r.eventStream.Update(aggregate, events)
+	r.Update(aggregate, events)
 
 	// aggregate are saved to the event store now its safe to update the internal aggregate state
 	aggregate.updateVersion()
@@ -100,24 +100,4 @@ func (r *Repository) Get(id string, aggregate aggregate) error {
 	// apply the event on the aggregate
 	aggregate.BuildFromHistory(aggregate, events)
 	return nil
-}
-
-// SubscribeAll calls the f on every event saved
-func (r *Repository) SubscribeAll(f func(e Event)) {
-	r.eventStream.SubscribeAll(f)
-}
-
-// SubscribeSpecificEvent binds the input func f to be called when supplied events are saved.
-func (r *Repository) SubscribeSpecificEvent(f func(e Event), events ...interface{}) {
-	r.eventStream.SubscribeSpecificEvent(f, events...)
-}
-
-// SubscribeAggregateType binds the input func f to be called on all events bound to supplied aggregates by type
-func (r *Repository) SubscribeAggregateType(f func(e Event), aggregates ...aggregate) {
-	r.eventStream.SubscribeAggregateType(f, aggregates...)
-}
-
-// SubscribeSpecificAggregate binds the input func f to be called on all events bound to supplied aggregates by type and identifier
-func (r *Repository) SubscribeSpecificAggregate(f func(e Event), aggregates ...aggregate) {
-	r.eventStream.SubscribeSpecificAggregate(f, aggregates...)
 }
