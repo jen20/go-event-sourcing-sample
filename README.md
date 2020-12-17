@@ -235,7 +235,7 @@ Example on how to set up the event subscription and consume the event `FrequentF
 repo := eventsourcing.NewRepository(memory.Create(unsafe.New()), nil)
 
 // subscriber that will trigger on every saved events
-s := repo.SubscribeAll(func(e eventsourcing.Event) {
+s := repo.SubscriberAll(func(e eventsourcing.Event) {
     switch e := event.Data.(type) {
         case *FrequentFlierAccountCreated:
             // e now have type info
