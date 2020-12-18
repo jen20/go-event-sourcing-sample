@@ -1,5 +1,5 @@
 all:
-	@go generate && go build
+	@go generate && go fmt ./... && go build
 
 clean:
 	@rm -f goes
