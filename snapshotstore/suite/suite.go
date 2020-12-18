@@ -1,13 +1,39 @@
-package snapshotstore_test
+package suite
 
 import (
-	"encoding/json"
-	"encoding/xml"
 	"errors"
-	"github.com/hallgren/eventsourcing"
-	"github.com/hallgren/eventsourcing/snapshotstore"
 	"testing"
+
+	"github.com/hallgren/eventsourcing"
 )
+
+type SnapshotStore interface {
+	Get(id string, a eventsourcing.Aggregate) error
+	Save(a eventsourcing.Aggregate) error
+}
+
+type snapshotStoreFunc = func() (SnapshotStore, func(), error)
+
+func Test(t *testing.T, ssFunc snapshotStoreFunc) {
+	tests := []struct {
+		title string
+		run   func(t *testing.T, es SnapshotStore)
+	}{
+		{"Basics", TestSnapshot},
+		{"Save empty ID", TestSaveEmptySnapshotID},
+		{"Save with unsaved events", TestGetNoneExistingSnapshot},
+	}
+	for _, test := range tests {
+		t.Run(test.title, func(t *testing.T) {
+			es, closeFunc, err := ssFunc()
+			if err != nil {
+				t.Fatal(err)
+			}
+			test.run(t, es)
+			closeFunc()
+		})
+	}
+}
 
 // Person aggregate
 type Person struct {
@@ -23,8 +49,7 @@ type Born struct {
 }
 
 // AgedOneYear event
-type AgedOneYear struct {
-}
+type AgedOneYear struct{}
 
 // CreatePerson constructor for the Person
 func CreatePerson(name string) (*Person, error) {
@@ -52,8 +77,7 @@ func (person *Person) Transition(event eventsourcing.Event) {
 	}
 }
 
-func TestSnapshot(t *testing.T) {
-	snapshot := snapshotstore.New(*eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal))
+func TestSnapshot(t *testing.T, snapshot SnapshotStore) {
 	var person Person
 
 	person.Age = 38
@@ -85,9 +109,7 @@ func TestSnapshot(t *testing.T) {
 	}
 }
 
-func TestGetNoneExistingSnapshot(t *testing.T) {
-	snapshot := snapshotstore.New(*eventsourcing.NewSerializer(json.Marshal, json.Unmarshal))
-
+func TestGetNoneExistingSnapshot(t *testing.T, snapshot SnapshotStore) {
 	p := Person{}
 	err := snapshot.Get("noneExistingID", &p)
 	if err == nil {
@@ -95,9 +117,7 @@ func TestGetNoneExistingSnapshot(t *testing.T) {
 	}
 }
 
-func TestSaveEmptySnapshotID(t *testing.T) {
-	snapshot := snapshotstore.New(*eventsourcing.NewSerializer(json.Marshal, json.Unmarshal))
-
+func TestSaveEmptySnapshotID(t *testing.T, snapshot SnapshotStore) {
 	p := Person{}
 	err := snapshot.Save(&p)
 	if err == nil {

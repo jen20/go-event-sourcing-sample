@@ -1,8 +1,8 @@
-package snapshotstore
+package memory
 
 import (
-	"errors"
 	"github.com/hallgren/eventsourcing"
+	"github.com/hallgren/eventsourcing/snapshotstore"
 )
 
 // Handler of snapshot store
@@ -25,26 +25,22 @@ func (h *Handler) Get(id string, s eventsourcing.Aggregate) error {
 	if !ok {
 		return eventsourcing.ErrSnapshotNotFound
 	}
-	err := h.serializer.Unmarshal(v, s)
-	if err != nil {
-		return err
-	}
-	return nil
+	return h.serializer.Unmarshal(v, s)
 }
 
 // Save persists the snapshot
-func (h *Handler) Save(s eventsourcing.Aggregate) error {
-	root := s.Root()
-	if root.ID() == "" {
-		return errors.New("aggregate id is empty")
-	}
-	if root.UnsavedEvents() {
-		return errors.New("aggregate holds unsaved events")
-	}
-	data, err := h.serializer.Marshal(s)
+func (h *Handler) Save(a eventsourcing.Aggregate) error {
+	root := a.Root()
+	err := snapshotstore.Validate(*root)
 	if err != nil {
 		return err
 	}
+
+	data, err := h.serializer.Marshal(a)
+	if err != nil {
+		return err
+	}
+
 	h.store[root.ID()] = data
 	return nil
 }

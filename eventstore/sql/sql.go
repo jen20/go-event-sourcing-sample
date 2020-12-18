@@ -14,12 +14,12 @@ import (
 
 // SQL for store events
 type SQL struct {
-	db         sql.DB
+	db         *sql.DB
 	serializer serializer.Handler
 }
 
 // Open connection to database
-func Open(db sql.DB, serializer serializer.Handler) *SQL {
+func Open(db *sql.DB, serializer serializer.Handler) *SQL {
 	return &SQL{
 		db:         db,
 		serializer: serializer,
@@ -71,7 +71,7 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 
 	insert := `Insert into events (id, version, reason, type, timestamp, data, metadata) values ($1, $2, $3, $4, $5, $6, $7)`
 	for _, event := range events {
-		var e,m []byte
+		var e, m []byte
 
 		e, err := sql.serializer.Marshal(event.Data)
 		if err != nil {
@@ -133,12 +133,12 @@ func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.
 
 		events = append(events, eventsourcing.Event{
 			AggregateRootID: id,
-			Version: version,
-			AggregateType: typ,
-			Reason: reason,
-			Timestamp: t,
-			Data: eventData,
-			MetaData: eventMetaData,
+			Version:         version,
+			AggregateType:   typ,
+			Reason:          reason,
+			Timestamp:       t,
+			Data:            eventData,
+			MetaData:        eventMetaData,
 		})
 	}
 	return

@@ -67,11 +67,7 @@ func (r *Repository) SaveSnapshot(aggregate Aggregate) error {
 	if root.UnsavedEvents() {
 		return errors.New("can't save snapshot with unsaved events")
 	}
-	err := r.snapshotStore.Save(aggregate)
-	if err != nil {
-		return err
-	}
-	return nil
+	return r.snapshotStore.Save(aggregate)
 }
 
 // Get fetches the aggregates event and build up the aggregate
@@ -85,7 +81,7 @@ func (r *Repository) Get(id string, aggregate Aggregate) error {
 	// if there is a snapshot store try fetch aggregate snapshot
 	if r.snapshotStore != nil {
 		err := r.snapshotStore.Get(id, aggregate)
-		if err != nil && err != ErrSnapshotNotFound {
+		if err != nil && !errors.Is(err, ErrSnapshotNotFound) {
 			return err
 		}
 	}

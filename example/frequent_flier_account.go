@@ -51,13 +51,11 @@ type FlightTaken struct {
 }
 
 // PromotedToGoldStatus promoted to gold status
-type PromotedToGoldStatus struct {
-}
+type PromotedToGoldStatus struct{}
 
 // CreateFrequentFlierAccount constructor
 func CreateFrequentFlierAccount(id string) *FrequentFlierAccountAggregate {
 	self := FrequentFlierAccountAggregate{}
-	//self.aggregateRoot.SetID(id)
 	self.TrackChange(&self, &FrequentFlierAccountCreated{OpeningMiles: 0, OpeningTierPoints: 0})
 	return &self
 }

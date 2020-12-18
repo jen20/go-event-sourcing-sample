@@ -3,10 +3,11 @@ package eventsourcing_test
 import (
 	"encoding/json"
 	"encoding/xml"
+	"testing"
+
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
-	"github.com/hallgren/eventsourcing/snapshotstore"
-	"testing"
+	memsnap "github.com/hallgren/eventsourcing/snapshotstore/memory"
 )
 
 func TestSaveAndGetAggregate(t *testing.T) {
@@ -39,7 +40,7 @@ func TestSaveAndGetAggregate(t *testing.T) {
 
 func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
-	snapshot := snapshotstore.New(*ser)
+	snapshot := memsnap.New(*ser)
 	repo := eventsourcing.NewRepository(memory.Create(), snapshot)
 
 	person, err := CreatePerson("kalle")
@@ -77,7 +78,7 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 
 func TestSaveSnapshotWithUnsavedEvents(t *testing.T) {
 	ser := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
-	snapshot := snapshotstore.New(*ser)
+	snapshot := memsnap.New(*ser)
 	repo := eventsourcing.NewRepository(memory.Create(), snapshot)
 
 	person, err := CreatePerson("kalle")
