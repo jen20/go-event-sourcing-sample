@@ -99,7 +99,6 @@ func TestCreateNewPerson(t *testing.T) {
 	if person.AggregateEvents[0].Timestamp.After(time.Now().UTC()) {
 		t.Fatal("event timestamp after current time")
 	}
-
 }
 
 func TestCreateNewPersonWithIDFromOutside(t *testing.T) {
@@ -119,7 +118,6 @@ func TestBlankName(t *testing.T) {
 	if err == nil {
 		t.Fatal("The constructor should return error on blank Name")
 	}
-
 }
 
 func TestSetIDOnExistingPerson(t *testing.T) {
@@ -132,7 +130,6 @@ func TestSetIDOnExistingPerson(t *testing.T) {
 	if err == nil {
 		t.Fatal("Should not be possible to set id on already existing person")
 	}
-
 }
 
 func TestPersonAgedOneYear(t *testing.T) {
@@ -155,6 +152,10 @@ func TestPersonAgedOneYear(t *testing.T) {
 
 	if d.(string) != "bar" {
 		t.Fatal("wrong meta data")
+	}
+
+	if person.AggregateID == "" {
+		t.Fatal("aggregate ID should not be empty")
 	}
 }
 

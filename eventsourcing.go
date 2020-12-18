@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"time"
 
-	uuid "github.com/gofrs/uuid"
+	uuid "github.com/google/uuid"
 )
 
 // Version is the event version used in event and aggregateRoot
@@ -48,7 +48,7 @@ func (state *AggregateRoot) TrackChange(a aggregate, data interface{}) {
 func (state *AggregateRoot) TrackChangeWithMetaData(a aggregate, data interface{}, metaData map[string]interface{}) {
 	// This can be overwritten in the constructor of the aggregate
 	if state.AggregateID == emptyAggregateID {
-		state.setID(uuid.Must(uuid.NewV4()).String())
+		state.setID(uuid.New().String())
 	}
 
 	reason := reflect.TypeOf(data).Elem().Name()
