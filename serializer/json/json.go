@@ -3,6 +3,7 @@ package json
 import (
 	"encoding/json"
 	"errors"
+	"github.com/hallgren/eventsourcing/snapshotstore"
 	"reflect"
 	"time"
 
@@ -106,7 +107,7 @@ func (h *Handler) DeserializeEvent(v []byte) (event eventsourcing.Event, err err
 }
 
 // SerializeSnapshot marshals an aggregate as interface{} to []byte
-func (h *Handler) SerializeSnapshot(aggregate interface{}) ([]byte, error) {
+func (h *Handler) SerializeSnapshot(aggregate snapshotstore.Snapshot) ([]byte, error) {
 	data, err := json.Marshal(aggregate)
 	if err != nil {
 		return nil, err
@@ -114,7 +115,7 @@ func (h *Handler) SerializeSnapshot(aggregate interface{}) ([]byte, error) {
 	return data, nil
 }
 
-// DeserializeSnapshot unmarshals []byte to an aggregate
-func (h *Handler) DeserializeSnapshot(data []byte, a interface{}) error {
+// DeserializeSnapshot unmarshal []byte to an aggregate
+func (h *Handler) DeserializeSnapshot(data []byte, a snapshotstore.Snapshot) error {
 	return json.Unmarshal(data, a)
 }

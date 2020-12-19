@@ -10,13 +10,14 @@ type Handler struct {
 	serializer snapshotSerializer
 }
 
+// Snapshot interface
 type Snapshot interface {
 	ID() string
 }
 
 type snapshotSerializer interface {
-	SerializeSnapshot(interface{}) ([]byte, error)
-	DeserializeSnapshot(data []byte, a interface{}) error
+	SerializeSnapshot(snapshot Snapshot) ([]byte, error)
+	DeserializeSnapshot(data []byte, a Snapshot) error
 }
 
 // ErrSnapshotNotFound returns if snapshot not found
