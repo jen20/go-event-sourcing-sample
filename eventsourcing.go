@@ -13,9 +13,9 @@ type Version int
 
 // AggregateRoot to be included into aggregates
 type AggregateRoot struct {
-	AggregateID      string
-	AggregateVersion Version
-	AggregateEvents  []Event
+	aggregateID      string
+	aggregateVersion Version
+	aggregateEvents  []Event
 }
 
 // Event holding meta data and the application specific event in the Data property
@@ -30,8 +30,8 @@ type Event struct {
 }
 
 var (
-	// ErrAggregateAlreadyExists returned if the AggregateID is set more than one time
-	ErrAggregateAlreadyExists = errors.New("its not possible to set id on already existing aggregate")
+	// ErrAggregateAlreadyExists returned if the aggregateID is set more than one time
+	ErrAggregateAlreadyExists = errors.New("its not possible to set ID on already existing aggregate")
 
 	emptyAggregateID = ""
 )
@@ -47,14 +47,14 @@ func (state *AggregateRoot) TrackChange(a aggregate, data interface{}) {
 // meta data is handled by this func to store none related application state
 func (state *AggregateRoot) TrackChangeWithMetaData(a aggregate, data interface{}, metaData map[string]interface{}) {
 	// This can be overwritten in the constructor of the aggregate
-	if state.AggregateID == emptyAggregateID {
+	if state.aggregateID == emptyAggregateID {
 		state.setID(uuid.New().String())
 	}
 
 	reason := reflect.TypeOf(data).Elem().Name()
 	name := reflect.TypeOf(a).Elem().Name()
 	event := Event{
-		AggregateRootID: state.AggregateID,
+		AggregateRootID: state.aggregateID,
 		Version:         state.nextVersion(),
 		Reason:          reason,
 		AggregateType:   name,
@@ -62,7 +62,7 @@ func (state *AggregateRoot) TrackChangeWithMetaData(a aggregate, data interface{
 		Data:            data,
 		MetaData:        metaData,
 	}
-	state.AggregateEvents = append(state.AggregateEvents, event)
+	state.aggregateEvents = append(state.aggregateEvents, event)
 	a.Transition(event)
 }
 
@@ -70,53 +70,49 @@ func (state *AggregateRoot) TrackChangeWithMetaData(a aggregate, data interface{
 func (state *AggregateRoot) BuildFromHistory(a aggregate, events []Event) {
 	for _, event := range events {
 		a.Transition(event)
-		//Set the aggregate id
-		state.AggregateID = event.AggregateRootID
+		//Set the aggregate ID
+		state.aggregateID = event.AggregateRootID
 		// Make sure the aggregate is in the correct version (the last event)
-		state.AggregateVersion = event.Version
+		state.aggregateVersion = event.Version
 	}
 }
 
 func (state *AggregateRoot) nextVersion() Version {
-	return state.CurrentVersion() + 1
+	return state.Version() + 1
 }
 
-// updateVersion sets the AggregateVersion to the AggregateVersion in the last event if reset the events
+// updateVersion sets the aggregateVersion to the aggregateVersion in the last event if reset the events
 // called by the Save func in the repository after the events are stored
 func (state *AggregateRoot) updateVersion() {
-	if len(state.AggregateEvents) > 0 {
-		state.AggregateVersion = state.AggregateEvents[len(state.AggregateEvents)-1].Version
-		state.AggregateEvents = []Event{}
+	if len(state.aggregateEvents) > 0 {
+		state.aggregateVersion = state.aggregateEvents[len(state.aggregateEvents)-1].Version
+		state.aggregateEvents = []Event{}
 	}
 }
 
 func (state *AggregateRoot) changes() []Event {
-	return state.AggregateEvents
+	return state.aggregateEvents
 }
 
-// setID is the internal method to set the aggregate id
+// setID is the internal method to set the aggregate ID
 func (state *AggregateRoot) setID(id string) {
-	state.AggregateID = id
-}
-
-func (state *AggregateRoot) version() Version {
-	return state.AggregateVersion
+	state.aggregateID = id
 }
 
 //Public accessors for aggregate root properties
 
-// SetID opens up the possibility to set manual aggregate id from the outside
+// SetID opens up the possibility to set manual aggregate ID from the outside
 func (state *AggregateRoot) SetID(id string) error {
-	if state.AggregateID != emptyAggregateID {
+	if state.aggregateID != emptyAggregateID {
 		return ErrAggregateAlreadyExists
 	}
 	state.setID(id)
 	return nil
 }
 
-// id returns the aggregate id as a string
-func (state *AggregateRoot) id() string {
-	return state.AggregateID
+// ID returns the aggregate ID as a string
+func (state *AggregateRoot) ID() string {
+	return state.aggregateID
 }
 
 // path return the full name of the aggregate making it unique to other aggregates with
@@ -125,10 +121,15 @@ func (state *AggregateRoot) path() string {
 	return reflect.TypeOf(state).Elem().PkgPath()
 }
 
-// CurrentVersion return the version based on events that are not stored
-func (state *AggregateRoot) CurrentVersion() Version {
-	if len(state.AggregateEvents) > 0 {
-		return state.AggregateEvents[len(state.AggregateEvents)-1].Version
+// Version return the version based on events that are not stored
+func (state *AggregateRoot) Version() Version {
+	if len(state.aggregateEvents) > 0 {
+		return state.aggregateEvents[len(state.aggregateEvents)-1].Version
 	}
-	return state.AggregateVersion
+	return state.aggregateVersion
+}
+
+// Events return the aggregate events from the aggregate
+func (state *AggregateRoot) Events() []Event {
+	return state.aggregateEvents
 }

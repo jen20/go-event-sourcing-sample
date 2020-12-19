@@ -80,7 +80,7 @@ func TestSerializeDeserialize(t *testing.T) {
 			}
 
 			if event.Version != 1 {
-				t.Fatalf("wrong value in AggregateVersion")
+				t.Fatalf("wrong value in aggregateVersion")
 			}
 
 			if event.Timestamp != timestamp {

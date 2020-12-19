@@ -10,6 +10,10 @@ type Handler struct {
 	serializer snapshotSerializer
 }
 
+type Snapshot interface {
+	ID() string
+}
+
 type snapshotSerializer interface {
 	SerializeSnapshot(interface{}) ([]byte, error)
 	DeserializeSnapshot(data []byte, a interface{}) error
@@ -27,12 +31,12 @@ func New(serializer snapshotSerializer) *Handler {
 }
 
 // Get returns the deserialize snapshot
-func (h *Handler) Get(id string, a interface{}) error {
+func (h *Handler) Get(id string, s Snapshot) error {
 	data, ok := h.store[id]
 	if !ok {
 		return ErrSnapshotNotFound
 	}
-	err := h.serializer.DeserializeSnapshot(data, a)
+	err := h.serializer.DeserializeSnapshot(data, s)
 	if err != nil {
 		return err
 	}
@@ -40,14 +44,14 @@ func (h *Handler) Get(id string, a interface{}) error {
 }
 
 // Save persists the snapshot
-func (h *Handler) Save(id string, a interface{}) error {
-	if id == "" {
+func (h *Handler) Save(s Snapshot) error {
+	if s.ID() == "" {
 		return errors.New("aggregate id is empty")
 	}
-	data, err := h.serializer.SerializeSnapshot(a)
+	data, err := h.serializer.SerializeSnapshot(s)
 	if err != nil {
 		return err
 	}
-	h.store[id] = data
+	h.store[s.ID()] = data
 	return nil
 }

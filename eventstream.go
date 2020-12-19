@@ -76,9 +76,9 @@ func (e *EventStream) Update(agg aggregate, events []Event) {
 			}
 		}
 
-		// call all functions that has registered for the aggregate type and id events
+		// call all functions that has registered for the aggregate type and ID events
 		// ref also include the package name ensuring that Aggregate Types can have the same name.
-		ref = fmt.Sprintf("%s_%s", ref, agg.id())
+		ref = fmt.Sprintf("%s_%s", ref, agg.ID())
 		if subs, ok := e.specificAggregates[ref]; ok {
 			for _, s := range subs {
 				s.f(event)
@@ -112,7 +112,7 @@ func (e *EventStream) SubscriberAll(f func(e Event)) *Subscription {
 	return &s
 }
 
-// SubscriberSpecificAggregate bind the f function to be called on events that belongs to aggregate based on type and id
+// SubscriberSpecificAggregate bind the f function to be called on events that belongs to aggregate based on type and ID
 func (e *EventStream) SubscriberSpecificAggregate(f func(e Event), aggregates ...aggregate) *Subscription {
 	s := Subscription{
 		f: f,
@@ -123,7 +123,7 @@ func (e *EventStream) SubscriberSpecificAggregate(f func(e Event), aggregates ..
 
 		for _, a := range aggregates {
 			name := reflect.TypeOf(a).Elem().Name()
-			ref := fmt.Sprintf("%s_%s_%s", a.path(), name, a.id())
+			ref := fmt.Sprintf("%s_%s_%s", a.path(), name, a.ID())
 			for i, sub := range e.specificAggregates[ref] {
 				if &s == sub {
 					e.specificAggregates[ref] = append(e.specificAggregates[ref][:i], e.specificAggregates[ref][i+1:]...)
@@ -138,7 +138,7 @@ func (e *EventStream) SubscriberSpecificAggregate(f func(e Event), aggregates ..
 
 		for _, a := range aggregates {
 			name := reflect.TypeOf(a).Elem().Name()
-			ref := fmt.Sprintf("%s_%s_%s", a.path(), name, a.id())
+			ref := fmt.Sprintf("%s_%s_%s", a.path(), name, a.ID())
 
 			// adds one more function to the aggregate
 			e.specificAggregates[ref] = append(e.specificAggregates[ref], &s)

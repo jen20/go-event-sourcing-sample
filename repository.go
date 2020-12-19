@@ -14,19 +14,19 @@ type eventStore interface {
 
 // snapshotStore interface expose the methods an snapshot store must uphold
 type snapshotStore interface {
-	Get(id string, a interface{}) error
-	Save(id string, a interface{}) error
+	Get(id string, a snapshotstore.Snapshot) error
+	Save(a snapshotstore.Snapshot) error
 }
 
 // aggregate interface to use the aggregate root specific methods
 type aggregate interface {
-	id() string
+	ID() string
 	path() string
 	BuildFromHistory(a aggregate, events []Event)
 	Transition(event Event)
 	changes() []Event
 	updateVersion()
-	version() Version
+	Version() Version
 }
 
 // Repository is the returned instance from the factory function
@@ -69,7 +69,7 @@ func (r *Repository) SaveSnapshot(aggregate aggregate) error {
 	if len(aggregate.changes()) > 0 {
 		return errors.New("can't save snapshot with unsaved events")
 	}
-	err := r.snapshotStore.Save(aggregate.id(), aggregate)
+	err := r.snapshotStore.Save(aggregate)
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func (r *Repository) Get(id string, aggregate aggregate) error {
 	}
 
 	// fetch events after the current version of the aggregate that could be fetched from the snapshot store
-	events, err := r.eventStore.Get(id, aggregateType, aggregate.version())
+	events, err := r.eventStore.Get(id, aggregateType, aggregate.Version())
 	if err != nil {
 		return err
 	}
