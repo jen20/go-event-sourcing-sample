@@ -10,7 +10,7 @@ import (
 
 type Eventstore interface {
 	Save(events []eventsourcing.Event) error
-	Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)
+	Get(id string, aggregateType string, afterVersion int) ([]eventsourcing.Event, error)
 }
 
 type eventstoreFunc = func() (Eventstore, func(), error)

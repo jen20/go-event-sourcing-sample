@@ -8,20 +8,17 @@ import (
 	uuid "github.com/google/uuid"
 )
 
-// Version is the event version used in event and aggregateRoot
-type Version int
-
 // AggregateRoot to be included into aggregates
 type AggregateRoot struct {
 	aggregateID      string
-	aggregateVersion Version
+	aggregateVersion int
 	aggregateEvents  []Event
 }
 
 // Event holding meta data and the application specific event in the Data property
 type Event struct {
 	AggregateRootID string
-	Version         Version
+	Version         int
 	Reason          string
 	AggregateType   string
 	Timestamp       time.Time
@@ -79,8 +76,8 @@ func (state *AggregateRoot) BuildFromHistory(a aggregate, events []Event) {
 	}
 }
 
-func (state *AggregateRoot) nextVersion() Version {
-	return state.Version() + 1
+func (state *AggregateRoot) nextVersion() int {
+	return int(state.Version() + 1)
 }
 
 // updateVersion sets the aggregateVersion to the aggregateVersion in the last event if reset the events
@@ -90,10 +87,6 @@ func (state *AggregateRoot) updateVersion() {
 		state.aggregateVersion = state.aggregateEvents[len(state.aggregateEvents)-1].Version
 		state.aggregateEvents = []Event{}
 	}
-}
-
-func (state *AggregateRoot) changes() []Event {
-	return state.aggregateEvents
 }
 
 // setID is the internal method to set the aggregate ID
@@ -124,11 +117,16 @@ func (state *AggregateRoot) path() string {
 }
 
 // Version return the version based on events that are not stored
-func (state *AggregateRoot) Version() Version {
+func (state *AggregateRoot) Version() int {
 	if len(state.aggregateEvents) > 0 {
-		return state.aggregateEvents[len(state.aggregateEvents)-1].Version
+		return int(state.aggregateEvents[len(state.aggregateEvents)-1].Version)
 	}
-	return state.aggregateVersion
+	return int(state.aggregateVersion)
+}
+
+// SetVersion return the version based on events that are not stored
+func (state *AggregateRoot) SetVersion(v int) {
+	state.aggregateVersion = int(v)
 }
 
 // Events return the aggregate events from the aggregate

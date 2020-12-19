@@ -40,7 +40,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	bucketName := aggregateKey(aggregateType, string(aggregateID))
 
 	evBucket := e.aggregateEvents[bucketName]
-	currentVersion := eventsourcing.Version(0)
+	currentVersion := 0
 
 	if len(evBucket) > 0 {
 		// Last version in the list
@@ -75,7 +75,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 }
 
 // Get aggregate events
-func (e *Memory) Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) {
+func (e *Memory) Get(id string, aggregateType string, afterVersion int) ([]eventsourcing.Event, error) {
 	var events []eventsourcing.Event
 
 	// make sure its thread safe
@@ -88,7 +88,7 @@ func (e *Memory) Get(id string, aggregateType string, afterVersion eventsourcing
 		if err != nil {
 			return nil, err
 		}
-		if event.Version > afterVersion {
+		if int(event.Version) > afterVersion {
 			events = append(events, event)
 		}
 	}

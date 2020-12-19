@@ -46,7 +46,7 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 	}
 	defer rows.Close()
 
-	currentVersion := eventsourcing.Version(0)
+	currentVersion := 0
 	for rows.Next() {
 		var data string
 		if err := rows.Scan(&data); err != nil {
@@ -86,7 +86,7 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 }
 
 // Get the events from database
-func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.Version) (events []eventsourcing.Event, err error) {
+func (sql *SQL) Get(id string, aggregateType string, afterVersion int) (events []eventsourcing.Event, err error) {
 	selectStm := `Select data from events where aggregate_id=? and aggregate_type=? and version>? order by version asc`
 	rows, err := sql.db.Query(selectStm, id, aggregateType, afterVersion)
 	if err != nil {

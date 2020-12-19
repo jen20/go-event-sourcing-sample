@@ -9,7 +9,7 @@ import (
 // eventStore interface expose the methods an event store must uphold
 type eventStore interface {
 	Save(events []Event) error
-	Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
+	Get(id string, aggregateType string, afterVersion int) ([]Event, error)
 }
 
 // snapshotStore interface expose the methods an snapshot store must uphold
@@ -24,9 +24,11 @@ type aggregate interface {
 	path() string
 	BuildFromHistory(a aggregate, events []Event)
 	Transition(event Event)
-	changes() []Event
+	Events() []Event
 	updateVersion()
-	Version() Version
+	Version() int
+	SetID(id string) error
+	SetVersion(version int)
 }
 
 // Repository is the returned instance from the factory function
@@ -47,14 +49,13 @@ func NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Reposito
 
 // Save an aggregates events
 func (r *Repository) Save(aggregate aggregate) error {
-	err := r.eventStore.Save(aggregate.changes())
+	err := r.eventStore.Save(aggregate.Events())
 	if err != nil {
 		return err
 	}
 
 	// publish the saved events to subscribers
-	events := aggregate.changes()
-	r.Update(aggregate, events)
+	r.Update(aggregate, aggregate.Events())
 
 	// aggregate are saved to the event store now its safe to update the internal aggregate state
 	aggregate.updateVersion()
@@ -66,7 +67,7 @@ func (r *Repository) SaveSnapshot(aggregate aggregate) error {
 	if r.snapshotStore == nil {
 		return errors.New("no snapshot store has been initialized in the repository")
 	}
-	if len(aggregate.changes()) > 0 {
+	if len(aggregate.Events()) > 0 {
 		return errors.New("can't save snapshot with unsaved events")
 	}
 	err := r.snapshotStore.Save(aggregate)
