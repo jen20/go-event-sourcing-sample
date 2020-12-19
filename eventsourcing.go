@@ -32,7 +32,9 @@ type Event struct {
 var (
 	// ErrAggregateAlreadyExists returned if the aggregateID is set more than one time
 	ErrAggregateAlreadyExists = errors.New("its not possible to set ID on already existing aggregate")
+)
 
+const (
 	emptyAggregateID = ""
 )
 
