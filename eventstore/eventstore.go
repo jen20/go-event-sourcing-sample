@@ -25,7 +25,7 @@ var ErrConcurrency = errors.New("concurrency error")
 var ErrReasonMissing = errors.New("event holds no reason")
 
 // ValidateEvents make sure the incoming events are valid
-func ValidateEvents(aggregateID string, currentVersion int, events []eventsourcing.Event) error {
+func ValidateEvents(aggregateID string, currentVersion eventsourcing.Version, events []eventsourcing.Event) error {
 	aggregateType := events[0].AggregateType
 
 	for _, event := range events {

@@ -8,17 +8,19 @@ import (
 	uuid "github.com/google/uuid"
 )
 
+type Version int
+
 // AggregateRoot to be included into aggregates
 type AggregateRoot struct {
 	AggregateID      string
-	AggregateVersion int
+	AggregateVersion Version
 	aggregateEvents  []Event
 }
 
 // Event holding meta data and the application specific event in the Data property
 type Event struct {
 	AggregateRootID string
-	Version         int
+	Version         Version
 	Reason          string
 	AggregateType   string
 	Timestamp       time.Time
@@ -72,12 +74,12 @@ func (state *AggregateRoot) BuildFromHistory(a aggregate, events []Event) {
 		//Set the aggregate ID
 		state.AggregateID = event.AggregateRootID
 		// Make sure the aggregate is in the correct version (the last event)
-		state.AggregateVersion = event.Version
+		state.AggregateVersion = Version(event.Version)
 	}
 }
 
-func (state *AggregateRoot) nextVersion() int {
-	return int(state.Version() + 1)
+func (state *AggregateRoot) nextVersion() Version {
+	return state.Version() + 1
 }
 
 // updateVersion sets the AggregateVersion to the AggregateVersion in the last event if reset the events
@@ -117,11 +119,11 @@ func (state *AggregateRoot) path() string {
 }
 
 // Version return the version based on events that are not stored
-func (state *AggregateRoot) Version() int {
+func (state *AggregateRoot) Version() Version {
 	if len(state.aggregateEvents) > 0 {
-		return int(state.aggregateEvents[len(state.aggregateEvents)-1].Version)
+		return state.aggregateEvents[len(state.aggregateEvents)-1].Version
 	}
-	return int(state.AggregateVersion)
+	return state.AggregateVersion
 }
 
 // Events return the aggregate events from the aggregate

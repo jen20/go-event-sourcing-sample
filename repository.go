@@ -9,7 +9,7 @@ import (
 // eventStore interface expose the methods an event store must uphold
 type eventStore interface {
 	Save(events []Event) error
-	Get(id string, aggregateType string, afterVersion int) ([]Event, error)
+	Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
 }
 
 // snapshotStore interface expose the methods an snapshot store must uphold
@@ -27,7 +27,7 @@ type aggregate interface {
 	Events() []Event
 	UnsavedEvents() bool
 	updateVersion()
-	Version() int
+	Version() Version
 	SetID(id string) error
 }
 

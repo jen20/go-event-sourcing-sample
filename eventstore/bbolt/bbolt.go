@@ -85,7 +85,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 		evBucket = tx.Bucket([]byte(bucketName))
 	}
 
-	currentVersion := 0
+	currentVersion := eventsourcing.Version(0)
 	cursor := evBucket.Cursor()
 	k, obj := cursor.Last()
 	if k != nil {
@@ -142,7 +142,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 }
 
 // Get aggregate events
-func (e *BBolt) Get(id string, aggregateType string, afterVersion int) ([]eventsourcing.Event, error) {
+func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) {
 	bucketName := aggregateKey(aggregateType, id)
 
 	tx, err := e.db.Begin(false)

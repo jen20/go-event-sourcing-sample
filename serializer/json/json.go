@@ -23,7 +23,7 @@ func New() *Handler {
 type jsonEvent struct {
 	AggregateType   string
 	Reason          string
-	Version         int
+	Version         eventsourcing.Version
 	AggregateRootID string
 	Timestamp       time.Time
 	Data            json.RawMessage

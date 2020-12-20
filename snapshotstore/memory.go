@@ -52,7 +52,7 @@ func (h *Handler) Save(s Snapshot) error {
 		return errors.New("aggregate id is empty")
 	}
 	if s.UnsavedEvents() {
-		return  errors.New("aggregate holds unsaved events")
+		return errors.New("aggregate holds unsaved events")
 	}
 	data, err := h.serializer.SerializeSnapshot(s)
 	if err != nil {
