@@ -42,7 +42,6 @@ func (h *Handler) Get(id string, s Snapshot) error {
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
