@@ -25,10 +25,10 @@ type aggregate interface {
 	BuildFromHistory(a aggregate, events []Event)
 	Transition(event Event)
 	Events() []Event
+	UnsavedEvents() bool
 	updateVersion()
 	Version() int
 	SetID(id string) error
-	SetVersion(version int)
 }
 
 // Repository is the returned instance from the factory function

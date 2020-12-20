@@ -53,17 +53,17 @@ func (person *Person) Transition(event eventsourcing.Event) {
 
 func TestSnapshot(t *testing.T) {
 	snapshot := snapshotstore.New(json.New())
-	person, err := CreatePerson("morgan")
+	var person Person
+
+	person.Age = 38
+	person.Name = "Test"
+	person.AggregateID = "123"
+	person.AggregateVersion = 10
+
+	err := snapshot.Save(&person)
 	if err != nil {
 		t.Fatal(err)
 	}
-	person.GrowOlder()
-
-	snapshot.Save(person)
-
-	// generate events that are not stored in the snapshot
-	person.GrowOlder()
-	person.GrowOlder()
 
 	p := Person{}
 	err = snapshot.Get(person.ID(), &p)
@@ -73,10 +73,13 @@ func TestSnapshot(t *testing.T) {
 	if p.Name != person.Name {
 		t.Fatalf("wrong Name in snapshot %q expected: %q", p.Name, person.Name)
 	}
+	if p.Age != person.Age {
+		t.Fatalf("wrong Age in snapshot %d expected: %d", p.Age, person.Age)
+	}
 	if p.ID() != person.ID() {
 		t.Fatalf("wrong id %s %s", p.ID(), person.ID())
 	}
-	if p.Version() != person.Version()-2 {
+	if p.Version() != person.Version() {
 		t.Fatalf("wrong version %d %d", p.Version(), person.Version())
 	}
 }
