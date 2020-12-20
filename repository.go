@@ -67,7 +67,7 @@ func (r *Repository) SaveSnapshot(aggregate aggregate) error {
 	if r.snapshotStore == nil {
 		return errors.New("no snapshot store has been initialized in the repository")
 	}
-	if len(aggregate.Events()) > 0 {
+	if aggregate.UnsavedEvents() {
 		return errors.New("can't save snapshot with unsaved events")
 	}
 	err := r.snapshotStore.Save(aggregate)
