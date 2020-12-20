@@ -8,6 +8,7 @@ import (
 	uuid "github.com/google/uuid"
 )
 
+// Version is the event version used in event and aggregateRoot
 type Version int
 
 // AggregateRoot to be included into aggregates
@@ -131,6 +132,7 @@ func (state *AggregateRoot) Events() []Event {
 	return state.aggregateEvents
 }
 
+// UnsavedEvents return true if there's unsaved events on the aggregate
 func (state *AggregateRoot) UnsavedEvents() bool {
 	return len(state.aggregateEvents) > 0
 }
