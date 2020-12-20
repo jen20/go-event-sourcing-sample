@@ -50,7 +50,7 @@ func (state *AggregateRoot) TrackChange(a aggregate, data interface{}) {
 func (state *AggregateRoot) TrackChangeWithMetaData(a aggregate, data interface{}, metaData map[string]interface{}) {
 	// This can be overwritten in the constructor of the aggregate
 	if state.AggregateID == emptyAggregateID {
-		state.setID(uuid.New().String())
+		state.AggregateID = uuid.New().String()
 	}
 
 	reason := reflect.TypeOf(data).Elem().Name()
@@ -75,7 +75,7 @@ func (state *AggregateRoot) BuildFromHistory(a aggregate, events []Event) {
 		//Set the aggregate ID
 		state.AggregateID = event.AggregateRootID
 		// Make sure the aggregate is in the correct version (the last event)
-		state.AggregateVersion = Version(event.Version)
+		state.AggregateVersion = event.Version
 	}
 }
 
@@ -92,11 +92,6 @@ func (state *AggregateRoot) updateVersion() {
 	}
 }
 
-// setID is the internal method to set the aggregate ID
-func (state *AggregateRoot) setID(id string) {
-	state.AggregateID = id
-}
-
 //Public accessors for aggregate root properties
 
 // SetID opens up the possibility to set manual aggregate ID from the outside
@@ -104,7 +99,7 @@ func (state *AggregateRoot) SetID(id string) error {
 	if state.AggregateID != emptyAggregateID {
 		return ErrAggregateAlreadyExists
 	}
-	state.setID(id)
+	state.AggregateID = id
 	return nil
 }
 
