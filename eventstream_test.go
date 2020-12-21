@@ -67,7 +67,7 @@ func TestSubscribeOneEvent(t *testing.T) {
 	}
 }
 
-func TestSubscribeSpecificAggregate(t *testing.T) {
+func TestSubscriberSpecificAggregate(t *testing.T) {
 	// setup aggregates with identifiers
 
 	anAggregate := AnAggregate{}
