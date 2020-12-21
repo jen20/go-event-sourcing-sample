@@ -34,7 +34,7 @@ func CreatePerson(name string) (*Person, error) {
 	return &person, nil
 }
 
-// CreatePersonWithID constructor for the Person that sets the aggregate id from the outside
+// CreatePersonWithID constructor for the Person that sets the aggregate ID from the outside
 func CreatePersonWithID(id, name string) (*Person, error) {
 	if name == "" {
 		return nil, errors.New("name can't be blank")
@@ -84,19 +84,19 @@ func TestCreateNewPerson(t *testing.T) {
 		t.Fatal("Wrong person Age")
 	}
 
-	if len(person.AggregateEvents) != 1 {
+	if len(person.Events()) != 1 {
 		t.Fatal("There should be one event on the person aggregateRoot")
 	}
 
-	if person.CurrentVersion() != 1 {
-		t.Fatal("Wrong version on the person aggregateRoot", person.AggregateVersion)
+	if person.Version() != 1 {
+		t.Fatal("Wrong version on the person aggregateRoot", person.Version())
 	}
 
-	if person.AggregateEvents[0].Timestamp.Before(timeBefore) {
+	if person.Events()[0].Timestamp.Before(timeBefore) {
 		t.Fatal("event timestamp before timeBefore")
 	}
 
-	if person.AggregateEvents[0].Timestamp.After(time.Now().UTC()) {
+	if person.Events()[0].Timestamp.After(time.Now().UTC()) {
 		t.Fatal("event timestamp after current time")
 	}
 }
@@ -108,8 +108,8 @@ func TestCreateNewPersonWithIDFromOutside(t *testing.T) {
 		t.Fatal("Error when creating person", err.Error())
 	}
 
-	if string(person.AggregateID) != id {
-		t.Fatal("Wrong aggregate id on the person aggregateRoot", person.AggregateID)
+	if person.ID() != id {
+		t.Fatal("Wrong aggregate ID on the person aggregateRoot", person.ID())
 	}
 }
 
@@ -128,7 +128,7 @@ func TestSetIDOnExistingPerson(t *testing.T) {
 
 	err = person.SetID("new_id")
 	if err == nil {
-		t.Fatal("Should not be possible to set id on already existing person")
+		t.Fatal("Should not be possible to set ID on already existing person")
 	}
 }
 
@@ -136,15 +136,15 @@ func TestPersonAgedOneYear(t *testing.T) {
 	person, _ := CreatePerson("kalle")
 	person.GrowOlder()
 
-	if len(person.AggregateEvents) != 2 {
-		t.Fatal("There should be two event on the person aggregateRoot", person.AggregateEvents)
+	if len(person.Events()) != 2 {
+		t.Fatal("There should be two event on the person aggregateRoot", person.Events())
 	}
 
-	if person.AggregateEvents[len(person.AggregateEvents)-1].Reason != "AgedOneYear" {
-		t.Fatal("The last event reason should be AgedOneYear", person.AggregateEvents[len(person.AggregateEvents)-1].Reason)
+	if person.Events()[len(person.Events())-1].Reason != "AgedOneYear" {
+		t.Fatal("The last event reason should be AgedOneYear", person.Events()[len(person.Events())-1].Reason)
 	}
 
-	d, ok := person.AggregateEvents[1].MetaData["foo"]
+	d, ok := person.Events()[1].MetaData["foo"]
 
 	if !ok {
 		t.Fatal("meta data not present")
@@ -154,7 +154,7 @@ func TestPersonAgedOneYear(t *testing.T) {
 		t.Fatal("wrong meta data")
 	}
 
-	if person.AggregateID == "" {
+	if person.ID() == "" {
 		t.Fatal("aggregate ID should not be empty")
 	}
 }

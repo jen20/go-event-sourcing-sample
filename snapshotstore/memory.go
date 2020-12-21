@@ -10,9 +10,15 @@ type Handler struct {
 	serializer snapshotSerializer
 }
 
+// Snapshot interface
+type Snapshot interface {
+	ID() string
+	UnsavedEvents() bool
+}
+
 type snapshotSerializer interface {
-	SerializeSnapshot(interface{}) ([]byte, error)
-	DeserializeSnapshot(data []byte, a interface{}) error
+	SerializeSnapshot(s Snapshot) ([]byte, error)
+	DeserializeSnapshot(data []byte, s Snapshot) error
 }
 
 // ErrSnapshotNotFound returns if snapshot not found
@@ -27,12 +33,12 @@ func New(serializer snapshotSerializer) *Handler {
 }
 
 // Get returns the deserialize snapshot
-func (h *Handler) Get(id string, a interface{}) error {
-	data, ok := h.store[id]
+func (h *Handler) Get(id string, s Snapshot) error {
+	v, ok := h.store[id]
 	if !ok {
 		return ErrSnapshotNotFound
 	}
-	err := h.serializer.DeserializeSnapshot(data, a)
+	err := h.serializer.DeserializeSnapshot(v, s)
 	if err != nil {
 		return err
 	}
@@ -40,14 +46,17 @@ func (h *Handler) Get(id string, a interface{}) error {
 }
 
 // Save persists the snapshot
-func (h *Handler) Save(id string, a interface{}) error {
-	if id == "" {
+func (h *Handler) Save(s Snapshot) error {
+	if s.ID() == "" {
 		return errors.New("aggregate id is empty")
 	}
-	data, err := h.serializer.SerializeSnapshot(a)
+	if s.UnsavedEvents() {
+		return errors.New("aggregate holds unsaved events")
+	}
+	data, err := h.serializer.SerializeSnapshot(s)
 	if err != nil {
 		return err
 	}
-	h.store[id] = data
+	h.store[s.ID()] = data
 	return nil
 }

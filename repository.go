@@ -14,19 +14,21 @@ type eventStore interface {
 
 // snapshotStore interface expose the methods an snapshot store must uphold
 type snapshotStore interface {
-	Get(id string, a interface{}) error
-	Save(id string, a interface{}) error
+	Get(id string, a snapshotstore.Snapshot) error
+	Save(a snapshotstore.Snapshot) error
 }
 
 // aggregate interface to use the aggregate root specific methods
 type aggregate interface {
-	id() string
+	ID() string
 	path() string
 	BuildFromHistory(a aggregate, events []Event)
 	Transition(event Event)
-	changes() []Event
+	Events() []Event
+	UnsavedEvents() bool
 	updateVersion()
-	version() Version
+	Version() Version
+	SetID(id string) error
 }
 
 // Repository is the returned instance from the factory function
@@ -47,14 +49,13 @@ func NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Reposito
 
 // Save an aggregates events
 func (r *Repository) Save(aggregate aggregate) error {
-	err := r.eventStore.Save(aggregate.changes())
+	err := r.eventStore.Save(aggregate.Events())
 	if err != nil {
 		return err
 	}
 
 	// publish the saved events to subscribers
-	events := aggregate.changes()
-	r.Update(aggregate, events)
+	r.Update(aggregate, aggregate.Events())
 
 	// aggregate are saved to the event store now its safe to update the internal aggregate state
 	aggregate.updateVersion()
@@ -66,10 +67,10 @@ func (r *Repository) SaveSnapshot(aggregate aggregate) error {
 	if r.snapshotStore == nil {
 		return errors.New("no snapshot store has been initialized in the repository")
 	}
-	if len(aggregate.changes()) > 0 {
+	if aggregate.UnsavedEvents() {
 		return errors.New("can't save snapshot with unsaved events")
 	}
-	err := r.snapshotStore.Save(aggregate.id(), aggregate)
+	err := r.snapshotStore.Save(aggregate)
 	if err != nil {
 		return err
 	}
@@ -93,7 +94,7 @@ func (r *Repository) Get(id string, aggregate aggregate) error {
 	}
 
 	// fetch events after the current version of the aggregate that could be fetched from the snapshot store
-	events, err := r.eventStore.Get(id, aggregateType, aggregate.version())
+	events, err := r.eventStore.Get(id, aggregateType, aggregate.Version())
 	if err != nil {
 		return err
 	}

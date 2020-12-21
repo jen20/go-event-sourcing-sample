@@ -53,30 +53,34 @@ func (person *Person) Transition(event eventsourcing.Event) {
 
 func TestSnapshot(t *testing.T) {
 	snapshot := snapshotstore.New(json.New())
-	person, err := CreatePerson("morgan")
+	var person Person
+
+	person.Age = 38
+	person.Name = "Test"
+	person.AggregateID = "123"
+	person.AggregateVersion = 10
+
+	err := snapshot.Save(&person)
 	if err != nil {
 		t.Fatal(err)
 	}
-	person.GrowOlder()
 
-	snapshot.Save(person.AggregateID, person)
-	// save the version we expect in the snapshot
-	personVersion := person.AggregateVersion
-
-	// generate events that are not stored in the snapshot
-	person.GrowOlder()
-	person.GrowOlder()
 	p := Person{}
-	err = snapshot.Get(person.AggregateID, &p)
+	err = snapshot.Get(person.ID(), &p)
 	if err != nil {
 		t.Fatalf("could not get snapshot %v", err)
 	}
 	if p.Name != person.Name {
 		t.Fatalf("wrong Name in snapshot %q expected: %q", p.Name, person.Name)
 	}
-
-	if p.AggregateVersion != personVersion {
-		t.Fatalf("wrong AggregateVersion in snapshot %q expected: %q", p.AggregateVersion, personVersion)
+	if p.Age != person.Age {
+		t.Fatalf("wrong Age in snapshot %d expected: %d", p.Age, person.Age)
+	}
+	if p.ID() != person.ID() {
+		t.Fatalf("wrong id %s %s", p.ID(), person.ID())
+	}
+	if p.Version() != person.Version() {
+		t.Fatalf("wrong version %d %d", p.Version(), person.Version())
 	}
 }
 
@@ -94,7 +98,7 @@ func TestSaveEmptySnapshotID(t *testing.T) {
 	snapshot := snapshotstore.New(json.New())
 
 	p := Person{}
-	err := snapshot.Save("", &p)
+	err := snapshot.Save(&p)
 	if err == nil {
 		t.Fatalf("could save blank snapshot id %v", err)
 	}

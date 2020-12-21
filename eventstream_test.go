@@ -67,10 +67,13 @@ func TestSubscribeOneEvent(t *testing.T) {
 	}
 }
 
-func TestSubscribeSpecificAggregate(t *testing.T) {
+func TestSubscriberSpecificAggregate(t *testing.T) {
 	// setup aggregates with identifiers
-	anAggregate := AnAggregate{eventsourcing.AggregateRoot{AggregateID: "123"}}
-	anOtherAggregate := AnotherAggregate{eventsourcing.AggregateRoot{AggregateID: "456"}}
+
+	anAggregate := AnAggregate{}
+	anAggregate.SetID("123")
+	anOtherAggregate := AnotherAggregate{}
+	anOtherAggregate.SetID("456")
 
 	var streamEvent *eventsourcing.Event
 	e := eventsourcing.NewEventStream()

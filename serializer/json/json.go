@@ -3,6 +3,7 @@ package json
 import (
 	"encoding/json"
 	"errors"
+	"github.com/hallgren/eventsourcing/snapshotstore"
 	"reflect"
 	"time"
 
@@ -22,7 +23,7 @@ func New() *Handler {
 type jsonEvent struct {
 	AggregateType   string
 	Reason          string
-	Version         int
+	Version         eventsourcing.Version
 	AggregateRootID string
 	Timestamp       time.Time
 	Data            json.RawMessage
@@ -70,7 +71,7 @@ func (h *Handler) SerializeEvent(event eventsourcing.Event) ([]byte, error) {
 	data, _ := json.Marshal(event.Data)
 	e.Data = data
 	e.AggregateType = event.AggregateType
-	e.Version = int(event.Version)
+	e.Version = event.Version
 	e.Timestamp = event.Timestamp
 	e.AggregateRootID = event.AggregateRootID
 	e.Reason = event.Reason
@@ -100,13 +101,13 @@ func (h *Handler) DeserializeEvent(v []byte) (event eventsourcing.Event, err err
 	event.Reason = jsonEvent.Reason
 	event.Timestamp = jsonEvent.Timestamp
 	event.AggregateRootID = jsonEvent.AggregateRootID
-	event.Version = eventsourcing.Version(jsonEvent.Version)
+	event.Version = jsonEvent.Version
 	event.AggregateType = jsonEvent.AggregateType
 	return
 }
 
 // SerializeSnapshot marshals an aggregate as interface{} to []byte
-func (h *Handler) SerializeSnapshot(aggregate interface{}) ([]byte, error) {
+func (h *Handler) SerializeSnapshot(aggregate snapshotstore.Snapshot) ([]byte, error) {
 	data, err := json.Marshal(aggregate)
 	if err != nil {
 		return nil, err
@@ -114,7 +115,7 @@ func (h *Handler) SerializeSnapshot(aggregate interface{}) ([]byte, error) {
 	return data, nil
 }
 
-// DeserializeSnapshot unmarshals []byte to an aggregate
-func (h *Handler) DeserializeSnapshot(data []byte, a interface{}) error {
+// DeserializeSnapshot unmarshal []byte to an aggregate
+func (h *Handler) DeserializeSnapshot(data []byte, a snapshotstore.Snapshot) error {
 	return json.Unmarshal(data, a)
 }
