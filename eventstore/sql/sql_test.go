@@ -22,7 +22,7 @@ func TestSuite(t *testing.T) {
 		r := seededRand.Intn(1000000)
 		db, err := sqldriver.Open("ramsql", string(r))
 		if err != nil {
-			return nil, nil, errors.New(fmt.Sprintf("could not open sqlit3 database %v", err))
+			return nil, nil, errors.New(fmt.Sprintf("could not open ramsql database %v", err))
 		}
 		err = db.Ping()
 		if err != nil {
