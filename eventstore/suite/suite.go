@@ -3,7 +3,6 @@ package suite
 import (
 	"fmt"
 	"github.com/hallgren/eventsourcing"
-	"github.com/hallgren/eventsourcing/serializer/json"
 	"sync"
 	"testing"
 )
@@ -68,7 +67,6 @@ type FlightTaken struct {
 var aggregateID = "123"
 var aggregateID2 = "321"
 var aggregateType = "FrequentFlierAccount"
-var jsonSerializer = json.New()
 var aggregateIDOther = "666"
 
 func testEventsWithID(aggregateID string) []eventsourcing.Event {
@@ -169,7 +167,7 @@ func getEventsAfterVersion(t *testing.T, es Eventstore) {
 
 	// Should return one less event
 	if len(fetchedEvents) != len(testEvents())-1 {
-		t.Fatal("wrong number of events returned")
+		t.Fatalf("wrong number of events returned exp: %d, got:%d",len(fetchedEvents), len(testEvents())-1)
 	}
 	// first event version should be 2
 	if fetchedEvents[0].Version != 2 {
