@@ -8,18 +8,16 @@ import (
 
 // Memory is a handler for event streaming
 type Memory struct {
-	aggregateEvents map[string][][]byte // The memory structure where we store aggregate events
-	eventsInOrder   [][]byte            // The global event order
-	serializer      eventstore.EventSerializer
+	aggregateEvents map[string][]eventsourcing.Event // The memory structure where we store aggregate events
+	eventsInOrder   []eventsourcing.Event            // The global event order
 	lock            sync.Mutex
 }
 
 // Create in memory event store
-func Create(serializer eventstore.EventSerializer) *Memory {
+func Create() *Memory {
 	return &Memory{
-		aggregateEvents: make(map[string][][]byte),
-		eventsInOrder:   make([][]byte, 0),
-		serializer:      serializer,
+		aggregateEvents: make(map[string][]eventsourcing.Event),
+		eventsInOrder:   make([]eventsourcing.Event, 0),
 	}
 }
 
@@ -44,10 +42,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 
 	if len(evBucket) > 0 {
 		// Last version in the list
-		lastEvent, err := e.serializer.DeserializeEvent(evBucket[len(evBucket)-1])
-		if err != nil {
-			return err
-		}
+		lastEvent := evBucket[len(evBucket)-1]
 		currentVersion = lastEvent.Version
 	}
 
@@ -60,12 +55,11 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	eventsInOrder := e.eventsInOrder
 
 	for _, event := range events {
-		eventSerialized, err := e.serializer.SerializeEvent(event)
 		if err != nil {
 			return err
 		}
-		evBucket = append(evBucket, eventSerialized)
-		eventsInOrder = append(eventsInOrder, eventSerialized)
+		evBucket = append(evBucket, event)
+		eventsInOrder = append(eventsInOrder, event)
 	}
 
 	e.aggregateEvents[bucketName] = evBucket
@@ -77,20 +71,15 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 // Get aggregate events
 func (e *Memory) Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) {
 	var events []eventsourcing.Event
-
 	// make sure its thread safe
 	e.lock.Lock()
-	e.lock.Unlock()
+	defer e.lock.Unlock()
 
-	eventsSerialized := e.aggregateEvents[aggregateKey(aggregateType, id)]
-	for _, eventSerialized := range eventsSerialized {
-		event, err := e.serializer.DeserializeEvent(eventSerialized)
-		if err != nil {
-			return nil, err
+	for _,e := range e.aggregateEvents[aggregateKey(aggregateType, id)] {
+		if e.Version > afterVersion {
+			events = append(events, e)
 		}
-		if event.Version > afterVersion {
-			events = append(events, event)
-		}
+
 	}
 	return events, nil
 }
