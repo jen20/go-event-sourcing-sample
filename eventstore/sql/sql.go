@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hallgren/eventsourcing/serializer"
+	"time"
 
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore"
@@ -74,6 +75,7 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 	insert := `Insert into events (id, version, reason, type, timestamp, data, metadata) values ($1, $2, $3, $4, $5, $6, $7)`
 	for _, event := range events {
 		var e,m []byte
+
 		e, err := sql.serializer.Marshal(event.Data)
 		if err != nil {
 			return err
@@ -84,13 +86,12 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 				return err
 			}
 		}
-		_, err = tx.Exec(insert, event.AggregateRootID, event.Version, event.Reason, event.AggregateType, event.Timestamp.String(), e, m)
+		_, err = tx.Exec(insert, event.AggregateRootID, event.Version, event.Reason, event.AggregateType, event.Timestamp.Format(time.RFC3339), string(e), string(m))
 		if err != nil {
 			return err
 		}
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 // Get the events from database
@@ -102,24 +103,38 @@ func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.
 	}
 	defer rows.Close()
 	for rows.Next() {
+		var eventMetaData map[string]interface{}
 		var version eventsourcing.Version
 		var id, reason, typ, timestamp string
-		var data, metadata []byte
+		var data, metadata string
 		if err := rows.Scan(&id, &version, &reason, &typ, &timestamp, &data, &metadata); err != nil {
 			return nil, err
 		}
-		eventData := sql.serializer.EventStruct(typ, reason)
-		err = sql.serializer.Unmarshal(data, &eventData)
+
+		t, err := time.Parse(time.RFC3339, timestamp)
 		if err != nil {
 			return nil, err
 		}
-		// TODO add all properties
+
+		eventData := sql.serializer.EventStruct(typ, reason)
+		err = sql.serializer.Unmarshal([]byte(data), &eventData)
+		if err != nil {
+			return nil, err
+		}
+		if metadata != "" {
+			err = sql.serializer.Unmarshal([]byte(metadata), &eventMetaData)
+			if err != nil {
+				return nil, err
+			}
+		}
 		e := eventsourcing.Event{
 			AggregateRootID: id,
 			Version: version,
 			AggregateType: typ,
 			Reason: reason,
+			Timestamp: t,
 			Data: eventData,
+			MetaData: eventMetaData,
 		}
 		events = append(events, e)
 	}

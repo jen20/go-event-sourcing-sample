@@ -3,14 +3,10 @@ package eventsourcing_test
 import (
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
-	"github.com/hallgren/eventsourcing/serializer/json"
-	"github.com/hallgren/eventsourcing/snapshotstore"
 	"testing"
 )
 
 func TestSaveAndGetAggregate(t *testing.T) {
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
 
 	person, err := CreatePerson("kalle")
@@ -38,10 +34,9 @@ func TestSaveAndGetAggregate(t *testing.T) {
 	}
 }
 
+/*
 func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
-	snapshot := snapshotstore.New(serializer)
+	snapshot := snapshotstore.New(nil)
 	repo := eventsourcing.NewRepository(memory.Create(), snapshot)
 
 	person, err := CreatePerson("kalle")
@@ -93,10 +88,9 @@ func TestSaveSnapshotWithUnsavedEvents(t *testing.T) {
 		t.Fatalf("should not save snapshot with unsaved events %v", err)
 	}
 }
+*/
 
 func TestSaveSnapshotWithoutSnapshotStore(t *testing.T) {
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
 
 	person, err := CreatePerson("kalle")
@@ -115,8 +109,6 @@ func TestSubscriptionAllEvent(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
 	s := repo.SubscriberAll(f)
 	s.Subscribe()
@@ -144,8 +136,6 @@ func TestSubscriptionSpecificEvent(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
 	s := repo.SubscriberSpecificEvent(f, &Born{}, &AgedOneYear{})
 	s.Subscribe()
@@ -173,8 +163,6 @@ func TestSubscriptionAggregateType(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
 	s := repo.SubscriberAggregateType(f, &Person{})
 	s.Subscribe()
@@ -202,8 +190,6 @@ func TestSubscriptionSpecificAggregate(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
 
 	person, err := CreatePerson("kalle")
@@ -228,8 +214,6 @@ func TestSubscriptionSpecificAggregate(t *testing.T) {
 }
 
 func TestEventChainDoesNotHang(t *testing.T) {
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
 
 	// eventChan can hold 5 events before it get full and blocks.

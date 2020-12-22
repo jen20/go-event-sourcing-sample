@@ -2,12 +2,12 @@ package sql_test
 
 import (
 	sqldriver "database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/hallgren/eventsourcing/eventstore/sql"
 	"github.com/hallgren/eventsourcing/eventstore/suite"
 	"github.com/hallgren/eventsourcing/serializer"
-	"github.com/hallgren/eventsourcing/serializer/json"
 	_ "github.com/proullon/ramsql/driver"
 	"math/rand"
 	"testing"
@@ -29,7 +29,8 @@ func TestSuite(t *testing.T) {
 		if err != nil {
 			return nil, nil, errors.New(fmt.Sprintf("could not ping database %v", err))
 		}
-		ser := serializer.New(json.New())
+		ser := serializer.New(json.Marshal, json.Unmarshal)
+		ser.Register(&suite.FrequentFlierAccount{}, &suite.FrequentFlierAccountCreated{}, &suite.FlightTaken{}, &suite.StatusMatched{})
 		es := sql.Open(*db, ser)
 		err = es.MigrateTest()
 		if err != nil {
