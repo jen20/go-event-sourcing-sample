@@ -20,7 +20,7 @@ func TestSuite(t *testing.T) {
 	f := func() (suite.Eventstore, func(), error) {
 		// use random int to get a new db on each test run
 		r := seededRand.Intn(1000000)
-		db, err := sqldriver.Open("ramsql", string(r))
+		db, err := sqldriver.Open("ramsql", fmt.Sprintf("%d",r))
 		if err != nil {
 			return nil, nil, errors.New(fmt.Sprintf("could not open ramsql database %v", err))
 		}
