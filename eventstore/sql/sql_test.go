@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/hallgren/eventsourcing/eventstore/sql"
 	"github.com/hallgren/eventsourcing/eventstore/suite"
+	"github.com/hallgren/eventsourcing/serializer"
 	"github.com/hallgren/eventsourcing/serializer/json"
 	_ "github.com/proullon/ramsql/driver"
 	"math/rand"
@@ -28,7 +29,8 @@ func TestSuite(t *testing.T) {
 		if err != nil {
 			return nil, nil, errors.New(fmt.Sprintf("could not ping database %v", err))
 		}
-		es := sql.Open(*db, json.New())
+		ser := serializer.New(json.New())
+		es := sql.Open(*db, ser)
 		err = es.MigrateTest()
 		if err != nil {
 			return nil, nil, errors.New(fmt.Sprintf("could not migrate database %v", err))

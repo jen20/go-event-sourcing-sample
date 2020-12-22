@@ -15,6 +15,7 @@ type Handler struct {
 	eventRegister map[string]interface{}
 }
 
+
 // New returns a json Handle
 func New() *Handler {
 	return &Handler{eventRegister: make(map[string]interface{})}
@@ -62,6 +63,14 @@ func (h *Handler) Register(aggregate aggregate, events ...interface{}) error {
 		h.eventRegister[aggregateName+"_"+eventName] = event
 	}
 	return nil
+}
+
+func (h *Handler) Marshal(v interface{}) ([]byte, error)  {
+	return json.Marshal(v)
+}
+
+func (h *Handler) Unmarshal(data []byte, v interface{}) error {
+	return json.Unmarshal(data, v)
 }
 
 // SerializeEvent marshals an event into a json byte array
