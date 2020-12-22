@@ -6,12 +6,6 @@ import (
 	"github.com/hallgren/eventsourcing"
 )
 
-// EventSerializer is the common interface a event serializer must uphold
-type EventSerializer interface {
-	SerializeEvent(event eventsourcing.Event) ([]byte, error)
-	DeserializeEvent(v []byte) (event eventsourcing.Event, err error)
-}
-
 // ErrEventMultipleAggregates when events holds different id
 var ErrEventMultipleAggregates = errors.New("events holds events for more than one aggregate")
 
