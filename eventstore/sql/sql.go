@@ -12,10 +12,6 @@ import (
 	"github.com/hallgren/eventsourcing/eventstore"
 )
 
-type aggregate interface {
-	Transition(event eventsourcing.Event)
-}
-
 // SQL for store events
 type SQL struct {
 	db         sql.DB
@@ -44,9 +40,15 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 	aggregateID := events[0].AggregateRootID
 	aggregateType := events[0].AggregateType
 
+	tx, err := sql.db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return errors.New(fmt.Sprintf("could not start a transaction, %v", err))
+	}
+	defer tx.Rollback()
+
 	// the current version of that is the last event saved
 	selectStm := `Select version from events where id=? and type=? order by version desc limit 1`
-	rows, err := sql.db.Query(selectStm, aggregateID, aggregateType)
+	rows, err := tx.Query(selectStm, aggregateID, aggregateType)
 	if err != nil {
 		return err
 	}
@@ -67,11 +69,6 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 		return err
 	}
 
-	tx, err := sql.db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return errors.New(fmt.Sprintf("could not start a write transaction, %v", err))
-	}
-	defer tx.Rollback()
 	insert := `Insert into events (id, version, reason, type, timestamp, data, metadata) values ($1, $2, $3, $4, $5, $6, $7)`
 	for _, event := range events {
 		var e,m []byte
@@ -127,7 +124,7 @@ func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.
 				return nil, err
 			}
 		}
-		e := eventsourcing.Event{
+		events = append(events, eventsourcing.Event{
 			AggregateRootID: id,
 			Version: version,
 			AggregateType: typ,
@@ -135,8 +132,7 @@ func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.
 			Timestamp: t,
 			Data: eventData,
 			MetaData: eventMetaData,
-		}
-		events = append(events, e)
+		})
 	}
 	return
 }
