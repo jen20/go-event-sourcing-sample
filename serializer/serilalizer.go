@@ -2,13 +2,10 @@ package serializer
 
 import (
 	"errors"
-	"github.com/hallgren/eventsourcing"
 	"reflect"
 )
 
-type aggregate interface {
-	Transition(event eventsourcing.Event)
-}
+type aggregate interface {}
 
 type marshal func (v interface{}) ([]byte, error)
 type unmarshal func(data []byte, v interface{}) error
