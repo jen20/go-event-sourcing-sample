@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/hallgren/eventsourcing/serializer"
+	"sync"
 	"time"
 
 	"github.com/hallgren/eventsourcing"
@@ -16,6 +17,7 @@ import (
 type SQL struct {
 	db         sql.DB
 	serializer *serializer.Handler
+	lock sync.Mutex
 }
 
 // Open connection to database
@@ -42,7 +44,7 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 
 	tx, err := sql.db.BeginTx(context.Background(), nil)
 	if err != nil {
-		return errors.New(fmt.Sprintf("could not start a transaction, %v", err))
+		return errors.New(fmt.Sprintf("could not start a write transaction, %v", err))
 	}
 	defer tx.Rollback()
 
@@ -73,12 +75,16 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 	for _, event := range events {
 		var e,m []byte
 
+		sql.lock.Lock()
 		e, err := sql.serializer.Marshal(event.Data)
+		sql.lock.Unlock()
 		if err != nil {
 			return err
 		}
 		if event.MetaData != nil {
+			sql.lock.Lock()
 			m, err = sql.serializer.Marshal(event.MetaData)
+			sql.lock.Unlock()
 			if err != nil {
 				return err
 			}
@@ -113,17 +119,22 @@ func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.
 			return nil, err
 		}
 
+		sql.lock.Lock()
 		eventData := sql.serializer.EventStruct(typ, reason)
 		err = sql.serializer.Unmarshal([]byte(data), &eventData)
+		sql.lock.Unlock()
 		if err != nil {
 			return nil, err
 		}
 		if metadata != "" {
+			sql.lock.Lock()
 			err = sql.serializer.Unmarshal([]byte(metadata), &eventMetaData)
+			sql.lock.Unlock()
 			if err != nil {
 				return nil, err
 			}
 		}
+
 		events = append(events, eventsourcing.Event{
 			AggregateRootID: id,
 			Version: version,
