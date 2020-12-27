@@ -35,7 +35,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	// get bucket name from first event
 	aggregateType := events[0].AggregateType
 	aggregateID := events[0].AggregateRootID
-	bucketName := aggregateKey(aggregateType, string(aggregateID))
+	bucketName := aggregateKey(aggregateType, aggregateID)
 
 	evBucket := e.aggregateEvents[bucketName]
 	currentVersion := eventsourcing.Version(0)
