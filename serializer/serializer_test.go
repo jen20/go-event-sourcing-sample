@@ -57,6 +57,7 @@ func TestSerializeDeserialize(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Could not Unmarshal data, %v", err)
 			}
+
 			/*
 			if data2.A != data.A {
 				t.Fatalf("wrong value in A expected: %d, actual: %d", data.A, data2.A)

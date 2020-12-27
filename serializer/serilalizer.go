@@ -14,9 +14,10 @@ type unmarshal func(data []byte, v interface{}) error
 // Handler for json serializes
 type Handler struct {
 	eventRegister map[string]interface{}
-	marshal marshal
-	unmarshal unmarshal
-	lock sync.Mutex
+	marshal       marshal
+	unmarshal     unmarshal
+	lockMarshal   sync.Mutex
+	lockUnmarshal  sync.Mutex
 }
 
 // New returns a json Handle
@@ -41,8 +42,6 @@ var (
 
 // Register events aggregate
 func (h *Handler) Register(aggregate aggregate, events ...interface{}) error {
-	h.lock.Lock()
-	defer h.lock.Unlock()
 	typ := reflect.TypeOf(aggregate).Elem().Name()
 	if typ == "" {
 		return ErrAggregateNameMissing
@@ -63,21 +62,19 @@ func (h *Handler) Register(aggregate aggregate, events ...interface{}) error {
 
 // EventStruct return a struct from the registry
 func (h *Handler) EventStruct(typ, reason string) interface{} {
-	h.lock.Lock()
-	defer h.lock.Unlock()
 	return h.eventRegister[typ+"_"+reason]
 }
 
 // Marshal pass the request to the under laying Marshal method
 func (h *Handler) Marshal(v interface{}) ([]byte, error) {
-	h.lock.Lock()
-	defer h.lock.Unlock()
+	h.lockMarshal.Lock()
+	defer h.lockMarshal.Unlock()
 	return h.marshal(v)
 }
 
 // Unmarshal pass the request to the under laying Unmarshal method
 func (h *Handler) Unmarshal(data []byte, v interface{}) error {
-	h.lock.Lock()
-	defer h.lock.Unlock()
+	h.lockUnmarshal.Lock()
+	defer h.lockUnmarshal.Unlock()
 	return h.unmarshal(data, v)
 }
