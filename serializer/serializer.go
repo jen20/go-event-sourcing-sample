@@ -18,18 +18,12 @@ type Handler struct {
 	unmarshal     unmarshal
 }
 
-// EventFunc holds the event and a func how to construct a new instance of the event.
-type EventFunc struct {
-	Event interface{}
-	F     EventF
-}
-
-type EventF = func() interface{}
+type EventFunc = func() interface{}
 
 // New returns a json Handle
 func New(marshalF marshal, unmarshalF unmarshal) *Handler {
 	return &Handler{
-		eventRegister: make(map[string]EventF),
+		eventRegister: make(map[string]EventFunc),
 		marshal: marshalF,
 		unmarshal: unmarshalF,
 	}
@@ -57,18 +51,19 @@ func (h *Handler) RegisterTypes(aggregate aggregate, events ...EventFunc) error 
 		return ErrNoEventsToRegister
 	}
 
-	for _, event := range events {
-		reason := reflect.TypeOf(event.Event).Elem().Name()
+	for _, f := range events {
+		event := f()
+		reason := reflect.TypeOf(event).Elem().Name()
 		if reason == "" {
 			return ErrEventNameMissing
 		}
-		h.eventRegister[typ+"_"+reason] = event.F
+		h.eventRegister[typ+"_"+reason] = f
 	}
 	return nil
 }
 
 // Type return a struct from the registry
-func (h *Handler) Type(typ, reason string) EventF {
+func (h *Handler) Type(typ, reason string) EventFunc {
 	return h.eventRegister[typ+"_"+reason]
 }
 

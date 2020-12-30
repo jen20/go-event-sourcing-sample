@@ -32,9 +32,9 @@ func TestSuite(t *testing.T) {
 		ser := serializer.New(json.Marshal, json.Unmarshal)
 
 		ser.RegisterTypes(&suite.FrequentFlierAccount{},
-			serializer.EventFunc{Event: &suite.FrequentFlierAccountCreated{}, F: func() interface{} { return &suite.FrequentFlierAccountCreated{}}},
-			serializer.EventFunc{Event: &suite.FlightTaken{}, F: func() interface{} { return &suite.FlightTaken{}}},
-			serializer.EventFunc{Event: &suite.StatusMatched{}, F: func() interface{} { return &suite.StatusMatched{}}},
+			func() interface{} { return &suite.FrequentFlierAccountCreated{}},
+			func() interface{} { return &suite.FlightTaken{}},
+			func() interface{} { return &suite.StatusMatched{}},
 		)
 
 		es := sql.Open(*db, ser)
