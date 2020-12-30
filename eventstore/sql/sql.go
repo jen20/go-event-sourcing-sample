@@ -113,7 +113,12 @@ func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.
 			return nil, err
 		}
 
-		f := sql.serializer.Type(typ, reason)
+		f, ok := sql.serializer.Type(typ, reason)
+		if !ok {
+			// if the typ/reason is not register jump over the event
+			continue
+		}
+
 		eventData := f()
 		err = sql.serializer.Unmarshal([]byte(data), &eventData)
 		if err != nil {

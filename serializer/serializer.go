@@ -63,8 +63,9 @@ func (h *Handler) RegisterTypes(aggregate aggregate, events ...eventFunc) error 
 }
 
 // Type return a struct from the registry
-func (h *Handler) Type(typ, reason string) eventFunc {
-	return h.eventRegister[typ+"_"+reason]
+func (h *Handler) Type(typ, reason string) (eventFunc, bool) {
+	d, ok := h.eventRegister[typ+"_"+reason]
+	return d, ok
 }
 
 // Marshal pass the request to the under laying Marshal method

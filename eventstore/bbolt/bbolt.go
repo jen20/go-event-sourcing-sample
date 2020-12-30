@@ -189,7 +189,11 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("could not deserialize event, %v", err))
 		}
-		f := e.serializer.Type(bEvent.AggregateType, bEvent.Reason)
+		f, ok := e.serializer.Type(bEvent.AggregateType, bEvent.Reason)
+		if !ok {
+			// if the typ/reason is not register jump over the event
+			continue
+		}
 		eventData := f()
 		err = e.serializer.Unmarshal(bEvent.Data, &eventData)
 		if err != nil {

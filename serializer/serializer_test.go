@@ -53,7 +53,10 @@ func TestSerializeDeserialize(t *testing.T) {
 			}
 			fmt.Println(string(d))
 
-			f := s.Type("SomeAggregate", "SomeData")
+			f, ok := s.Type("SomeAggregate", "SomeData")
+			if !ok {
+				t.Fatal("could not find event type registered for SomeAggregate/SomeData")
+			}
 			data2 := f()
 			err = s.Unmarshal(d, &data2)
 			if err != nil {
@@ -94,7 +97,10 @@ func TestConcurrentUnmarshal(t *testing.T) {
 		for i := 0; i < 10; i++ {
 			go func(j int) {
 				defer wg.Done()
-				f := s.Type("SomeAggregate", "SomeData")
+				f, ok := s.Type("SomeAggregate", "SomeData")
+				if !ok {
+					t.Fatal("could not find event type registered for SomeAggregate/SomeData")
+				}
 				dataOut := f()
 				err2 := s.Unmarshal(d, &dataOut)
 				if err2 != nil {
