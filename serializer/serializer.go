@@ -6,19 +6,16 @@ import (
 )
 
 type aggregate interface {}
-
+type eventFunc = func() interface{}
 type marshal func (v interface{}) ([]byte, error)
 type unmarshal func(data []byte, v interface{}) error
 
 // Handler for json serializes
 type Handler struct {
-	eventRegister map[string]func() interface{}
-	f func(event interface{})
+	eventRegister map[string]eventFunc
 	marshal       marshal
 	unmarshal     unmarshal
 }
-
-type eventFunc = func() interface{}
 
 // New returns a json Handle
 func New(marshalF marshal, unmarshalF unmarshal) *Handler {
@@ -37,7 +34,7 @@ var (
 	ErrNoEventsToRegister = errors.New("no events to register")
 
 	// ErrEventNameMissing return if Event name is missing
-	ErrEventNameMissing = errors.New("missing Event name")
+	ErrEventNameMissing = errors.New("missing event name")
 )
 
 
