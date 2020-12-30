@@ -3,7 +3,6 @@ package serializer
 import (
 	"errors"
 	"reflect"
-	"sync"
 )
 
 type aggregate interface {}
@@ -13,17 +12,24 @@ type unmarshal func(data []byte, v interface{}) error
 
 // Handler for json serializes
 type Handler struct {
-	eventRegister map[string]interface{}
+	eventRegister map[string]func() interface{}
+	f func(event interface{})
 	marshal       marshal
 	unmarshal     unmarshal
-	lockMarshal   sync.Mutex
-	lockUnmarshal  sync.Mutex
 }
+
+// EventFunc holds the event and a func how to construct a new instance of the event.
+type EventFunc struct {
+	Event interface{}
+	F     EventF
+}
+
+type EventF = func() interface{}
 
 // New returns a json Handle
 func New(marshalF marshal, unmarshalF unmarshal) *Handler {
 	return &Handler{
-		eventRegister: make(map[string]interface{}),
+		eventRegister: make(map[string]EventF),
 		marshal: marshalF,
 		unmarshal: unmarshalF,
 	}
@@ -36,12 +42,13 @@ var (
 	// ErrNoEventsToRegister return if no events to register
 	ErrNoEventsToRegister = errors.New("no events to register")
 
-	// ErrEventNameMissing return if event name is missing
-	ErrEventNameMissing = errors.New("missing event name")
+	// ErrEventNameMissing return if Event name is missing
+	ErrEventNameMissing = errors.New("missing Event name")
 )
 
-// Register events aggregate
-func (h *Handler) Register(aggregate aggregate, events ...interface{}) error {
+
+// RegisterTypes events aggregate
+func (h *Handler) RegisterTypes(aggregate aggregate, events ...EventFunc) error {
 	typ := reflect.TypeOf(aggregate).Elem().Name()
 	if typ == "" {
 		return ErrAggregateNameMissing
@@ -51,30 +58,26 @@ func (h *Handler) Register(aggregate aggregate, events ...interface{}) error {
 	}
 
 	for _, event := range events {
-		reason := reflect.TypeOf(event).Elem().Name()
+		reason := reflect.TypeOf(event.Event).Elem().Name()
 		if reason == "" {
 			return ErrEventNameMissing
 		}
-		h.eventRegister[typ+"_"+reason] = event
+		h.eventRegister[typ+"_"+reason] = event.F
 	}
 	return nil
 }
 
-// EventStruct return a struct from the registry
-func (h *Handler) EventStruct(typ, reason string) interface{} {
+// Type return a struct from the registry
+func (h *Handler) Type(typ, reason string) EventF {
 	return h.eventRegister[typ+"_"+reason]
 }
 
 // Marshal pass the request to the under laying Marshal method
 func (h *Handler) Marshal(v interface{}) ([]byte, error) {
-	h.lockMarshal.Lock()
-	defer h.lockMarshal.Unlock()
 	return h.marshal(v)
 }
 
 // Unmarshal pass the request to the under laying Unmarshal method
 func (h *Handler) Unmarshal(data []byte, v interface{}) error {
-	h.lockUnmarshal.Lock()
-	defer h.lockUnmarshal.Unlock()
 	return h.unmarshal(data, v)
 }
