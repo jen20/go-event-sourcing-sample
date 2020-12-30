@@ -18,12 +18,12 @@ type Handler struct {
 	unmarshal     unmarshal
 }
 
-type EventFunc = func() interface{}
+type eventFunc = func() interface{}
 
 // New returns a json Handle
 func New(marshalF marshal, unmarshalF unmarshal) *Handler {
 	return &Handler{
-		eventRegister: make(map[string]EventFunc),
+		eventRegister: make(map[string]eventFunc),
 		marshal: marshalF,
 		unmarshal: unmarshalF,
 	}
@@ -42,7 +42,7 @@ var (
 
 
 // RegisterTypes events aggregate
-func (h *Handler) RegisterTypes(aggregate aggregate, events ...EventFunc) error {
+func (h *Handler) RegisterTypes(aggregate aggregate, events ...eventFunc) error {
 	typ := reflect.TypeOf(aggregate).Elem().Name()
 	if typ == "" {
 		return ErrAggregateNameMissing
@@ -63,7 +63,7 @@ func (h *Handler) RegisterTypes(aggregate aggregate, events ...EventFunc) error 
 }
 
 // Type return a struct from the registry
-func (h *Handler) Type(typ, reason string) EventFunc {
+func (h *Handler) Type(typ, reason string) eventFunc {
 	return h.eventRegister[typ+"_"+reason]
 }
 
