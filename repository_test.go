@@ -1,8 +1,12 @@
 package eventsourcing_test
 
 import (
+	"encoding/json"
+	"encoding/xml"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
+	"github.com/hallgren/eventsourcing/serializer"
+	"github.com/hallgren/eventsourcing/snapshotstore"
 	"testing"
 )
 
@@ -34,9 +38,9 @@ func TestSaveAndGetAggregate(t *testing.T) {
 	}
 }
 
-/*
 func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
-	snapshot := snapshotstore.New(nil)
+	ser := serializer.New(xml.Marshal, xml.Unmarshal)
+	snapshot := snapshotstore.New(*ser)
 	repo := eventsourcing.NewRepository(memory.Create(), snapshot)
 
 	person, err := CreatePerson("kalle")
@@ -73,9 +77,8 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 }
 
 func TestSaveSnapshotWithUnsavedEvents(t *testing.T) {
-	serializer := json.New()
-	serializer.RegisterTypes(&Person{}, &Born{}, &AgedOneYear{})
-	snapshot := snapshotstore.New(serializer)
+	ser := serializer.New(json.Marshal,json.Unmarshal)
+	snapshot := snapshotstore.New(*ser)
 	repo := eventsourcing.NewRepository(memory.Create(), snapshot)
 
 	person, err := CreatePerson("kalle")
@@ -88,7 +91,6 @@ func TestSaveSnapshotWithUnsavedEvents(t *testing.T) {
 		t.Fatalf("should not save snapshot with unsaved events %v", err)
 	}
 }
-*/
 
 func TestSaveSnapshotWithoutSnapshotStore(t *testing.T) {
 	repo := eventsourcing.NewRepository(memory.Create(), nil)

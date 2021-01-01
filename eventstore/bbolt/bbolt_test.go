@@ -19,7 +19,7 @@ func TestSuite(t *testing.T) {
 			func() interface{} { return &suite.FlightTaken{}},
 			func() interface{} { return &suite.StatusMatched{}},
 		)
-		es := bbolt.MustOpenBBolt(dbFile, ser)
+		es := bbolt.MustOpenBBolt(dbFile, *ser)
 		return es, func(){
 			es.Close()
 			os.Remove(dbFile)

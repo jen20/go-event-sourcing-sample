@@ -37,7 +37,7 @@ func TestSuite(t *testing.T) {
 			func() interface{} { return &suite.StatusMatched{}},
 		)
 
-		es := sql.Open(*db, ser)
+		es := sql.Open(*db, *ser)
 		err = es.MigrateTest()
 		if err != nil {
 			return nil, nil, errors.New(fmt.Sprintf("could not migrate database %v", err))

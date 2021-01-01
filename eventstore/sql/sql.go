@@ -15,11 +15,11 @@ import (
 // SQL for store events
 type SQL struct {
 	db         sql.DB
-	serializer *serializer.Handler
+	serializer serializer.Handler
 }
 
 // Open connection to database
-func Open(db sql.DB, serializer *serializer.Handler) *SQL {
+func Open(db sql.DB, serializer serializer.Handler) *SQL {
 	return &SQL{
 		db:         db,
 		serializer: serializer,

@@ -8,7 +8,7 @@ import (
 // Handler of snapshot store
 type Handler struct {
 	store      map[string][]byte
-	serializer *serializer.Handler
+	serializer serializer.Handler
 }
 
 // Snapshot interface
@@ -21,7 +21,7 @@ type Snapshot interface {
 var ErrSnapshotNotFound = errors.New("snapshot not found")
 
 // New handler for the snapshot service
-func New(serializer *serializer.Handler) *Handler {
+func New(serializer serializer.Handler) *Handler {
 	return &Handler{
 		store:      make(map[string][]byte),
 		serializer: serializer,
