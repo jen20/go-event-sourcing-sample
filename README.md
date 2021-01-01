@@ -184,23 +184,28 @@ Save(id string, a interface{}) error
 
 ## Serializer
 
-The event and snapshot stores depends on a serializer to transform events and aggregates to the `[]byte` data type.
+To store events and snapshots they have to be serialised into `[]byte`. This is handled differently depending on event
+store implementation. The sql event store only marshal the event.Data and event.MetaData properties. (The rest is stored
+in separate columns), while the bbolt event store marshal the hole event in its key / value database. The memory based event
+store does not use a serializer due to it never serialise events to `[]byte`.
 
-The constructor takes two functions marshal and unmarshal. That is used to serialize/un-serialize data. 
+To be open to different storage solution the serializer takes as parameter to its constructor a marshal and unmarshal function,
+that follows the declaration from the `"encoding/json"` package.
+
 ```go
-New(marshalF marshal, unmarshalF unmarshal) *Handler
+New(marshalF func (v interface{}) ([]byte, error), unmarshalF func(data []byte, v interface{}) error) *Handler
 
 creating a json serializer: 
 serializer.New(json.Marshal, json.Unmarshal)
 ```
 
-To get the correct type info in the event.Data the aggregate, and the belonging events needs to be registered in the serializer.
-
+The registered event function is used internally inside the event store to set the correct type info when unmarshalling
+the data into the `eventsourcing.Event`.
 ```go
 RegisterTypes(aggregate aggregate, events ...func() interface{})
 
 register the aggregate Person and the event Born:
-s.RegisterTypes(&Person{}, func() interface{} { return &Born{}}
+s.RegisterTypes(&Person{}, func() interface{} { return &Born{}})
 ```
 
 ### Event Subscription
