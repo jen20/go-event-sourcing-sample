@@ -3,9 +3,9 @@ package suite
 import (
 	"fmt"
 	"github.com/hallgren/eventsourcing"
-	"github.com/hallgren/eventsourcing/serializer/json"
 	"sync"
 	"testing"
+	"time"
 )
 
 type Eventstore interface {
@@ -50,6 +50,12 @@ const (
 	StatusGold   Status = iota
 )
 
+type FrequentFlierAccount struct {
+	eventsourcing.AggregateRoot
+}
+
+func (f *FrequentFlierAccount) Transition(e eventsourcing.Event) {}
+
 type FrequentFlierAccountCreated struct {
 	AccountId         string
 	OpeningMiles      int
@@ -68,19 +74,19 @@ type FlightTaken struct {
 var aggregateID = "123"
 var aggregateID2 = "321"
 var aggregateType = "FrequentFlierAccount"
-var jsonSerializer = json.New()
 var aggregateIDOther = "666"
+var timestamp = time.Now()
 
 func testEventsWithID(aggregateID string) []eventsourcing.Event {
 	metaData := make(map[string]interface{})
 	metaData["test"] = "hello"
 	history := []eventsourcing.Event{
-		{AggregateRootID: aggregateID, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Data: FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}, MetaData: metaData},
-		{AggregateRootID: aggregateID, Version: 2, Reason: "StatusMatched", AggregateType: aggregateType, Data: StatusMatched{NewStatus: StatusSilver}, MetaData: metaData},
-		{AggregateRootID: aggregateID, Version: 3, Reason: "FlightTaken", AggregateType: aggregateType, Data: FlightTaken{MilesAdded: 2525, TierPointsAdded: 5}, MetaData: metaData},
-		{AggregateRootID: aggregateID, Version: 4, Reason: "FlightTaken", AggregateType: aggregateType, Data: FlightTaken{MilesAdded: 2512, TierPointsAdded: 5}, MetaData: metaData},
-		{AggregateRootID: aggregateID, Version: 5, Reason: "FlightTaken", AggregateType: aggregateType, Data: FlightTaken{MilesAdded: 5600, TierPointsAdded: 5}, MetaData: metaData},
-		{AggregateRootID: aggregateID, Version: 6, Reason: "FlightTaken", AggregateType: aggregateType, Data: FlightTaken{MilesAdded: 3000, TierPointsAdded: 3}, MetaData: metaData},
+		{AggregateRootID: aggregateID, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Timestamp: timestamp, Data: &FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}, MetaData: metaData},
+		{AggregateRootID: aggregateID, Version: 2, Reason: "StatusMatched", AggregateType: aggregateType, Timestamp: timestamp, Data: &StatusMatched{NewStatus: StatusSilver}, MetaData: metaData},
+		{AggregateRootID: aggregateID, Version: 3, Reason: "FlightTaken", AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 2525, TierPointsAdded: 5}, MetaData: metaData},
+		{AggregateRootID: aggregateID, Version: 4, Reason: "FlightTaken", AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 2512, TierPointsAdded: 5}, MetaData: metaData},
+		{AggregateRootID: aggregateID, Version: 5, Reason: "FlightTaken", AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 5600, TierPointsAdded: 5}, MetaData: metaData},
+		{AggregateRootID: aggregateID, Version: 6, Reason: "FlightTaken", AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 3000, TierPointsAdded: 3}, MetaData: metaData},
 	}
 	return history
 }
@@ -91,14 +97,14 @@ func testEvents() []eventsourcing.Event {
 
 func testEventsPartTwo() []eventsourcing.Event {
 	history := []eventsourcing.Event{
-		{AggregateRootID: aggregateID, Version: 7, Reason: "FlightTaken", AggregateType: aggregateType, Data: FlightTaken{MilesAdded: 5600, TierPointsAdded: 5}},
-		{AggregateRootID: aggregateID, Version: 8, Reason: "FlightTaken", AggregateType: aggregateType, Data: FlightTaken{MilesAdded: 3000, TierPointsAdded: 3}},
+		{AggregateRootID: aggregateID, Version: 7, Reason: "FlightTaken", AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 5600, TierPointsAdded: 5}},
+		{AggregateRootID: aggregateID, Version: 8, Reason: "FlightTaken", AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 3000, TierPointsAdded: 3}},
 	}
 	return history
 }
 
 func testEventOtherAggregate() eventsourcing.Event {
-	return eventsourcing.Event{AggregateRootID: aggregateIDOther, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Data: FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}}
+	return eventsourcing.Event{AggregateRootID: aggregateIDOther, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Timestamp: timestamp, Data: &FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}}
 }
 
 func saveAndGetEvents(t *testing.T, es Eventstore) {
@@ -126,7 +132,7 @@ func saveAndGetEvents(t *testing.T, es Eventstore) {
 		t.Fatal(err)
 	}
 
-	fetchedEventsIncludingPartTwo, err := es.Get(string(aggregateID), aggregateType, 0)
+	fetchedEventsIncludingPartTwo, err := es.Get(aggregateID, aggregateType, 0)
 	if err != nil {
 		t.Fatalf("repository Get returned error: %v", err)
 	}
@@ -154,6 +160,19 @@ func saveAndGetEvents(t *testing.T, es Eventstore) {
 	if fetchedEventsIncludingPartTwo[0].MetaData["test"] != "hello" {
 		t.Error("wrong event meta data returned")
 	}
+
+	if fetchedEventsIncludingPartTwo[0].Timestamp.Format(time.RFC3339) != timestamp.Format(time.RFC3339) {
+		t.Errorf("wrong timestamp exp: %s got: %s", fetchedEventsIncludingPartTwo[0].Timestamp.Format(time.RFC3339), timestamp.Format(time.RFC3339))
+	}
+
+	data, ok := fetchedEventsIncludingPartTwo[0].Data.(*FrequentFlierAccountCreated)
+	if !ok {
+		t.Errorf("wrong type in Data")
+	}
+
+	if data.OpeningMiles != 10000 {
+		t.Errorf("wrong OpeningMiles %d", data.OpeningMiles)
+	}
 }
 
 func getEventsAfterVersion(t *testing.T, es Eventstore) {
@@ -169,7 +188,7 @@ func getEventsAfterVersion(t *testing.T, es Eventstore) {
 
 	// Should return one less event
 	if len(fetchedEvents) != len(testEvents())-1 {
-		t.Fatal("wrong number of events returned")
+		t.Fatalf("wrong number of events returned exp: %d, got:%d",len(fetchedEvents), len(testEvents())-1)
 	}
 	// first event version should be 2
 	if fetchedEvents[0].Version != 2 {

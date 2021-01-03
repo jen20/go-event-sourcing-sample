@@ -2,12 +2,13 @@ package snapshotstore
 
 import (
 	"errors"
+	"github.com/hallgren/eventsourcing/serializer"
 )
 
 // Handler of snapshot store
 type Handler struct {
 	store      map[string][]byte
-	serializer snapshotSerializer
+	serializer serializer.Handler
 }
 
 // Snapshot interface
@@ -16,16 +17,11 @@ type Snapshot interface {
 	UnsavedEvents() bool
 }
 
-type snapshotSerializer interface {
-	SerializeSnapshot(s Snapshot) ([]byte, error)
-	DeserializeSnapshot(data []byte, s Snapshot) error
-}
-
 // ErrSnapshotNotFound returns if snapshot not found
 var ErrSnapshotNotFound = errors.New("snapshot not found")
 
 // New handler for the snapshot service
-func New(serializer snapshotSerializer) *Handler {
+func New(serializer serializer.Handler) *Handler {
 	return &Handler{
 		store:      make(map[string][]byte),
 		serializer: serializer,
@@ -38,7 +34,7 @@ func (h *Handler) Get(id string, s Snapshot) error {
 	if !ok {
 		return ErrSnapshotNotFound
 	}
-	err := h.serializer.DeserializeSnapshot(v, s)
+	err := h.serializer.Unmarshal(v, s)
 	if err != nil {
 		return err
 	}
@@ -53,7 +49,7 @@ func (h *Handler) Save(s Snapshot) error {
 	if s.UnsavedEvents() {
 		return errors.New("aggregate holds unsaved events")
 	}
-	data, err := h.serializer.SerializeSnapshot(s)
+	data, err := h.serializer.Marshal(s)
 	if err != nil {
 		return err
 	}

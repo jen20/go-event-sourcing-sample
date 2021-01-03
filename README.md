@@ -145,7 +145,7 @@ repo.Get(person.Id, &twin)
 
 ### Event Store
 
-The only thing an event store handles are events and it must implement the following interface.
+The only thing an event store handles are events, and it must implement the following interface.
 
 ```go
 // saves events to an underlaying data store.
@@ -155,7 +155,7 @@ Save(events []eventsourcing.Event) error
 Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)
 ```
 
-Currently there are three implementations.
+Currently, there are three implementations.
 
 * SQL
 * Bolt
@@ -184,33 +184,29 @@ Save(id string, a interface{}) error
 
 ## Serializer
 
-The event and snapshot stores depends on a serializer to transform events and aggregates to the `[]byte` data type.
+To store events and snapshots they have to be serialised into `[]byte`. This is handled differently depending on event
+store implementation. The sql event store only marshal the event.Data and event.MetaData properties. (The rest is stored
+in separate columns), while the bbolt event store marshal the hole event in its key / value database. The memory based event
+store does not use a serializer due to it never serialise events to `[]byte`.
+
+To be open to different storage solution the serializer takes as parameter to its constructor a marshal and unmarshal function,
+that follows the declaration from the `"encoding/json"` package.
 
 ```go
-SerializeSnapshot(interface{}) ([]byte, error)
-DeserializeSnapshot(data []byte, a interface{}) error
-SerializeEvent(event eventsourcing.Event) ([]byte, error)
-DeserializeEvent(v []byte) (event eventsourcing.Event, err error)
+New(marshalF func (v interface{}) ([]byte, error), unmarshalF func(data []byte, v interface{}) error) *Handler
+
+creating a json serializer: 
+serializer.New(json.Marshal, json.Unmarshal)
 ```
 
-### JSON
-
-The JSON serializer has the following extra function.
-
+The registered event function is used internally inside the event store to set the correct type info when unmarshalling
+the data into the `eventsourcing.Event`.
 ```go
-Register(aggregate aggregate, events ...interface{}) error
+RegisterTypes(aggregate aggregate, events ...func() interface{})
+
+register the aggregate Person and the event Born:
+s.RegisterTypes(&Person{}, func() interface{} { return &Born{}})
 ```
-
-It needs to register the aggregate together with the events that belongs to it. It has to do this to maintain correct type info when it unmarshal an event.
-
-```go
-j := json.New()
-err := j.Register(&Person{}, &Born{}, &AgedOneYear{})
-```
-
-### Unsafe
-
-The unsafe serializer stores the underlying memory representation of a struct directly. This makes it as its name implies, unsafe to use if you are unsure what you are doing. [Here](https://youtu.be/4xB46Xl9O9Q?t=610) is the video that explains the reason for this serializer.
 
 ### Event Subscription
 
@@ -235,7 +231,7 @@ Example on how to set up the event subscription and consume the event `FrequentF
 
 ```go
 // Setup a memory based repository
-repo := eventsourcing.NewRepository(memory.Create(unsafe.New()), nil)
+repo := eventsourcing.NewRepository(memory.Create(), nil)
 
 // subscriber that will trigger on every saved events
 s := repo.SubscriberAll(func(e eventsourcing.Event) {
@@ -257,11 +253,10 @@ s.Unsubscribe()
 ## Custom made components
 
 Parts of this package may not fulfill your application need, either it can be that the event or snapshot stores uses the wrong database for storage.
-Or that some other serializer is preferred other than the per existing one with JSON support. As the title implies its possible to create them by your own.  
 
 #### Event Store
 
-A custom made event store has to implements the following functions to fulfill the interface in the repository.  
+A custom-made event store has to implement the following functions to fulfill the interface in the repository.  
 
 ```go
 type eventStore interface {
@@ -278,25 +273,5 @@ If the snapshot store is the thing you need to change here is the interface you 
 type snapshotStore interface {
     Get(id string, a interface{}) error
     Save(id string, a interface{}) error
-}
-```
-
-#### Serializer
-
-To make a custom made serializer the following interface is used in the event stores built in this package.
-
-```go
-type EventSerializer interface {
-    SerializeEvent(event eventsourcing.Event) ([]byte, error)
-    DeserializeEvent(v []byte) (event eventsourcing.Event, err error)
-}
-```
-
-The serializer interface in the snapshot store.
-
-```go
-type snapshotSerializer interface {
-    SerializeSnapshot(interface{}) ([]byte, error)
-    DeserializeSnapshot(data []byte, a interface{}) error
 }
 ```

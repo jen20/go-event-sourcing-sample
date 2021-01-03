@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/hallgren/eventsourcing/serializer"
 	"time"
 
 	"github.com/hallgren/eventsourcing"
@@ -28,12 +29,22 @@ func itob(v uint64) []byte {
 // BBolt is a handler for event streaming
 type BBolt struct {
 	db         *bbolt.DB                  // The bbolt db where we store everything
-	serializer eventstore.EventSerializer // The interface that serialize event
+	serializer serializer.Handler		  // The serializer
+}
+
+type boltEvent struct {
+	AggregateRootID string
+	Version         int
+	Reason          string
+	AggregateType   string
+	Timestamp       time.Time
+	Data            []byte
+	MetaData        map[string]interface{}
 }
 
 // MustOpenBBolt opens the event stream found in the given file. If the file is not found it will be created and
 // initialized. Will panic if it has problems persisting the changes to the filesystem.
-func MustOpenBBolt(dbFile string, s eventstore.EventSerializer) *BBolt {
+func MustOpenBBolt(dbFile string, s serializer.Handler) *BBolt {
 	db, err := bbolt.Open(dbFile, 0600, &bbolt.Options{
 		Timeout: 1 * time.Second,
 	})
@@ -67,7 +78,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 	// get bucket name from first event
 	aggregateType := events[0].AggregateType
 	aggregateID := events[0].AggregateRootID
-	bucketName := aggregateKey(aggregateType, string(aggregateID))
+	bucketName := aggregateKey(aggregateType, aggregateID)
 
 	tx, err := e.db.Begin(true)
 	if err != nil {
@@ -89,11 +100,12 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 	cursor := evBucket.Cursor()
 	k, obj := cursor.Last()
 	if k != nil {
-		event, err := e.serializer.DeserializeEvent(obj)
+		lastEvent := eventsourcing.Event{}
+		err := e.serializer.Unmarshal(obj, &lastEvent)
 		if err != nil {
 			return errors.New(fmt.Sprintf("could not serialize event, %v", err))
 		}
-		currentVersion = event.Version
+		currentVersion = lastEvent.Version
 	}
 
 	//Validate events
@@ -112,7 +124,21 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 		if err != nil {
 			return errors.New(fmt.Sprintf("could not get sequence for %#v", bucketName))
 		}
-		value, err := e.serializer.SerializeEvent(event)
+		// marshal the event.Data separately to be able to handle the type info
+		eventData, err := e.serializer.Marshal(event.Data)
+
+		// build the internal bolt event
+		bEvent := boltEvent{
+			AggregateRootID: event.AggregateRootID,
+			AggregateType: event.AggregateType,
+			Version: int(event.Version),
+			Reason: event.Reason,
+			Timestamp: event.Timestamp,
+			MetaData: event.MetaData,
+			Data: eventData,
+		}
+
+		value, err := e.serializer.Marshal(bEvent)
 		if err != nil {
 			return errors.New(fmt.Sprintf("could not serialize event, %v", err))
 		}
@@ -158,9 +184,29 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 	firstEvent := afterVersion + 1
 
 	for k, obj := cursor.Seek(itob(uint64(firstEvent))); k != nil; k, obj = cursor.Next() {
-		event, err := e.serializer.DeserializeEvent(obj)
+		bEvent := boltEvent{}
+		err := e.serializer.Unmarshal(obj, &bEvent)
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("could not deserialize event, %v", err))
+		}
+		f, ok := e.serializer.Type(bEvent.AggregateType, bEvent.Reason)
+		if !ok {
+			// if the typ/reason is not register jump over the event
+			continue
+		}
+		eventData := f()
+		err = e.serializer.Unmarshal(bEvent.Data, &eventData)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("could not deserialize event data, %v", err))
+		}
+		event := eventsourcing.Event{
+			AggregateRootID: bEvent.AggregateRootID,
+			AggregateType: bEvent.AggregateType,
+			Version: eventsourcing.Version(bEvent.Version),
+			Reason: bEvent.Reason,
+			Timestamp: bEvent.Timestamp,
+			MetaData: bEvent.MetaData,
+			Data: eventData,
 		}
 		events = append(events, event)
 	}

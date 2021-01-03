@@ -1,17 +1,17 @@
 package eventsourcing_test
 
 import (
+	"encoding/json"
+	"encoding/xml"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
-	"github.com/hallgren/eventsourcing/serializer/json"
+	"github.com/hallgren/eventsourcing/serializer"
 	"github.com/hallgren/eventsourcing/snapshotstore"
 	"testing"
 )
 
 func TestSaveAndGetAggregate(t *testing.T) {
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
-	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
+	repo := eventsourcing.NewRepository(memory.Create(), nil)
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -39,10 +39,9 @@ func TestSaveAndGetAggregate(t *testing.T) {
 }
 
 func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
-	snapshot := snapshotstore.New(serializer)
-	repo := eventsourcing.NewRepository(memory.Create(serializer), snapshot)
+	ser := serializer.New(xml.Marshal, xml.Unmarshal)
+	snapshot := snapshotstore.New(*ser)
+	repo := eventsourcing.NewRepository(memory.Create(), snapshot)
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -78,10 +77,9 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 }
 
 func TestSaveSnapshotWithUnsavedEvents(t *testing.T) {
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
-	snapshot := snapshotstore.New(serializer)
-	repo := eventsourcing.NewRepository(memory.Create(serializer), snapshot)
+	ser := serializer.New(json.Marshal,json.Unmarshal)
+	snapshot := snapshotstore.New(*ser)
+	repo := eventsourcing.NewRepository(memory.Create(), snapshot)
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -95,9 +93,7 @@ func TestSaveSnapshotWithUnsavedEvents(t *testing.T) {
 }
 
 func TestSaveSnapshotWithoutSnapshotStore(t *testing.T) {
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
-	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
+	repo := eventsourcing.NewRepository(memory.Create(), nil)
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -115,9 +111,7 @@ func TestSubscriptionAllEvent(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
-	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
+	repo := eventsourcing.NewRepository(memory.Create(), nil)
 	s := repo.SubscriberAll(f)
 	s.Subscribe()
 	defer s.Unsubscribe()
@@ -144,9 +138,7 @@ func TestSubscriptionSpecificEvent(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
-	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
+	repo := eventsourcing.NewRepository(memory.Create(), nil)
 	s := repo.SubscriberSpecificEvent(f, &Born{}, &AgedOneYear{})
 	s.Subscribe()
 	defer s.Unsubscribe()
@@ -173,9 +165,7 @@ func TestSubscriptionAggregateType(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
-	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
+	repo := eventsourcing.NewRepository(memory.Create(), nil)
 	s := repo.SubscriberAggregateType(f, &Person{})
 	s.Subscribe()
 	defer s.Unsubscribe()
@@ -202,9 +192,7 @@ func TestSubscriptionSpecificAggregate(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
-	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
+	repo := eventsourcing.NewRepository(memory.Create(), nil)
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -228,9 +216,7 @@ func TestSubscriptionSpecificAggregate(t *testing.T) {
 }
 
 func TestEventChainDoesNotHang(t *testing.T) {
-	serializer := json.New()
-	serializer.Register(&Person{}, &Born{}, &AgedOneYear{})
-	repo := eventsourcing.NewRepository(memory.Create(serializer), nil)
+	repo := eventsourcing.NewRepository(memory.Create(), nil)
 
 	// eventChan can hold 5 events before it get full and blocks.
 	eventChan := make(chan eventsourcing.Event, 5)

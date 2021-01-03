@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/hallgren/eventsourcing/serializer"
+	"time"
 
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore"
@@ -13,11 +15,11 @@ import (
 // SQL for store events
 type SQL struct {
 	db         sql.DB
-	serializer eventstore.EventSerializer
+	serializer serializer.Handler
 }
 
 // Open connection to database
-func Open(db sql.DB, serializer eventstore.EventSerializer) *SQL {
+func Open(db sql.DB, serializer serializer.Handler) *SQL {
 	return &SQL{
 		db:         db,
 		serializer: serializer,
@@ -38,9 +40,15 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 	aggregateID := events[0].AggregateRootID
 	aggregateType := events[0].AggregateType
 
+	tx, err := sql.db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return errors.New(fmt.Sprintf("could not start a write transaction, %v", err))
+	}
+	defer tx.Rollback()
+
 	// the current version of that is the last event saved
-	selectStm := `Select data from events where aggregate_id=? and aggregate_type=? order by version desc limit 1`
-	rows, err := sql.db.Query(selectStm, aggregateID, aggregateType)
+	selectStm := `Select version from events where id=? and type=? order by version desc limit 1`
+	rows, err := tx.Query(selectStm, aggregateID, aggregateType)
 	if err != nil {
 		return err
 	}
@@ -48,15 +56,11 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 
 	currentVersion := eventsourcing.Version(0)
 	for rows.Next() {
-		var data string
-		if err := rows.Scan(&data); err != nil {
+		var version int
+		if err := rows.Scan(&version); err != nil {
 			return err
 		}
-		event, err := sql.serializer.DeserializeEvent([]byte(data))
-		if err != nil {
-			return errors.New(fmt.Sprintf("could not deserialize event %v", err))
-		}
-		currentVersion = event.Version
+		currentVersion = eventsourcing.Version(version)
 	}
 
 	//Validate events
@@ -65,44 +69,77 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 		return err
 	}
 
-	tx, err := sql.db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return errors.New(fmt.Sprintf("could not start a write transaction, %v", err))
-	}
-	defer tx.Rollback()
-	insert := `Insert into events (aggregate_id, version, reason, aggregate_type, data) values ($1, $2, $3, $4, $5)`
+	insert := `Insert into events (id, version, reason, type, timestamp, data, metadata) values ($1, $2, $3, $4, $5, $6, $7)`
 	for _, event := range events {
-		d, err := sql.serializer.SerializeEvent(event)
+		var e,m []byte
+
+		e, err := sql.serializer.Marshal(event.Data)
 		if err != nil {
 			return err
 		}
-		_, err = tx.Exec(insert, event.AggregateRootID, event.Version, event.Reason, event.AggregateType, string(d))
+		if event.MetaData != nil {
+			m, err = sql.serializer.Marshal(event.MetaData)
+			if err != nil {
+				return err
+			}
+		}
+		_, err = tx.Exec(insert, event.AggregateRootID, event.Version, event.Reason, event.AggregateType, event.Timestamp.Format(time.RFC3339), string(e), string(m))
 		if err != nil {
 			return err
 		}
 	}
-	tx.Commit()
-	return nil
+	return tx.Commit()
 }
 
 // Get the events from database
 func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.Version) (events []eventsourcing.Event, err error) {
-	selectStm := `Select data from events where aggregate_id=? and aggregate_type=? and version>? order by version asc`
+	selectStm := `Select id, version, reason, type, timestamp, data, metadata from events where id=? and type=? and version>? order by version asc`
 	rows, err := sql.db.Query(selectStm, id, aggregateType, afterVersion)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var data string
-		if err := rows.Scan(&data); err != nil {
+		var eventMetaData map[string]interface{}
+		var version eventsourcing.Version
+		var id, reason, typ, timestamp string
+		var data, metadata string
+		if err := rows.Scan(&id, &version, &reason, &typ, &timestamp, &data, &metadata); err != nil {
 			return nil, err
 		}
-		event, err := sql.serializer.DeserializeEvent([]byte(data))
+
+		t, err := time.Parse(time.RFC3339, timestamp)
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf("could not deserialize event %v", err))
+			return nil, err
 		}
-		events = append(events, event)
+
+		f, ok := sql.serializer.Type(typ, reason)
+		if !ok {
+			// if the typ/reason is not register jump over the event
+			continue
+		}
+
+		eventData := f()
+		err = sql.serializer.Unmarshal([]byte(data), &eventData)
+		if err != nil {
+			return nil, err
+		}
+		if metadata != "" {
+			err = sql.serializer.Unmarshal([]byte(metadata), &eventMetaData)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		events = append(events, eventsourcing.Event{
+			AggregateRootID: id,
+			Version: version,
+			AggregateType: typ,
+			Reason: reason,
+			Timestamp: t,
+			Data: eventData,
+			MetaData: eventMetaData,
+		})
 	}
 	return
 }
