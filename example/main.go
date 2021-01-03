@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
-	"github.com/hallgren/eventsourcing/serializer/unsafe"
 	"time"
 )
 
 func main() {
 	var c = make(chan eventsourcing.Event)
 	// Setup a memory based event store
-	eventStore := memory.Create(unsafe.New())
+	eventStore := memory.Create()
 	repo := eventsourcing.NewRepository(eventStore, nil)
 	f := func(e eventsourcing.Event) {
 		fmt.Printf("Event from stream %q\n", e)
@@ -19,7 +18,8 @@ func main() {
 		// Here we use the go-observer pkg to store the events in a stream to be consumed async
 		c <- e
 	}
-	repo.SubscribeAll(f)
+	sub := repo.SubscriberAll(f)
+	sub.Subscribe()
 
 	// Read the event stream async
 	go func() {

@@ -1,4 +1,8 @@
 github.com/gofrs/uuid v3.2.0+incompatible h1:y12jRkkFxsd7GpqdSZ+/KCs/fJbqpEXSGd4+jfEaewE=
 github.com/gofrs/uuid v3.2.0+incompatible/go.mod h1:b2aQJv3Z4Fp6yNu3cdSllBxTCLRxnplIgP/c0N/04lM=
+github.com/google/uuid v1.1.2 h1:EVhdT+1Kseyi1/pUmXKaFxYsDNy9RQYkMWRH68J/W7Y=
+github.com/google/uuid v1.1.2/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/hallgren/eventsourcing v0.0.7-0.20200412202848-95b037191236 h1:M0emioj/eEj3mOZKGcY+73LygwBu+q+emr8LFp7UVgE=
 github.com/hallgren/eventsourcing v0.0.7-0.20200412202848-95b037191236/go.mod h1:izcXwHWPZMV09PS2bZl7oHDcOvLV18INpxAoqbppp28=
+github.com/hallgren/eventsourcing v0.0.12 h1:tuVpyL37fOyuRZ6X72lb2oifbM9AuoG2ooXZJO85hD8=
+github.com/hallgren/eventsourcing v0.0.12/go.mod h1:BR/UEqq+BLYYpBvG3rPQf9J32ef1L7hbxbOsKkm2iVE=
