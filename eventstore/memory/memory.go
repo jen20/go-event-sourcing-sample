@@ -75,7 +75,7 @@ func (e *Memory) Get(id string, aggregateType string, afterVersion eventsourcing
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
-	for _,e := range e.aggregateEvents[aggregateKey(aggregateType, id)] {
+	for _, e := range e.aggregateEvents[aggregateKey(aggregateType, id)] {
 		if e.Version > afterVersion {
 			events = append(events, e)
 		}

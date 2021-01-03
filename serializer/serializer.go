@@ -5,9 +5,9 @@ import (
 	"reflect"
 )
 
-type aggregate interface {}
+type aggregate interface{}
 type eventFunc = func() interface{}
-type marshal func (v interface{}) ([]byte, error)
+type marshal func(v interface{}) ([]byte, error)
 type unmarshal func(data []byte, v interface{}) error
 
 // Handler for json serializes
@@ -21,8 +21,8 @@ type Handler struct {
 func New(marshalF marshal, unmarshalF unmarshal) *Handler {
 	return &Handler{
 		eventRegister: make(map[string]eventFunc),
-		marshal: marshalF,
-		unmarshal: unmarshalF,
+		marshal:       marshalF,
+		unmarshal:     unmarshalF,
 	}
 }
 
@@ -36,7 +36,6 @@ var (
 	// ErrEventNameMissing return if Event name is missing
 	ErrEventNameMissing = errors.New("missing event name")
 )
-
 
 // RegisterTypes events aggregate
 func (h *Handler) RegisterTypes(aggregate aggregate, events ...eventFunc) error {

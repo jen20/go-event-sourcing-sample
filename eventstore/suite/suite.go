@@ -188,7 +188,7 @@ func getEventsAfterVersion(t *testing.T, es Eventstore) {
 
 	// Should return one less event
 	if len(fetchedEvents) != len(testEvents())-1 {
-		t.Fatalf("wrong number of events returned exp: %d, got:%d",len(fetchedEvents), len(testEvents())-1)
+		t.Fatalf("wrong number of events returned exp: %d, got:%d", len(fetchedEvents), len(testEvents())-1)
 	}
 	// first event version should be 2
 	if fetchedEvents[0].Version != 2 {

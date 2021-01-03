@@ -77,7 +77,7 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 }
 
 func TestSaveSnapshotWithUnsavedEvents(t *testing.T) {
-	ser := serializer.New(json.Marshal,json.Unmarshal)
+	ser := serializer.New(json.Marshal, json.Unmarshal)
 	snapshot := snapshotstore.New(*ser)
 	repo := eventsourcing.NewRepository(memory.Create(), snapshot)
 
