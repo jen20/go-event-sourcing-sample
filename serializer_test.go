@@ -1,18 +1,17 @@
-package serializer_test
+package eventsourcing_test
 
 import (
 	"encoding/json"
 	"fmt"
 	"github.com/hallgren/eventsourcing"
-	"github.com/hallgren/eventsourcing/serializer"
 	"reflect"
 	"sync"
 	"testing"
 )
 
-func initSerializers(t *testing.T) []*serializer.Handler {
-	var result []*serializer.Handler
-	s := serializer.New(json.Marshal, json.Unmarshal)
+func initSerializers(t *testing.T) []*eventsourcing.Serializer {
+	var result []*eventsourcing.Serializer
+	s := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
 	err := s.RegisterTypes(&SomeAggregate{}, func() interface{} { return &SomeData{} }, func() interface{} { return &SomeData2{} })
 	if err != nil {
 		t.Fatalf("could not register aggregate events %v", err)
@@ -21,7 +20,9 @@ func initSerializers(t *testing.T) []*serializer.Handler {
 	return result
 }
 
-type SomeAggregate struct{}
+type SomeAggregate struct{
+	eventsourcing.AggregateRoot
+}
 
 func (s *SomeAggregate) Transition(event eventsourcing.Event) {}
 

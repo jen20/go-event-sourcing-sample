@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
-	"github.com/hallgren/eventsourcing/serializer"
 	"github.com/hallgren/eventsourcing/snapshotstore"
 	"testing"
 )
@@ -39,7 +38,7 @@ func TestSaveAndGetAggregate(t *testing.T) {
 }
 
 func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
-	ser := serializer.New(xml.Marshal, xml.Unmarshal)
+	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
 	snapshot := snapshotstore.New(*ser)
 	repo := eventsourcing.NewRepository(memory.Create(), snapshot)
 
@@ -77,7 +76,7 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 }
 
 func TestSaveSnapshotWithUnsavedEvents(t *testing.T) {
-	ser := serializer.New(json.Marshal, json.Unmarshal)
+	ser := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
 	snapshot := snapshotstore.New(*ser)
 	repo := eventsourcing.NewRepository(memory.Create(), snapshot)
 

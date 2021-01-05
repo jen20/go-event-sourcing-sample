@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"github.com/hallgren/eventsourcing"
-	"github.com/hallgren/eventsourcing/serializer"
 	"github.com/hallgren/eventsourcing/snapshotstore"
 	"testing"
 )
@@ -54,7 +53,7 @@ func (person *Person) Transition(event eventsourcing.Event) {
 }
 
 func TestSnapshot(t *testing.T) {
-	snapshot := snapshotstore.New(*serializer.New(xml.Marshal, xml.Unmarshal))
+	snapshot := snapshotstore.New(*eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal))
 	var person Person
 
 	person.Age = 38
@@ -87,7 +86,7 @@ func TestSnapshot(t *testing.T) {
 }
 
 func TestGetNoneExistingSnapshot(t *testing.T) {
-	snapshot := snapshotstore.New(*serializer.New(json.Marshal, json.Unmarshal))
+	snapshot := snapshotstore.New(*eventsourcing.NewSerializer(json.Marshal, json.Unmarshal))
 
 	p := Person{}
 	err := snapshot.Get("noneExistingID", &p)
@@ -97,7 +96,7 @@ func TestGetNoneExistingSnapshot(t *testing.T) {
 }
 
 func TestSaveEmptySnapshotID(t *testing.T) {
-	snapshot := snapshotstore.New(*serializer.New(json.Marshal, json.Unmarshal))
+	snapshot := snapshotstore.New(*eventsourcing.NewSerializer(json.Marshal, json.Unmarshal))
 
 	p := Person{}
 	err := snapshot.Save(&p)

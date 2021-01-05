@@ -2,7 +2,6 @@ package eventsourcing
 
 import (
 	"errors"
-	"github.com/hallgren/eventsourcing/snapshotstore"
 	"reflect"
 )
 
@@ -14,8 +13,8 @@ type eventStore interface {
 
 // snapshotStore interface expose the methods an snapshot store must uphold
 type snapshotStore interface {
-	Get(id string, a snapshotstore.Snapshot) error
-	Save(a snapshotstore.Snapshot) error
+	Get(id string, a Snapshot) error
+	Save(a Snapshot) error
 }
 
 // aggregate interface to use the aggregate root specific methods
@@ -30,6 +29,15 @@ type aggregate interface {
 	Version() Version
 	SetID(id string) error
 }
+
+// Snapshot interface
+type Snapshot interface {
+	ID() string
+	UnsavedEvents() bool
+}
+
+// ErrSnapshotNotFound returns if snapshot not found
+var ErrSnapshotNotFound = errors.New("snapshot not found")
 
 // Repository is the returned instance from the factory function
 type Repository struct {
@@ -88,7 +96,7 @@ func (r *Repository) Get(id string, aggregate aggregate) error {
 	// if there is a snapshot store try fetch aggregate snapshot
 	if r.snapshotStore != nil {
 		err := r.snapshotStore.Get(id, aggregate)
-		if err != nil && err != snapshotstore.ErrSnapshotNotFound {
+		if err != nil && err != ErrSnapshotNotFound {
 			return err
 		}
 	}
