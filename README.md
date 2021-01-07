@@ -193,19 +193,19 @@ To be open to different storage solution the serializer takes as parameter to it
 that follows the declaration from the `"encoding/json"` package.
 
 ```go
-New(marshalF func (v interface{}) ([]byte, error), unmarshalF func(data []byte, v interface{}) error) *Handler
+NewSerializer(marshalF func (v interface{}) ([]byte, error), unmarshalF func(data []byte, v interface{}) error) *Serializer
 
-creating a json serializer: 
-serializer.New(json.Marshal, json.Unmarshal)
+creating a json based serializer: 
+serializer := NewSerializer(json.Marshal, json.Unmarshal)
 ```
 
 The registered event function is used internally inside the event store to set the correct type info when unmarshalling
-the data into the `eventsourcing.Event`.
+event data into the `eventsourcing.Event`.
 ```go
 RegisterTypes(aggregate aggregate, events ...func() interface{})
 
 register the aggregate Person and the event Born:
-s.RegisterTypes(&Person{}, func() interface{} { return &Born{}})
+serializer.RegisterTypes(&Person{}, func() interface{} { return &Born{}})
 ```
 
 ### Event Subscription
