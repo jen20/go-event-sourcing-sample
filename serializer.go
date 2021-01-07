@@ -1,25 +1,24 @@
-package serializer
+package eventsourcing
 
 import (
 	"errors"
 	"reflect"
 )
 
-type aggregate interface{}
 type eventFunc = func() interface{}
 type marshal func(v interface{}) ([]byte, error)
 type unmarshal func(data []byte, v interface{}) error
 
-// Handler for json serializes
-type Handler struct {
+// Serializer for json serializes
+type Serializer struct {
 	eventRegister map[string]eventFunc
 	marshal       marshal
 	unmarshal     unmarshal
 }
 
-// New returns a json Handle
-func New(marshalF marshal, unmarshalF unmarshal) *Handler {
-	return &Handler{
+// NewSerializer returns a json Handle
+func NewSerializer(marshalF marshal, unmarshalF unmarshal) *Serializer {
+	return &Serializer{
 		eventRegister: make(map[string]eventFunc),
 		marshal:       marshalF,
 		unmarshal:     unmarshalF,
@@ -38,7 +37,7 @@ var (
 )
 
 // RegisterTypes events aggregate
-func (h *Handler) RegisterTypes(aggregate aggregate, events ...eventFunc) error {
+func (h *Serializer) RegisterTypes(aggregate aggregate, events ...eventFunc) error {
 	typ := reflect.TypeOf(aggregate).Elem().Name()
 	if typ == "" {
 		return ErrAggregateNameMissing
@@ -59,17 +58,17 @@ func (h *Handler) RegisterTypes(aggregate aggregate, events ...eventFunc) error 
 }
 
 // Type return a struct from the registry
-func (h *Handler) Type(typ, reason string) (eventFunc, bool) {
+func (h *Serializer) Type(typ, reason string) (eventFunc, bool) {
 	d, ok := h.eventRegister[typ+"_"+reason]
 	return d, ok
 }
 
 // Marshal pass the request to the under laying Marshal method
-func (h *Handler) Marshal(v interface{}) ([]byte, error) {
+func (h *Serializer) Marshal(v interface{}) ([]byte, error) {
 	return h.marshal(v)
 }
 
 // Unmarshal pass the request to the under laying Unmarshal method
-func (h *Handler) Unmarshal(data []byte, v interface{}) error {
+func (h *Serializer) Unmarshal(data []byte, v interface{}) error {
 	return h.unmarshal(data, v)
 }
