@@ -40,14 +40,14 @@ const (
 
 // TrackChange is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
-func (state *AggregateRoot) TrackChange(a aggregate, data interface{}) {
+func (state *AggregateRoot) TrackChange(a Aggregate, data interface{}) {
 	state.TrackChangeWithMetaData(a, data, nil)
 }
 
 // TrackChangeWithMetaData is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
 // meta data is handled by this func to store none related application state
-func (state *AggregateRoot) TrackChangeWithMetaData(a aggregate, data interface{}, metaData map[string]interface{}) {
+func (state *AggregateRoot) TrackChangeWithMetaData(a Aggregate, data interface{}, metaData map[string]interface{}) {
 	// This can be overwritten in the constructor of the aggregate
 	if state.AggregateID == emptyAggregateID {
 		state.AggregateID = uuid.New().String()
@@ -69,7 +69,7 @@ func (state *AggregateRoot) TrackChangeWithMetaData(a aggregate, data interface{
 }
 
 // BuildFromHistory builds the aggregate state from events
-func (state *AggregateRoot) BuildFromHistory(a aggregate, events []Event) {
+func (state *AggregateRoot) BuildFromHistory(a Aggregate, events []Event) {
 	for _, event := range events {
 		a.Transition(event)
 		//Set the aggregate ID
@@ -92,7 +92,13 @@ func (state *AggregateRoot) updateVersion() {
 	}
 }
 
-//Public accessors for aggregate root properties
+// path return the full name of the aggregate making it unique to other aggregates with
+// the same name but placed in other packages.
+func (state *AggregateRoot) path() string {
+	return reflect.TypeOf(state).Elem().PkgPath()
+}
+
+//Public accessors for aggregate Root properties
 
 // SetID opens up the possibility to set manual aggregate ID from the outside
 func (state *AggregateRoot) SetID(id string) error {
@@ -108,10 +114,9 @@ func (state *AggregateRoot) ID() string {
 	return state.AggregateID
 }
 
-// path return the full name of the aggregate making it unique to other aggregates with
-// the same name but placed in other packages.
-func (state *AggregateRoot) path() string {
-	return reflect.TypeOf(state).Elem().PkgPath()
+// Root returns the included Aggregate Root state, and is used from the interface Aggregate.
+func (state *AggregateRoot) Root() *AggregateRoot {
+	return state
 }
 
 // Version return the version based on events that are not stored

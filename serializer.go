@@ -37,7 +37,7 @@ var (
 )
 
 // RegisterTypes events aggregate
-func (h *Serializer) RegisterTypes(aggregate aggregate, events ...eventFunc) error {
+func (h *Serializer) RegisterTypes(aggregate Aggregate, events ...eventFunc) error {
 	typ := reflect.TypeOf(aggregate).Elem().Name()
 	if typ == "" {
 		return ErrAggregateNameMissing
