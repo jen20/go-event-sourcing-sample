@@ -114,17 +114,17 @@ The repository is used to save and retrieve aggregates. The main functions are:
 
 ```go
 // saves the events on the aggregate
-Save(aggregate aggregate) error
+Save(aggregate Aggregate) error
 
 // retrieves and build an aggregate from events based on its identifier
-Get(id string, aggregate aggregate) error
+Get(id string, aggregate Aggregate) error
 ```
 
 It is possible to save a snapshot of an aggregate reducing the amount of event needed to be fetched and applied.
 
 ```go
 // saves the aggregate (an error will be returned if there are unsaved events on the aggregate when doing this operation)
-SaveSnapshot(aggregate aggregate) error
+SaveSnapshot(aggregate Aggregate) error
 ```
 
 The repository constructor input values is an event store and a snapshot store, this handles the reading and writing of events and snapshots. We will dig deeper on the internals below.
@@ -202,7 +202,7 @@ serializer := NewSerializer(json.Marshal, json.Unmarshal)
 The registered event function is used internally inside the event store to set the correct type info when unmarshalling
 event data into the `eventsourcing.Event`.
 ```go
-RegisterTypes(aggregate aggregate, events ...func() interface{})
+RegisterTypes(aggregate Aggregate, events ...func() interface{})
 
 register the aggregate Person and the event Born:
 serializer.RegisterTypes(&Person{}, func() interface{} { return &Born{}})
@@ -214,12 +214,12 @@ The repository expose four possibilities to subscribe to events in realtime as t
 
 `SubscriberAll(func (e Event)) *Subscription` all event.
 
-`SubscriberAggregateType(func (e Event), aggregates ...aggregate) *Subscription` events bound to specific aggregate types. 
+`SubscriberAggregateType(func (e Event), aggregates ...Aggregate) *Subscription` events bound to specific aggregate types. 
  
 `SubscriberSpecificEvent(func (e Event), events ...interface{}) *Subscription` specific events. There are no restrictions that the events need
 to come from the same aggregate, you can mix and match as you please.
 
-`SubscriberSpecificAggregate(func (e Event), events ...aggregate) *Subscription` events bound to specific aggregate based on type and identity. This makes it possible to get events pinpointed to one specific aggregate instance. 
+`SubscriberSpecificAggregate(func (e Event), events ...Aggregate) *Subscription` events bound to specific aggregate based on type and identity. This makes it possible to get events pinpointed to one specific aggregate instance. 
 
 The subscription is realtime and events that are saved before the call to one of the subscribers will not be exposed via the `func(e Event)` function. If the application 
 depends on this functionality make sure to call Subscribe() function on the subscriber before storing events in the repository. 
