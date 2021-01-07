@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"time"
 
-	uuid "github.com/google/uuid"
+	"github.com/google/uuid"
 )
 
 // Version is the event version used in event and aggregateRoot

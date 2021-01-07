@@ -20,7 +20,7 @@ func initSerializers(t *testing.T) []*eventsourcing.Serializer {
 	return result
 }
 
-type SomeAggregate struct{
+type SomeAggregate struct {
 	eventsourcing.AggregateRoot
 }
 
