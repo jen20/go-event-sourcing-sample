@@ -20,7 +20,7 @@ func New(serializer eventsourcing.Serializer) *Handler {
 }
 
 // Get returns the deserialize snapshot
-func (h *Handler) Get(id string, s eventsourcing.Snapshot) error {
+func (h *Handler) Get(id string, s eventsourcing.Aggregate) error {
 	v, ok := h.store[id]
 	if !ok {
 		return eventsourcing.ErrSnapshotNotFound
@@ -33,17 +33,18 @@ func (h *Handler) Get(id string, s eventsourcing.Snapshot) error {
 }
 
 // Save persists the snapshot
-func (h *Handler) Save(s eventsourcing.Snapshot) error {
-	if s.ID() == "" {
+func (h *Handler) Save(s eventsourcing.Aggregate) error {
+	root := s.Root()
+	if root.ID() == "" {
 		return errors.New("aggregate id is empty")
 	}
-	if s.UnsavedEvents() {
+	if root.UnsavedEvents() {
 		return errors.New("aggregate holds unsaved events")
 	}
 	data, err := h.serializer.Marshal(s)
 	if err != nil {
 		return err
 	}
-	h.store[s.ID()] = data
+	h.store[root.ID()] = data
 	return nil
 }

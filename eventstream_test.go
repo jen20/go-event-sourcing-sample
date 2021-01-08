@@ -37,7 +37,7 @@ func TestAll(t *testing.T) {
 	s := e.SubscriberAll(f)
 	s.Subscribe()
 	defer s.Unsubscribe()
-	e.Update(&AnAggregate{}, []eventsourcing.Event{event})
+	e.Update(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
 
 	if streamEvent == nil {
 		t.Fatalf("should have received event")
@@ -56,7 +56,7 @@ func TestSubscribeOneEvent(t *testing.T) {
 	s := e.SubscriberSpecificEvent(f, &AnEvent{})
 	s.Subscribe()
 	defer s.Unsubscribe()
-	e.Update(&AnAggregate{}, []eventsourcing.Event{event})
+	e.Update(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
 
 	if streamEvent == nil {
 		t.Fatalf("should have received event")
@@ -84,7 +84,7 @@ func TestSubscriberSpecificAggregate(t *testing.T) {
 	s.Subscribe()
 	defer s.Unsubscribe()
 	// update with event from the AnAggregate aggregate
-	e.Update(&anAggregate, []eventsourcing.Event{event})
+	e.Update(anAggregate.AggregateRoot, []eventsourcing.Event{event})
 	if streamEvent == nil {
 		t.Fatalf("should have received event")
 	}
@@ -93,7 +93,7 @@ func TestSubscriberSpecificAggregate(t *testing.T) {
 	}
 
 	// update with event from the AnotherAggregate aggregate
-	e.Update(&anOtherAggregate, []eventsourcing.Event{otherEvent})
+	e.Update(anOtherAggregate.AggregateRoot, []eventsourcing.Event{otherEvent})
 	if streamEvent.Version != otherEvent.Version {
 		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, otherEvent.Version)
 	}
@@ -110,7 +110,7 @@ func TestSubscribeAggregateType(t *testing.T) {
 	defer s.Unsubscribe()
 
 	// update with event from the AnAggregate aggregate
-	e.Update(&AnAggregate{}, []eventsourcing.Event{event})
+	e.Update(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
 	if streamEvent == nil {
 		t.Fatalf("should have received event")
 	}
@@ -119,7 +119,7 @@ func TestSubscribeAggregateType(t *testing.T) {
 	}
 
 	// update with event from the AnotherAggregate aggregate
-	e.Update(&AnotherAggregate{}, []eventsourcing.Event{otherEvent})
+	e.Update(AnotherAggregate{}.AggregateRoot, []eventsourcing.Event{otherEvent})
 	if streamEvent.Version != otherEvent.Version {
 		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, otherEvent.Version)
 	}
@@ -134,8 +134,8 @@ func TestSubscribeToManyEvents(t *testing.T) {
 	s := e.SubscriberSpecificEvent(f, &AnEvent{}, &AnotherEvent{})
 	s.Subscribe()
 	defer s.Unsubscribe()
-	e.Update(&AnAggregate{}, []eventsourcing.Event{event})
-	e.Update(&AnotherAggregate{}, []eventsourcing.Event{otherEvent})
+	e.Update(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
+	e.Update(AnotherAggregate{}.AggregateRoot, []eventsourcing.Event{otherEvent})
 
 	if streamEvents == nil {
 		t.Fatalf("should have received event")
@@ -166,7 +166,7 @@ func TestUpdateNoneSubscribedEvent(t *testing.T) {
 	s := e.SubscriberSpecificEvent(f, &AnotherEvent{})
 	s.Subscribe()
 	defer s.Unsubscribe()
-	e.Update(&AnAggregate{}, []eventsourcing.Event{event})
+	e.Update(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
 
 	if streamEvent != nil {
 		t.Fatalf("should not have received event %q", streamEvent)
@@ -212,7 +212,7 @@ func TestManySubscribers(t *testing.T) {
 	s.Subscribe()
 	defer s.Unsubscribe()
 
-	e.Update(&AnAggregate{}, []eventsourcing.Event{event})
+	e.Update(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
 
 	if len(streamEvent1) != 0 {
 		t.Fatalf("stream1 should not have any events")
@@ -261,11 +261,11 @@ func TestParallelUpdates(t *testing.T) {
 	for i := 1; i < 1000; i++ {
 		wg.Add(2)
 		go func() {
-			e.Update(&AnotherAggregate{}, []eventsourcing.Event{otherEvent, otherEvent})
+			e.Update(AnotherAggregate{}.AggregateRoot, []eventsourcing.Event{otherEvent, otherEvent})
 			wg.Done()
 		}()
 		go func() {
-			e.Update(&AnAggregate{}, []eventsourcing.Event{event, event})
+			e.Update(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event, event})
 			wg.Done()
 		}()
 	}
@@ -301,7 +301,7 @@ func TestClose(t *testing.T) {
 	s4.Subscribe()
 
 	// trigger all 4 subscriptions
-	e.Update(&AnAggregate{}, []eventsourcing.Event{event})
+	e.Update(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
 	if count != 4 {
 		t.Fatalf("should have received four event")
 	}
@@ -312,7 +312,7 @@ func TestClose(t *testing.T) {
 	s4.Unsubscribe()
 
 	// new event should not trigger closed subscriptions
-	e.Update(&AnAggregate{}, []eventsourcing.Event{event})
+	e.Update(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
 	if count != 4 {
 		t.Fatalf("should not have received event after subscriptions are closed")
 	}

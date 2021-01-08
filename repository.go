@@ -13,27 +13,14 @@ type eventStore interface {
 
 // snapshotStore interface expose the methods an snapshot store must uphold
 type snapshotStore interface {
-	Get(id string, a Snapshot) error
-	Save(a Snapshot) error
+	Get(id string, a Aggregate) error
+	Save(a Aggregate) error
 }
 
-// aggregate interface to use the aggregate root specific methods
-type aggregate interface {
-	ID() string
-	path() string
-	BuildFromHistory(a aggregate, events []Event)
+// Aggregate interface to use the aggregate root specific methods
+type Aggregate interface {
+	Root() *AggregateRoot
 	Transition(event Event)
-	Events() []Event
-	UnsavedEvents() bool
-	updateVersion()
-	Version() Version
-	SetID(id string) error
-}
-
-// Snapshot interface
-type Snapshot interface {
-	ID() string
-	UnsavedEvents() bool
 }
 
 // ErrSnapshotNotFound returns if snapshot not found
@@ -56,26 +43,28 @@ func NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Reposito
 }
 
 // Save an aggregates events
-func (r *Repository) Save(aggregate aggregate) error {
-	err := r.eventStore.Save(aggregate.Events())
+func (r *Repository) Save(aggregate Aggregate) error {
+	root := aggregate.Root()
+	err := r.eventStore.Save(root.Events())
 	if err != nil {
 		return err
 	}
 
 	// publish the saved events to subscribers
-	r.Update(aggregate, aggregate.Events())
+	r.Update(*root, root.Events())
 
 	// aggregate are saved to the event store now its safe to update the internal aggregate state
-	aggregate.updateVersion()
+	root.updateVersion()
 	return nil
 }
 
 // SaveSnapshot saves the current state of the aggregate but only if it has no unsaved events
-func (r *Repository) SaveSnapshot(aggregate aggregate) error {
+func (r *Repository) SaveSnapshot(aggregate Aggregate) error {
 	if r.snapshotStore == nil {
 		return errors.New("no snapshot store has been initialized in the repository")
 	}
-	if aggregate.UnsavedEvents() {
+	root := aggregate.Root()
+	if root.UnsavedEvents() {
 		return errors.New("can't save snapshot with unsaved events")
 	}
 	err := r.snapshotStore.Save(aggregate)
@@ -88,7 +77,7 @@ func (r *Repository) SaveSnapshot(aggregate aggregate) error {
 // Get fetches the aggregates event and build up the aggregate
 // If there is a snapshot store try fetch a snapshot of the aggregate and fetch event after the
 // version of the aggregate if any
-func (r *Repository) Get(id string, aggregate aggregate) error {
+func (r *Repository) Get(id string, aggregate Aggregate) error {
 	if reflect.ValueOf(aggregate).Kind() != reflect.Ptr {
 		return errors.New("aggregate needs to be a pointer")
 	}
@@ -100,13 +89,13 @@ func (r *Repository) Get(id string, aggregate aggregate) error {
 			return err
 		}
 	}
-
+	root := aggregate.Root()
 	// fetch events after the current version of the aggregate that could be fetched from the snapshot store
-	events, err := r.eventStore.Get(id, aggregateType, aggregate.Version())
+	events, err := r.eventStore.Get(id, aggregateType, root.Version())
 	if err != nil {
 		return err
 	}
 	// apply the event on the aggregate
-	aggregate.BuildFromHistory(aggregate, events)
+	root.BuildFromHistory(aggregate, events)
 	return nil
 }
