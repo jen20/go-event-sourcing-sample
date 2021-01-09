@@ -107,6 +107,18 @@ func TestSnapshot(t *testing.T, snapshot SnapshotStore) {
 	if p.Version() != person.Version() {
 		t.Fatalf("wrong version %d %d", p.Version(), person.Version())
 	}
+
+	// store the snapshot once more
+	person.Age = 99
+	snapshot.Save(&person)
+
+	err = snapshot.Get(person.ID(), &p)
+	if err != nil {
+		t.Fatalf("could not get snapshot %v", err)
+	}
+	if p.Age != person.Age {
+		t.Fatalf("wrong age %d %d", p.Age, person.Age)
+	}
 }
 
 func TestGetNoneExistingSnapshot(t *testing.T, snapshot SnapshotStore) {
