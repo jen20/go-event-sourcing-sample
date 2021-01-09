@@ -26,7 +26,10 @@ func TestSQLSnapshotStore(t *testing.T) {
 			return nil, nil, err
 		}
 		store := sql.New(db, *eventsourcing.NewSerializer(json.Marshal, json.Unmarshal))
-		store.Migrate()
+		err = store.MigrateTest()
+		if err != nil {
+			return nil, nil, err
+		}
 		return store, func() { store.Close() }, nil
 	}
 	suite.Test(t, f)

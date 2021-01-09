@@ -1,8 +1,11 @@
 package sql
 
 import (
+	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"reflect"
 
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/snapshotstore"
@@ -25,8 +28,37 @@ func (sql *SQL) Close() {
 	sql.db.Close()
 }
 
-func (sql *SQL) Get(id string,a eventsourcing.Aggregate) error {
-	return errors.New("not implemented")
+// Get retrieves the persisted snapshot
+func (sql *SQL) Get(id string, a eventsourcing.Aggregate) error {
+	typ := reflect.TypeOf(a).Elem().Name()
+
+	tx, err := sql.db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	statement := `SELECT data from snapshots where id=$1 AND type=$2 LIMIT 1`
+	rows, err := tx.Query(statement, id, typ)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		var data []byte
+		err = rows.Scan(&data)
+		if err != nil {
+			return err
+		}
+		err = sql.serializer.Unmarshal(data, a)
+		if err != nil {
+			return err
+		}
+	} else {
+		return eventsourcing.ErrSnapshotNotFound
+	}
+	return nil
 }
 
 // Save persists the snapshot
@@ -37,9 +69,38 @@ func (sql *SQL) Save(a eventsourcing.Aggregate) error {
 		return err
 	}
 
-	_, err = sql.serializer.Marshal(a)
+	typ := reflect.TypeOf(a).Elem().Name()
+	data, err := sql.serializer.Marshal(a)
 	if err != nil {
 		return err
 	}
-	return errors.New("not implemented")
+
+	tx, err := sql.db.BeginTx(context.Background(), nil)
+	if err != nil {
+		return errors.New(fmt.Sprintf("could not start a write transaction, %v", err))
+	}
+	defer tx.Rollback()
+
+	statement := `SELECT data from snapshots where id=$1 AND type=$2 LIMIT 1`
+	rows, err := tx.Query(statement, root.ID(), typ)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	if rows.Next() {
+		// update
+		statement = `UPDATE snapshots set data=$1 where id=$2 AND type=$3`
+		_, err = tx.Exec(statement, string(data), root.ID(), typ)
+		if err != nil {
+			return err
+		}
+	} else {
+		// insert
+		statement = `INSERT INTO snapshots (data, id, type) VALUES ($1, $2, $3)`
+		_, err = tx.Exec(statement, string(data), root.ID(), typ)
+		if err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
