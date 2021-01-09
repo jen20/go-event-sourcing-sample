@@ -130,7 +130,7 @@ SaveSnapshot(aggregate Aggregate) error
 The repository constructor input values is an event store and a snapshot store, this handles the reading and writing of events and snapshots. We will dig deeper on the internals below.
 
 ```go
-NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Repository
+NewRepository(eventStore EventStore, snapshotStore SnapshotStore) *Repository
 ```
 
 Here is an example of a person being saved and fetched from the repository.
@@ -259,7 +259,7 @@ Parts of this package may not fulfill your application need, either it can be th
 A custom-made event store has to implement the following functions to fulfill the interface in the repository.  
 
 ```go
-type eventStore interface {
+type EventStore interface {
     Save(events []Event) error
     Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
 }
@@ -270,7 +270,7 @@ type eventStore interface {
 If the snapshot store is the thing you need to change here is the interface you need to uphold.
 
 ```go
-type snapshotStore interface {
+type SnapshotStore interface {
     Get(id string, a interface{}) error
     Save(id string, a interface{}) error
 }

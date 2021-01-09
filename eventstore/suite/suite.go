@@ -8,17 +8,12 @@ import (
 	"time"
 )
 
-type Eventstore interface {
-	Save(events []eventsourcing.Event) error
-	Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)
-}
-
-type eventstoreFunc = func() (Eventstore, func(), error)
+type eventstoreFunc = func() (eventsourcing.EventStore, func(), error)
 
 func Test(t *testing.T, esFunc eventstoreFunc) {
 	tests := []struct {
 		title string
-		run   func(t *testing.T, es Eventstore)
+		run   func(t *testing.T, es eventsourcing.EventStore)
 	}{
 		{"should save and get events", saveAndGetEvents},
 		{"should get events after version", getEventsAfterVersion},
@@ -107,7 +102,7 @@ func testEventOtherAggregate() eventsourcing.Event {
 	return eventsourcing.Event{AggregateRootID: aggregateIDOther, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Timestamp: timestamp, Data: &FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}}
 }
 
-func saveAndGetEvents(t *testing.T, es Eventstore) {
+func saveAndGetEvents(t *testing.T, es eventsourcing.EventStore) {
 	err := es.Save(testEvents())
 	if err != nil {
 		t.Fatal(err)
@@ -175,7 +170,7 @@ func saveAndGetEvents(t *testing.T, es Eventstore) {
 	}
 }
 
-func getEventsAfterVersion(t *testing.T, es Eventstore) {
+func getEventsAfterVersion(t *testing.T, es eventsourcing.EventStore) {
 	err := es.Save(testEvents())
 	if err != nil {
 		t.Fatal(err)
@@ -196,7 +191,7 @@ func getEventsAfterVersion(t *testing.T, es Eventstore) {
 	}
 }
 
-func saveEventsFromMoreThanOneAggregate(t *testing.T, es Eventstore) {
+func saveEventsFromMoreThanOneAggregate(t *testing.T, es eventsourcing.EventStore) {
 	invalidEvent := append(testEvents(), testEventOtherAggregate())
 	err := es.Save(invalidEvent)
 	if err == nil {
@@ -204,7 +199,7 @@ func saveEventsFromMoreThanOneAggregate(t *testing.T, es Eventstore) {
 	}
 }
 
-func saveEventsFromMoreThanOneAggregateType(t *testing.T, es Eventstore) {
+func saveEventsFromMoreThanOneAggregateType(t *testing.T, es eventsourcing.EventStore) {
 	events := testEvents()
 	events[1].AggregateType = "OtherAggregateType"
 
@@ -214,7 +209,7 @@ func saveEventsFromMoreThanOneAggregateType(t *testing.T, es Eventstore) {
 	}
 }
 
-func saveEventsInWrongOrder(t *testing.T, es Eventstore) {
+func saveEventsInWrongOrder(t *testing.T, es eventsourcing.EventStore) {
 	events := append(testEvents(), testEvents()[0])
 	err := es.Save(events)
 	if err == nil {
@@ -222,7 +217,7 @@ func saveEventsInWrongOrder(t *testing.T, es Eventstore) {
 	}
 }
 
-func saveEventsInWrongVersion(t *testing.T, es Eventstore) {
+func saveEventsInWrongVersion(t *testing.T, es eventsourcing.EventStore) {
 	events := testEventsPartTwo()
 	err := es.Save(events)
 	if err == nil {
@@ -230,7 +225,7 @@ func saveEventsInWrongVersion(t *testing.T, es Eventstore) {
 	}
 }
 
-func saveEventsWithEmptyReason(t *testing.T, es Eventstore) {
+func saveEventsWithEmptyReason(t *testing.T, es eventsourcing.EventStore) {
 	events := testEvents()
 	events[2].Reason = ""
 	err := es.Save(events)
@@ -239,7 +234,7 @@ func saveEventsWithEmptyReason(t *testing.T, es Eventstore) {
 	}
 }
 
-func saveAndGetEventsConcurrently(t *testing.T, es Eventstore) {
+func saveAndGetEventsConcurrently(t *testing.T, es eventsourcing.EventStore) {
 	wg := sync.WaitGroup{}
 
 	wg.Add(10)

@@ -5,14 +5,14 @@ import (
 	"reflect"
 )
 
-// eventStore interface expose the methods an event store must uphold
-type eventStore interface {
+// EventStore interface expose the methods an event store must uphold
+type EventStore interface {
 	Save(events []Event) error
 	Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
 }
 
-// snapshotStore interface expose the methods an snapshot store must uphold
-type snapshotStore interface {
+// SnapshotStore interface expose the methods an snapshot store must uphold
+type SnapshotStore interface {
 	Get(id string, a Aggregate) error
 	Save(a Aggregate) error
 }
@@ -29,12 +29,12 @@ var ErrSnapshotNotFound = errors.New("snapshot not found")
 // Repository is the returned instance from the factory function
 type Repository struct {
 	*EventStream
-	eventStore    eventStore
-	snapshotStore snapshotStore
+	eventStore    EventStore
+	snapshotStore SnapshotStore
 }
 
 // NewRepository factory function
-func NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Repository {
+func NewRepository(eventStore EventStore, snapshotStore SnapshotStore) *Repository {
 	return &Repository{
 		eventStore:    eventStore,
 		snapshotStore: snapshotStore,

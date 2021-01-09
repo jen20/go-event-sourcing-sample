@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/hallgren/eventsourcing/serializer"
 	"time"
 
 	"github.com/hallgren/eventsourcing"
@@ -29,7 +28,7 @@ func itob(v uint64) []byte {
 // BBolt is a handler for event streaming
 type BBolt struct {
 	db         *bbolt.DB                  // The bbolt db where we store everything
-	serializer serializer.Handler		  // The serializer
+	serializer eventsourcing.Serializer		  // The serializer
 }
 
 type boltEvent struct {
@@ -44,7 +43,7 @@ type boltEvent struct {
 
 // MustOpenBBolt opens the event stream found in the given file. If the file is not found it will be created and
 // initialized. Will panic if it has problems persisting the changes to the filesystem.
-func MustOpenBBolt(dbFile string, s serializer.Handler) *BBolt {
+func MustOpenBBolt(dbFile string, s eventsourcing.Serializer) *BBolt {
 	db, err := bbolt.Open(dbFile, 0600, &bbolt.Options{
 		Timeout: 1 * time.Second,
 	})

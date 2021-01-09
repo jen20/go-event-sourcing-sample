@@ -7,17 +7,12 @@ import (
 	"github.com/hallgren/eventsourcing"
 )
 
-type SnapshotStore interface {
-	Get(id string, a eventsourcing.Aggregate) error
-	Save(a eventsourcing.Aggregate) error
-}
-
-type snapshotStoreFunc = func() (SnapshotStore, func(), error)
+type snapshotStoreFunc = func() (eventsourcing.SnapshotStore, func(), error)
 
 func Test(t *testing.T, ssFunc snapshotStoreFunc) {
 	tests := []struct {
 		title string
-		run   func(t *testing.T, es SnapshotStore)
+		run   func(t *testing.T, es eventsourcing.SnapshotStore)
 	}{
 		{"Basics", TestSnapshot},
 		{"Save empty ID", TestSaveEmptySnapshotID},
@@ -77,7 +72,7 @@ func (person *Person) Transition(event eventsourcing.Event) {
 	}
 }
 
-func TestSnapshot(t *testing.T, snapshot SnapshotStore) {
+func TestSnapshot(t *testing.T, snapshot eventsourcing.SnapshotStore) {
 	var person Person
 
 	person.Age = 38
@@ -121,7 +116,7 @@ func TestSnapshot(t *testing.T, snapshot SnapshotStore) {
 	}
 }
 
-func TestGetNoneExistingSnapshot(t *testing.T, snapshot SnapshotStore) {
+func TestGetNoneExistingSnapshot(t *testing.T, snapshot eventsourcing.SnapshotStore) {
 	p := Person{}
 	err := snapshot.Get("noneExistingID", &p)
 	if err == nil {
@@ -129,7 +124,7 @@ func TestGetNoneExistingSnapshot(t *testing.T, snapshot SnapshotStore) {
 	}
 }
 
-func TestSaveEmptySnapshotID(t *testing.T, snapshot SnapshotStore) {
+func TestSaveEmptySnapshotID(t *testing.T, snapshot eventsourcing.SnapshotStore) {
 	p := Person{}
 	err := snapshot.Save(&p)
 	if err == nil {

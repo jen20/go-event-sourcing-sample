@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/hallgren/eventsourcing/serializer"
 	"time"
 
 	"github.com/hallgren/eventsourcing"
@@ -15,11 +14,11 @@ import (
 // SQL for store events
 type SQL struct {
 	db         *sql.DB
-	serializer serializer.Handler
+	serializer eventsourcing.Serializer
 }
 
 // Open connection to database
-func Open(db *sql.DB, serializer serializer.Handler) *SQL {
+func Open(db *sql.DB, serializer eventsourcing.Serializer) *SQL {
 	return &SQL{
 		db:         db,
 		serializer: serializer,

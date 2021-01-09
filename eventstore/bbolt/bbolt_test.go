@@ -2,17 +2,17 @@ package bbolt_test
 
 import (
 	"encoding/json"
+	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/bbolt"
 	"github.com/hallgren/eventsourcing/eventstore/suite"
-	"github.com/hallgren/eventsourcing/serializer"
 	"os"
 	"testing"
 )
 
 func TestSuite(t *testing.T) {
-	f := func() (suite.Eventstore, func(), error) {
+	f := func() (eventsourcing.EventStore, func(), error) {
 		dbFile := "bolt.db"
-		ser := serializer.New(json.Marshal, json.Unmarshal)
+		ser := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
 
 		ser.RegisterTypes(&suite.FrequentFlierAccount{},
 			func() interface{} { return &suite.FrequentFlierAccountCreated{}},

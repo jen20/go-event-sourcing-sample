@@ -10,7 +10,7 @@ import (
 )
 
 func TestMemorySnapshot(t *testing.T) {
-	f := func() (suite.SnapshotStore, func(), error) {
+	f := func() (eventsourcing.SnapshotStore, func(), error) {
 		store := memory.New(*eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal))
 		return store, func() {}, nil
 	}

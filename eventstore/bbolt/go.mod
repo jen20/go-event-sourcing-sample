@@ -7,3 +7,7 @@ require (
 	github.com/hallgren/eventsourcing v0.0.12
 	go.etcd.io/bbolt v1.3.4
 )
+
+replace (
+	"github.com/hallgren/eventsourcing" => ../..
+)

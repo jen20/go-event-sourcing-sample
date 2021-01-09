@@ -15,7 +15,7 @@ import (
 )
 
 func TestSQLSnapshotStore(t *testing.T) {
-	f := func() (suite.SnapshotStore, func(), error) {
+	f := func() (eventsourcing.SnapshotStore, func(), error) {
 		seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
 		db, err := sqldriver.Open("ramsql", fmt.Sprint(seededRand.Intn(1000000)))
 		if err != nil {
