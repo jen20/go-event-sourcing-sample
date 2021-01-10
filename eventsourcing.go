@@ -2,7 +2,6 @@ package eventsourcing
 
 import (
 	"errors"
-	"math/rand"
 	"reflect"
 	"time"
 )
@@ -41,22 +40,6 @@ const (
 // the current instance and also track it in order that it can be persisted later.
 func (state *AggregateRoot) TrackChange(a Aggregate, data interface{}) {
 	state.TrackChangeWithMetaData(a, data, nil)
-}
-
-func randSeq() string {
-	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-	b := make([]rune, 10)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
-}
-
-var idFunc = randSeq
-
-func SetIDFunc(f func() string) {
-	idFunc = f
 }
 
 // TrackChangeWithMetaData is used internally by behaviour methods to apply a state change to
