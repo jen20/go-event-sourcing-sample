@@ -2,10 +2,9 @@ package eventsourcing
 
 import (
 	"errors"
+	"math/rand"
 	"reflect"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 // Version is the event version used in event and aggregateRoot
@@ -44,13 +43,29 @@ func (state *AggregateRoot) TrackChange(a Aggregate, data interface{}) {
 	state.TrackChangeWithMetaData(a, data, nil)
 }
 
+func randSeq() string {
+	var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+	b := make([]rune, 10)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
+}
+
+var idFunc = randSeq
+
+func SetIDFunc(f func() string) {
+	idFunc = f
+}
+
 // TrackChangeWithMetaData is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
 // meta data is handled by this func to store none related application state
 func (state *AggregateRoot) TrackChangeWithMetaData(a Aggregate, data interface{}, metaData map[string]interface{}) {
 	// This can be overwritten in the constructor of the aggregate
 	if state.AggregateID == emptyAggregateID {
-		state.AggregateID = uuid.New().String()
+		state.AggregateID = idFunc()
 	}
 
 	reason := reflect.TypeOf(data).Elem().Name()
