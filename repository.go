@@ -5,14 +5,14 @@ import (
 	"reflect"
 )
 
-// eventStore interface expose the methods an event store must uphold
-type eventStore interface {
+// EventStore interface expose the methods an event store must uphold
+type EventStore interface {
 	Save(events []Event) error
 	Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
 }
 
-// snapshotStore interface expose the methods an snapshot store must uphold
-type snapshotStore interface {
+// SnapshotStore interface expose the methods an snapshot store must uphold
+type SnapshotStore interface {
 	Get(id string, a Aggregate) error
 	Save(a Aggregate) error
 }
@@ -29,12 +29,12 @@ var ErrSnapshotNotFound = errors.New("snapshot not found")
 // Repository is the returned instance from the factory function
 type Repository struct {
 	*EventStream
-	eventStore    eventStore
-	snapshotStore snapshotStore
+	eventStore    EventStore
+	snapshotStore SnapshotStore
 }
 
 // NewRepository factory function
-func NewRepository(eventStore eventStore, snapshotStore snapshotStore) *Repository {
+func NewRepository(eventStore EventStore, snapshotStore SnapshotStore) *Repository {
 	return &Repository{
 		eventStore:    eventStore,
 		snapshotStore: snapshotStore,
@@ -67,11 +67,7 @@ func (r *Repository) SaveSnapshot(aggregate Aggregate) error {
 	if root.UnsavedEvents() {
 		return errors.New("can't save snapshot with unsaved events")
 	}
-	err := r.snapshotStore.Save(aggregate)
-	if err != nil {
-		return err
-	}
-	return nil
+	return r.snapshotStore.Save(aggregate)
 }
 
 // Get fetches the aggregates event and build up the aggregate
@@ -85,7 +81,7 @@ func (r *Repository) Get(id string, aggregate Aggregate) error {
 	// if there is a snapshot store try fetch aggregate snapshot
 	if r.snapshotStore != nil {
 		err := r.snapshotStore.Get(id, aggregate)
-		if err != nil && err != ErrSnapshotNotFound {
+		if err != nil && !errors.Is(err, ErrSnapshotNotFound) {
 			return err
 		}
 	}

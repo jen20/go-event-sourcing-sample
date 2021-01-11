@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/sql"
 	"github.com/hallgren/eventsourcing/eventstore/suite"
-	"github.com/hallgren/eventsourcing/serializer"
 	_ "github.com/proullon/ramsql/driver"
 	"math/rand"
 	"testing"
@@ -18,7 +18,7 @@ var seededRand = rand.New(
 	rand.NewSource(time.Now().UnixNano()))
 
 func TestSuite(t *testing.T) {
-	f := func() (suite.Eventstore, func(), error) {
+	f := func() (eventsourcing.EventStore, func(), error) {
 		// use random int to get a new db on each test run
 		r := seededRand.Intn(1000000)
 		db, err := sqldriver.Open("ramsql", fmt.Sprintf("%d",r))
@@ -29,7 +29,7 @@ func TestSuite(t *testing.T) {
 		if err != nil {
 			return nil, nil, errors.New(fmt.Sprintf("could not ping database %v", err))
 		}
-		ser := serializer.New(json.Marshal, json.Unmarshal)
+		ser := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
 
 		ser.RegisterTypes(&suite.FrequentFlierAccount{},
 			func() interface{} { return &suite.FrequentFlierAccountCreated{}},
@@ -37,7 +37,7 @@ func TestSuite(t *testing.T) {
 			func() interface{} { return &suite.StatusMatched{}},
 		)
 
-		es := sql.Open(*db, *ser)
+		es := sql.Open(db, *ser)
 		err = es.MigrateTest()
 		if err != nil {
 			return nil, nil, errors.New(fmt.Sprintf("could not migrate database %v", err))

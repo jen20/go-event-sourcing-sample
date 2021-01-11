@@ -1,4 +1,4 @@
-module github.com/hallgren/eventsourcing/eventstore/sql
+module github.com/hallgren/eventsourcing/snapshotstore/sql
 
 go 1.13
 
