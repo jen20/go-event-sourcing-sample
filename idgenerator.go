@@ -1,6 +1,8 @@
 package eventsourcing
 
-import "crypto/rand"
+import (
+	"crypto/rand"
+)
 
 // idFunc is a global function that generates aggregate id's.
 // It could be changed from the outside via the SetIDFunc function.
@@ -13,7 +15,7 @@ func SetIDFunc(f func() string) {
 }
 
 func randSeq() string {
-	id, err := generateRandomString(32)
+	id, err := generateRandomString(20)
 	if err != nil {
 		return ""
 	}
