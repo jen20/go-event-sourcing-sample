@@ -11,11 +11,13 @@ import (
 	"github.com/hallgren/eventsourcing/snapshotstore"
 )
 
+// SQL is the struct holding the underlying database and serializer
 type SQL struct {
 	db         *sql.DB
 	serializer eventsourcing.Serializer
 }
 
+// New returns a SQL struct
 func New(db *sql.DB, serializer eventsourcing.Serializer) *SQL {
 	return &SQL{
 		db:         db,
