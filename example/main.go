@@ -15,7 +15,7 @@ func main() {
 	f := func(e eventsourcing.Event) {
 		fmt.Printf("Event from stream %q\n", e)
 		// Its a good practice making this function as fast as possible not blocking the event sourcing call for to long
-		// Here we use the go-observer pkg to store the events in a stream to be consumed async
+		// Here we use a channel to store the events to be consumed async
 		c <- e
 	}
 	sub := repo.SubscriberAll(f)

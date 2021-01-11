@@ -2,6 +2,7 @@ package eventsourcing_test
 
 import (
 	"errors"
+	"fmt"
 	"github.com/hallgren/eventsourcing"
 	"testing"
 	"time"
@@ -167,5 +168,33 @@ func TestPersonGrewTenYears(t *testing.T) {
 
 	if person.Age != 10 {
 		t.Fatal("person has the wrong Age")
+	}
+}
+
+func TestSetIDFunc(t *testing.T) {
+	var counter = 0
+	f := func() string {
+		counter++
+		return fmt.Sprint(counter)
+	}
+
+	eventsourcing.SetIDFunc(f)
+	for i := 1; i< 10; i++ {
+		person, _ := CreatePerson("kalle")
+		if person.ID() != fmt.Sprint(i) {
+			t.Fatalf("id not set via the new SetIDFunc, exp: %d got: %s",i, person.ID())
+		}
+	}
+}
+
+func TestIDFuncGeneratingRandomIDs(t *testing.T) {
+	var ids = map[string]struct{}{}
+	for i := 1; i< 100000; i++ {
+		person, _ := CreatePerson("kalle")
+		_, exists := ids[person.ID()]
+		if exists {
+			t.Fatalf("id: %s, already created", person.ID())
+		}
+		ids[person.ID()] = struct{}{}
 	}
 }

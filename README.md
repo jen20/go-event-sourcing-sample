@@ -108,6 +108,30 @@ type Event struct {
 }
 ```
 
+### Aggregate ID
+
+The identifier on the aggregate is default set by a random generated string via the crypt/rand pkg. It is possible to change the default behaivior in two ways.
+
+* Set a specific id on the aggregate via the SetID func.
+
+```go
+var id = "123"
+person := Person{}
+err := person.SetID(id)
+```
+
+* Change the id generator via the global eventsourcing.SetIDFunc function.
+
+```go
+var counter = 0
+f := func() string {
+	counter++
+	return fmt.Sprint(counter)
+}
+
+eventsourcing.SetIDFunc(f)
+```
+
 ## Repository
 
 The repository is used to save and retrieve aggregates. The main functions are:
