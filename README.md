@@ -192,7 +192,7 @@ Submodules needs to be fetched separately via go get.
 `go get github.com/hallgren/eventsourcing/eventstore/sql`  
 `go get github.com/hallgren/eventsourcing/eventstore/bbolt`
 
-The in memory based event store is part of the main module and does not need to be fetched separately.
+The memory based event store is part of the main module and does not need to be fetched separately.
 
 ### Snapshot Store
 
@@ -205,6 +205,13 @@ Get(id string, a interface{}) error
 // saves snapshot
 Save(id string, a interface{}) error
 ```
+
+Currently, there are two implementations.
+
+* SQL
+* RAM Memory
+
+Where the SQL snapshot store is a submodule and can be fetched via `go get github.com/hallgren/eventsourcing/snapshotstore/sql`
 
 ## Serializer
 
