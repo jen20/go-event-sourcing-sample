@@ -9,10 +9,16 @@ import (
 	"github.com/hallgren/eventsourcing/snapshotstore/suite"
 )
 
+type provider struct{}
+
+func (p *provider) Setup() (eventsourcing.SnapshotStore, error) {
+	return memory.New(*eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)), nil
+}
+
+func (p *provider) Cleanup() {}
+
+func (p *provider) Teardown() {}
+
 func TestMemorySnapshot(t *testing.T) {
-	f := func() (eventsourcing.SnapshotStore, func(), error) {
-		store := memory.New(*eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal))
-		return store, func() {}, nil
-	}
-	suite.Test(t, f)
+	suite.Test(t, new(provider))
 }
