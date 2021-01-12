@@ -26,12 +26,12 @@ func Open(db *sql.DB, serializer eventsourcing.Serializer) *SQL {
 }
 
 // Close the connection
-func (sql *SQL) Close() {
-	sql.db.Close()
+func (s *SQL) Close() {
+	s.db.Close()
 }
 
 // Save persists events to the database
-func (sql *SQL) Save(events []eventsourcing.Event) error {
+func (s *SQL) Save(events []eventsourcing.Event) error {
 	// If no event return no error
 	if len(events) == 0 {
 		return nil
@@ -39,7 +39,7 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 	aggregateID := events[0].AggregateRootID
 	aggregateType := events[0].AggregateType
 
-	tx, err := sql.db.BeginTx(context.Background(), nil)
+	tx, err := s.db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return errors.New(fmt.Sprintf("could not start a write transaction, %v", err))
 	}
@@ -47,18 +47,11 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 
 	// the current version of that is the last event saved
 	selectStm := `Select version from events where id=? and type=? order by version desc limit 1`
-	rows, err := tx.Query(selectStm, aggregateID, aggregateType)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
 
 	currentVersion := eventsourcing.Version(0)
-	for rows.Next() {
-		var version int
-		if err := rows.Scan(&version); err != nil {
-			return err
-		}
+	var version int
+	err = tx.QueryRow(selectStm, aggregateID, aggregateType).Scan(&version)
+	if err == nil {
 		currentVersion = eventsourcing.Version(version)
 	}
 
@@ -72,12 +65,12 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 	for _, event := range events {
 		var e, m []byte
 
-		e, err := sql.serializer.Marshal(event.Data)
+		e, err := s.serializer.Marshal(event.Data)
 		if err != nil {
 			return err
 		}
 		if event.MetaData != nil {
-			m, err = sql.serializer.Marshal(event.MetaData)
+			m, err = s.serializer.Marshal(event.MetaData)
 			if err != nil {
 				return err
 			}
@@ -91,9 +84,9 @@ func (sql *SQL) Save(events []eventsourcing.Event) error {
 }
 
 // Get the events from database
-func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.Version) (events []eventsourcing.Event, err error) {
+func (s *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.Version) (events []eventsourcing.Event, err error) {
 	selectStm := `Select id, version, reason, type, timestamp, data, metadata from events where id=? and type=? and version>? order by version asc`
-	rows, err := sql.db.Query(selectStm, id, aggregateType, afterVersion)
+	rows, err := s.db.Query(selectStm, id, aggregateType, afterVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -112,19 +105,19 @@ func (sql *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.
 			return nil, err
 		}
 
-		f, ok := sql.serializer.Type(typ, reason)
+		f, ok := s.serializer.Type(typ, reason)
 		if !ok {
 			// if the typ/reason is not register jump over the event
 			continue
 		}
 
 		eventData := f()
-		err = sql.serializer.Unmarshal([]byte(data), &eventData)
+		err = s.serializer.Unmarshal([]byte(data), &eventData)
 		if err != nil {
 			return nil, err
 		}
 		if metadata != "" {
-			err = sql.serializer.Unmarshal([]byte(metadata), &eventMetaData)
+			err = s.serializer.Unmarshal([]byte(metadata), &eventMetaData)
 			if err != nil {
 				return nil, err
 			}
