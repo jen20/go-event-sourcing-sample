@@ -41,24 +41,14 @@ func (s *SQL) Get(id string, a eventsourcing.Aggregate) error {
 	defer tx.Rollback()
 
 	statement := `SELECT data from snapshots where id=$1 AND type=$2 LIMIT 1`
-	rows, err := tx.Query(statement, id, typ)
+	var data []byte
+	err = tx.QueryRow(statement, id, typ).Scan(&data)
+	if err == sql.ErrNoRows {
+		return eventsourcing.ErrSnapshotNotFound
+	}
+	err = s.serializer.Unmarshal(data, a)
 	if err != nil {
 		return err
-	}
-	defer rows.Close()
-
-	if rows.Next() {
-		var data []byte
-		err = rows.Scan(&data)
-		if err != nil {
-			return err
-		}
-		err = s.serializer.Unmarshal(data, a)
-		if err != nil {
-			return err
-		}
-	} else {
-		return eventsourcing.ErrSnapshotNotFound
 	}
 	return nil
 }
