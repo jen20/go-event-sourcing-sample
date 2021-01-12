@@ -45,13 +45,17 @@ func (s *SQL) Save(events []eventsourcing.Event) error {
 	}
 	defer tx.Rollback()
 
-	// the current version of that is the last event saved
-	selectStm := `Select version from events where id=? and type=? order by version desc limit 1`
-
-	currentVersion := eventsourcing.Version(0)
+	var currentVersion eventsourcing.Version
 	var version int
+	selectStm := `Select version from events where id=? and type=? order by version desc limit 1`
 	err = tx.QueryRow(selectStm, aggregateID, aggregateType).Scan(&version)
-	if err == nil {
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	} else if err == sql.ErrNoRows {
+		// if no events are saved before set the current version to zero
+		currentVersion = eventsourcing.Version(0)
+	} else {
+		// set the current version to the last event stored
 		currentVersion = eventsourcing.Version(version)
 	}
 

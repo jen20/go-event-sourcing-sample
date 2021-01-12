@@ -43,7 +43,9 @@ func (s *SQL) Get(id string, a eventsourcing.Aggregate) error {
 	statement := `SELECT data from snapshots where id=$1 AND type=$2 LIMIT 1`
 	var data []byte
 	err = tx.QueryRow(statement, id, typ).Scan(&data)
-	if err == sql.ErrNoRows {
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	} else if err == sql.ErrNoRows {
 		return eventsourcing.ErrSnapshotNotFound
 	}
 	err = s.serializer.Unmarshal(data, a)
@@ -76,6 +78,9 @@ func (s *SQL) Save(a eventsourcing.Aggregate) error {
 	statement := `SELECT id from snapshots where id=$1 AND type=$2 LIMIT 1`
 	var id string
 	err = tx.QueryRow(statement, root.ID(), typ).Scan(&id)
+	if err != nil && err != sql.ErrNoRows {
+		return err
+	}
 	if err == sql.ErrNoRows  {
 		// insert
 		statement = `INSERT INTO snapshots (data, id, type) VALUES ($1, $2, $3)`
