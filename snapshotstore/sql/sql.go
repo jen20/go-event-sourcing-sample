@@ -26,15 +26,15 @@ func New(db *sql.DB, serializer eventsourcing.Serializer) *SQL {
 }
 
 // Close the connection
-func (sql *SQL) Close() {
-	sql.db.Close()
+func (s *SQL) Close() {
+	s.db.Close()
 }
 
 // Get retrieves the persisted snapshot
-func (sql *SQL) Get(id string, a eventsourcing.Aggregate) error {
+func (s *SQL) Get(id string, a eventsourcing.Aggregate) error {
 	typ := reflect.TypeOf(a).Elem().Name()
 
-	tx, err := sql.db.BeginTx(context.Background(), nil)
+	tx, err := s.db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return err
 	}
@@ -53,7 +53,7 @@ func (sql *SQL) Get(id string, a eventsourcing.Aggregate) error {
 		if err != nil {
 			return err
 		}
-		err = sql.serializer.Unmarshal(data, a)
+		err = s.serializer.Unmarshal(data, a)
 		if err != nil {
 			return err
 		}
@@ -64,7 +64,7 @@ func (sql *SQL) Get(id string, a eventsourcing.Aggregate) error {
 }
 
 // Save persists the snapshot
-func (sql *SQL) Save(a eventsourcing.Aggregate) error {
+func (s *SQL) Save(a eventsourcing.Aggregate) error {
 	root := a.Root()
 	err := snapshotstore.Validate(*root)
 	if err != nil {
@@ -72,33 +72,30 @@ func (sql *SQL) Save(a eventsourcing.Aggregate) error {
 	}
 
 	typ := reflect.TypeOf(a).Elem().Name()
-	data, err := sql.serializer.Marshal(a)
+	data, err := s.serializer.Marshal(a)
 	if err != nil {
 		return err
 	}
 
-	tx, err := sql.db.BeginTx(context.Background(), nil)
+	tx, err := s.db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return errors.New(fmt.Sprintf("could not start a write transaction, %v", err))
 	}
 	defer tx.Rollback()
 
-	statement := `SELECT data from snapshots where id=$1 AND type=$2 LIMIT 1`
-	rows, err := tx.Query(statement, root.ID(), typ)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-	if rows.Next() {
-		// update
-		statement = `UPDATE snapshots set data=$1 where id=$2 AND type=$3`
+	statement := `SELECT id from snapshots where id=$1 AND type=$2 LIMIT 1`
+	var id string
+	err = tx.QueryRow(statement, root.ID(), typ).Scan(&id)
+	if err == sql.ErrNoRows  {
+		// insert
+		statement = `INSERT INTO snapshots (data, id, type) VALUES ($1, $2, $3)`
 		_, err = tx.Exec(statement, string(data), root.ID(), typ)
 		if err != nil {
 			return err
 		}
 	} else {
-		// insert
-		statement = `INSERT INTO snapshots (data, id, type) VALUES ($1, $2, $3)`
+		// update
+		statement = `UPDATE snapshots set data=$1 where id=$2 AND type=$3`
 		_, err = tx.Exec(statement, string(data), root.ID(), typ)
 		if err != nil {
 			return err

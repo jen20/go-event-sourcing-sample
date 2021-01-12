@@ -20,7 +20,7 @@ type provider struct {
 
 func (p *provider) Setup() (eventsourcing.SnapshotStore, error) {
 	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
-	db, err := sqldriver.Open("ramsql", fmt.Sprint(seededRand.Intn(1000000)))
+	db, err := sqldriver.Open("ramsql", fmt.Sprint(seededRand.Intn(99999999)))
 	if err != nil {
 		return nil, err
 	}
@@ -30,6 +30,7 @@ func (p *provider) Setup() (eventsourcing.SnapshotStore, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	store := sql.New(db, *eventsourcing.NewSerializer(json.Marshal, json.Unmarshal))
 	err = store.MigrateTest()
 	return store, err
