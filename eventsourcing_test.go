@@ -179,17 +179,17 @@ func TestSetIDFunc(t *testing.T) {
 	}
 
 	eventsourcing.SetIDFunc(f)
-	for i := 1; i< 10; i++ {
+	for i := 1; i < 10; i++ {
 		person, _ := CreatePerson("kalle")
 		if person.ID() != fmt.Sprint(i) {
-			t.Fatalf("id not set via the new SetIDFunc, exp: %d got: %s",i, person.ID())
+			t.Fatalf("id not set via the new SetIDFunc, exp: %d got: %s", i, person.ID())
 		}
 	}
 }
 
 func TestIDFuncGeneratingRandomIDs(t *testing.T) {
 	var ids = map[string]struct{}{}
-	for i := 1; i< 100000; i++ {
+	for i := 1; i < 100000; i++ {
 		person, _ := CreatePerson("kalle")
 		_, exists := ids[person.ID()]
 		if exists {

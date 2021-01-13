@@ -7,9 +7,16 @@ import (
 	"github.com/hallgren/eventsourcing"
 )
 
-type snapshotStoreFunc = func() (eventsourcing.SnapshotStore, func(), error)
+type storeProvider interface {
+	// Setup runs before all test and provides the store to test.
+	Setup() (eventsourcing.SnapshotStore, error)
+	// Cleanup is called after each test.
+	Cleanup()
+	// Teardown is called after all test has passed.
+	Teardown()
+}
 
-func Test(t *testing.T, ssFunc snapshotStoreFunc) {
+func Test(t *testing.T, provider storeProvider) {
 	tests := []struct {
 		title string
 		run   func(t *testing.T, es eventsourcing.SnapshotStore)
@@ -18,14 +25,15 @@ func Test(t *testing.T, ssFunc snapshotStoreFunc) {
 		{"Save empty ID", TestSaveEmptySnapshotID},
 		{"Save with unsaved events", TestGetNoneExistingSnapshot},
 	}
+	store, err := provider.Setup()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer provider.Teardown()
 	for _, test := range tests {
 		t.Run(test.title, func(t *testing.T) {
-			es, closeFunc, err := ssFunc()
-			if err != nil {
-				t.Fatal(err)
-			}
-			test.run(t, es)
-			closeFunc()
+			test.run(t, store)
+			provider.Cleanup()
 		})
 	}
 }

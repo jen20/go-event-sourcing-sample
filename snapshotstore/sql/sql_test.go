@@ -14,23 +14,32 @@ import (
 	_ "github.com/proullon/ramsql/driver"
 )
 
-func TestSQLSnapshotStore(t *testing.T) {
-	f := func() (eventsourcing.SnapshotStore, func(), error) {
-		seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
-		db, err := sqldriver.Open("ramsql", fmt.Sprint(seededRand.Intn(1000000)))
-		if err != nil {
-			return nil, nil, err
-		}
-		err = db.Ping()
-		if err != nil {
-			return nil, nil, err
-		}
-		store := sql.New(db, *eventsourcing.NewSerializer(json.Marshal, json.Unmarshal))
-		err = store.MigrateTest()
-		if err != nil {
-			return nil, nil, err
-		}
-		return store, func() { store.Close() }, nil
+type provider struct {
+	db *sqldriver.DB
+}
+
+func (p *provider) Setup() (eventsourcing.SnapshotStore, error) {
+	seededRand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	db, err := sqldriver.Open("ramsql", fmt.Sprint(seededRand.Intn(99999999)))
+	if err != nil {
+		return nil, err
 	}
-	suite.Test(t, f)
+	p.db = db
+
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+
+	store := sql.New(db, *eventsourcing.NewSerializer(json.Marshal, json.Unmarshal))
+	err = store.MigrateTest()
+	return store, err
+}
+
+func (p *provider) Cleanup() { p.db.Exec(`delete from snapshots;`) }
+
+func (p *provider) Teardown() { p.db.Close() }
+
+func TestSQLSnapshotStore(t *testing.T) {
+	suite.Test(t, new(provider))
 }
