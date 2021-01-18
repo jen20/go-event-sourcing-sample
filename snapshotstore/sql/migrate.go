@@ -2,38 +2,33 @@ package sql
 
 import "context"
 
+const create_table = `create table snapshots (id VARCHAR NOT NULL, type VARCHAR, data BLOB);`
+
 // Migrate the database
 func (s *SQL) Migrate() error {
-	tx, err := s.db.BeginTx(context.Background(), nil)
-	if err != nil {
-		return nil
+	sqlStmt := []string{
+		create_table,
+		`create unique index id_type on snapshots (id, type);`,
 	}
-	defer tx.Rollback()
-	sqlStmt := `
-	create table snapshots (id VARCHAR NOT NULL, type VARCHAR, data BLOB);
-	create unique index id_type on snapshots (id, type);
-	delete from snapshots;
-	`
-	_, err = tx.Exec(sqlStmt)
-	if err != nil {
-		return err
-	}
-	return tx.Commit()
+	return s.migrate(sqlStmt)
 }
 
 // MigrateTest remove the index that the test sql driver does not support
 func (s *SQL) MigrateTest() error {
 	sqlStmt := []string{
-		`create table snapshots (id VARCHAR NOT NULL, type VARCHAR, data BLOB);`,
-		`delete from snapshots;`,
+		create_table,
 	}
 
+	return s.migrate(sqlStmt)
+}
+
+func (s *SQL) migrate(stm []string) error {
 	tx, err := s.db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return nil
 	}
 	defer tx.Rollback()
-	for _, b := range sqlStmt {
+	for _, b := range stm {
 		_, err := tx.Exec(b)
 		if err != nil {
 			return err
