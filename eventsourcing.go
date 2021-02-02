@@ -18,13 +18,13 @@ type AggregateRoot struct {
 
 // Event holding meta data and the application specific event in the Data property
 type Event struct {
-	AggregateRootID string
-	Version         Version
-	Reason          string
-	AggregateType   string
-	Timestamp       time.Time
-	Data            interface{}
-	MetaData        map[string]interface{}
+	AggregateID   string
+	Version       Version
+	Reason        string
+	AggregateType string
+	Timestamp     time.Time
+	Data          interface{}
+	MetaData      map[string]interface{}
 }
 
 var (
@@ -54,13 +54,13 @@ func (state *AggregateRoot) TrackChangeWithMetaData(a Aggregate, data interface{
 	reason := reflect.TypeOf(data).Elem().Name()
 	name := reflect.TypeOf(a).Elem().Name()
 	event := Event{
-		AggregateRootID: state.AggregateID,
-		Version:         state.nextVersion(),
-		Reason:          reason,
-		AggregateType:   name,
-		Timestamp:       time.Now().UTC(),
-		Data:            data,
-		MetaData:        metaData,
+		AggregateID:   state.AggregateID,
+		Version:       state.nextVersion(),
+		Reason:        reason,
+		AggregateType: name,
+		Timestamp:     time.Now().UTC(),
+		Data:          data,
+		MetaData:      metaData,
 	}
 	state.aggregateEvents = append(state.aggregateEvents, event)
 	a.Transition(event)
@@ -71,7 +71,7 @@ func (state *AggregateRoot) BuildFromHistory(a Aggregate, events []Event) {
 	for _, event := range events {
 		a.Transition(event)
 		//Set the aggregate ID
-		state.AggregateID = event.AggregateRootID
+		state.AggregateID = event.AggregateID
 		// Make sure the aggregate is in the correct version (the last event)
 		state.AggregateVersion = event.Version
 	}

@@ -1,9 +1,10 @@
 package memory
 
 import (
+	"sync"
+
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore"
-	"sync"
 )
 
 // Memory is a handler for event streaming
@@ -34,7 +35,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 
 	// get bucket name from first event
 	aggregateType := events[0].AggregateType
-	aggregateID := events[0].AggregateRootID
+	aggregateID := events[0].AggregateID
 	bucketName := aggregateKey(aggregateType, aggregateID)
 
 	evBucket := e.aggregateEvents[bucketName]

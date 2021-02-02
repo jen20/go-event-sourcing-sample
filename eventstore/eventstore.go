@@ -23,7 +23,7 @@ func ValidateEvents(aggregateID string, currentVersion eventsourcing.Version, ev
 	aggregateType := events[0].AggregateType
 
 	for _, event := range events {
-		if event.AggregateRootID != aggregateID {
+		if event.AggregateID != aggregateID {
 			return ErrEventMultipleAggregates
 		}
 
