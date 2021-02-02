@@ -27,18 +27,18 @@ func itob(v uint64) []byte {
 
 // BBolt is a handler for event streaming
 type BBolt struct {
-	db         *bbolt.DB                  // The bbolt db where we store everything
-	serializer eventsourcing.Serializer		  // The serializer
+	db         *bbolt.DB                // The bbolt db where we store everything
+	serializer eventsourcing.Serializer // The serializer
 }
 
 type boltEvent struct {
-	AggregateRootID string
-	Version         int
-	Reason          string
-	AggregateType   string
-	Timestamp       time.Time
-	Data            []byte
-	MetaData        map[string]interface{}
+	AggregateID   string
+	Version       int
+	Reason        string
+	AggregateType string
+	Timestamp     time.Time
+	Data          []byte
+	MetaData      map[string]interface{}
 }
 
 // MustOpenBBolt opens the event stream found in the given file. If the file is not found it will be created and
@@ -76,7 +76,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 
 	// get bucket name from first event
 	aggregateType := events[0].AggregateType
-	aggregateID := events[0].AggregateRootID
+	aggregateID := events[0].AggregateID
 	bucketName := aggregateKey(aggregateType, aggregateID)
 
 	tx, err := e.db.Begin(true)
@@ -128,13 +128,13 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 
 		// build the internal bolt event
 		bEvent := boltEvent{
-			AggregateRootID: event.AggregateRootID,
+			AggregateID:   event.AggregateID,
 			AggregateType: event.AggregateType,
-			Version: int(event.Version),
-			Reason: event.Reason,
-			Timestamp: event.Timestamp,
-			MetaData: event.MetaData,
-			Data: eventData,
+			Version:       int(event.Version),
+			Reason:        event.Reason,
+			Timestamp:     event.Timestamp,
+			MetaData:      event.MetaData,
+			Data:          eventData,
 		}
 
 		value, err := e.serializer.Marshal(bEvent)
@@ -199,13 +199,13 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 			return nil, errors.New(fmt.Sprintf("could not deserialize event data, %v", err))
 		}
 		event := eventsourcing.Event{
-			AggregateRootID: bEvent.AggregateRootID,
+			AggregateID:   bEvent.AggregateID,
 			AggregateType: bEvent.AggregateType,
-			Version: eventsourcing.Version(bEvent.Version),
-			Reason: bEvent.Reason,
-			Timestamp: bEvent.Timestamp,
-			MetaData: bEvent.MetaData,
-			Data: eventData,
+			Version:       eventsourcing.Version(bEvent.Version),
+			Reason:        bEvent.Reason,
+			Timestamp:     bEvent.Timestamp,
+			MetaData:      bEvent.MetaData,
+			Data:          eventData,
 		}
 		events = append(events, event)
 	}

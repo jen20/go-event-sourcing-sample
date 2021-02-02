@@ -36,7 +36,7 @@ func (s *SQL) Save(events []eventsourcing.Event) error {
 	if len(events) == 0 {
 		return nil
 	}
-	aggregateID := events[0].AggregateRootID
+	aggregateID := events[0].AggregateID
 	aggregateType := events[0].AggregateType
 
 	tx, err := s.db.BeginTx(context.Background(), nil)
@@ -79,7 +79,7 @@ func (s *SQL) Save(events []eventsourcing.Event) error {
 				return err
 			}
 		}
-		_, err = tx.Exec(insert, event.AggregateRootID, event.Version, event.Reason, event.AggregateType, event.Timestamp.Format(time.RFC3339), string(e), string(m))
+		_, err = tx.Exec(insert, event.AggregateID, event.Version, event.Reason, event.AggregateType, event.Timestamp.Format(time.RFC3339), string(e), string(m))
 		if err != nil {
 			return err
 		}
@@ -128,13 +128,13 @@ func (s *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.Ve
 		}
 
 		events = append(events, eventsourcing.Event{
-			AggregateRootID: id,
-			Version:         version,
-			AggregateType:   typ,
-			Reason:          reason,
-			Timestamp:       t,
-			Data:            eventData,
-			MetaData:        eventMetaData,
+			AggregateID:   id,
+			Version:       version,
+			AggregateType: typ,
+			Reason:        reason,
+			Timestamp:     t,
+			Data:          eventData,
+			MetaData:      eventMetaData,
 		})
 	}
 	return
