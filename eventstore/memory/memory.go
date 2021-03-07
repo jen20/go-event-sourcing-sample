@@ -80,7 +80,9 @@ func (e *Memory) Get(id string, aggregateType string, afterVersion eventsourcing
 		if e.Version > afterVersion {
 			events = append(events, e)
 		}
-
+	}
+	if len(events) == 0 {
+		return nil, eventsourcing.ErrNoEvents
 	}
 	return events, nil
 }

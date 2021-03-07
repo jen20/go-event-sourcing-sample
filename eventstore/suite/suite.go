@@ -1,6 +1,7 @@
 package suite
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -24,6 +25,7 @@ func Test(t *testing.T, esFunc eventstoreFunc) {
 		{"should not save events in wrong version", saveEventsInWrongVersion},
 		{"should not save event with no reason", saveEventsWithEmptyReason},
 		{"should save and get event concurrently", saveAndGetEventsConcurrently},
+		{"should return error when no events", getErrWhenNoEvents},
 	}
 	for _, test := range tests {
 		t.Run(test.title, func(t *testing.T) {
@@ -177,7 +179,7 @@ func getEventsAfterVersion(t *testing.T, es eventsourcing.EventStore) {
 		t.Fatal(err)
 	}
 
-	fetchedEvents, err := es.Get(string(aggregateID), aggregateType, 1)
+	fetchedEvents, err := es.Get(aggregateID, aggregateType, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -265,4 +267,11 @@ func saveAndGetEventsConcurrently(t *testing.T, es eventsourcing.EventStore) {
 		}()
 	}
 	wg.Wait()
+}
+
+func getErrWhenNoEvents(t *testing.T, es eventsourcing.EventStore) {
+	_, err := es.Get(aggregateID, aggregateType, 0)
+	if !errors.Is(err, eventsourcing.ErrNoEvents) {
+		t.Fatal("expect error when no events are saved for aggregate")
+	}
 }

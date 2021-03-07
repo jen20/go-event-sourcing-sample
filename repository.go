@@ -26,6 +26,9 @@ type Aggregate interface {
 // ErrSnapshotNotFound returns if snapshot not found
 var ErrSnapshotNotFound = errors.New("snapshot not found")
 
+// ErrAggregateNotFound returns if snapshot or event not found for aggregate
+var ErrAggregateNotFound = errors.New("aggregate not found")
+
 // Repository is the returned instance from the factory function
 type Repository struct {
 	*EventStream
@@ -74,6 +77,7 @@ func (r *Repository) SaveSnapshot(aggregate Aggregate) error {
 // If there is a snapshot store try fetch a snapshot of the aggregate and fetch event after the
 // version of the aggregate if any
 func (r *Repository) Get(id string, aggregate Aggregate) error {
+	var exist bool
 	if reflect.ValueOf(aggregate).Kind() != reflect.Ptr {
 		return errors.New("aggregate needs to be a pointer")
 	}
@@ -84,11 +88,15 @@ func (r *Repository) Get(id string, aggregate Aggregate) error {
 		if err != nil && !errors.Is(err, ErrSnapshotNotFound) {
 			return err
 		}
+		exist = true
 	}
 	root := aggregate.Root()
 	// fetch events after the current version of the aggregate that could be fetched from the snapshot store
 	events, err := r.eventStore.Get(id, aggregateType, root.Version())
-	if err != nil {
+	if errors.Is(err, ErrNoEvents) && !exist {
+		return ErrAggregateNotFound
+	}
+	if err != nil && !errors.Is(err, ErrNoEvents) {
 		return err
 	}
 	// apply the event on the aggregate
