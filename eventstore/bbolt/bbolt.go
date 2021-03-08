@@ -15,9 +15,6 @@ const (
 	globalEventOrderBucketName = "global_event_order"
 )
 
-// ErrorNotFound is returned when a given entity cannot be found in the event stream
-var ErrorNotFound = errors.New("NotFoundError")
-
 // itob returns an 8-byte big endian representation of v.
 func itob(v uint64) []byte {
 	b := make([]byte, 8)
@@ -177,6 +174,9 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 	defer tx.Rollback()
 
 	evBucket := tx.Bucket([]byte(bucketName))
+	if evBucket == nil {
+		return nil, eventsourcing.ErrNoEvents
+	}
 
 	cursor := evBucket.Cursor()
 	events := make([]eventsourcing.Event, 0)
@@ -208,6 +208,9 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 			Data:          eventData,
 		}
 		events = append(events, event)
+	}
+	if len(events) == 0 {
+		return nil, eventsourcing.ErrNoEvents
 	}
 	return events, nil
 }

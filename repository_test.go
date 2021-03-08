@@ -38,6 +38,16 @@ func TestSaveAndGetAggregate(t *testing.T) {
 	}
 }
 
+func TestGetNoneExistingAggregate(t *testing.T) {
+	repo := eventsourcing.NewRepository(memory.Create(), nil)
+
+	p := Person{}
+	err := repo.Get("none_existing", &p)
+	if err != eventsourcing.ErrAggregateNotFound {
+		t.Fatal("could not get aggregate")
+	}
+}
+
 func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
 	snapshot := memsnap.New(*ser)
@@ -60,7 +70,7 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 	person.GrowOlder()
 	repo.Save(person)
 	twin := Person{}
-	err = repo.Get(string(person.ID()), &twin)
+	err = repo.Get(person.ID(), &twin)
 	if err != nil {
 		t.Fatal("could not get aggregate")
 	}

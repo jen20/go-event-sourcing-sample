@@ -88,7 +88,8 @@ func (s *SQL) Save(events []eventsourcing.Event) error {
 }
 
 // Get the events from database
-func (s *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.Version) (events []eventsourcing.Event, err error) {
+func (s *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) {
+	var events []eventsourcing.Event
 	selectStm := `Select id, version, reason, type, timestamp, data, metadata from events where id=? and type=? and version>? order by version asc`
 	rows, err := s.db.Query(selectStm, id, aggregateType, afterVersion)
 	if err != nil {
@@ -137,5 +138,8 @@ func (s *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.Ve
 			MetaData:      eventMetaData,
 		})
 	}
-	return
+	if len(events) == 0 {
+		return nil, eventsourcing.ErrNoEvents
+	}
+	return events, nil
 }
