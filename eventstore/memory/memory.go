@@ -23,10 +23,10 @@ func Create() *Memory {
 }
 
 // Save an aggregate (its events)
-func (e *Memory) Save(events []eventsourcing.Event) error {
+func (e *Memory) Save(events []eventsourcing.Event) (uint64, error) {
 	// Return if there is no events to save
 	if len(events) == 0 {
-		return nil
+		return 0, nil
 	}
 
 	// make sure its thread safe
@@ -50,14 +50,14 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	//Validate events
 	err := eventstore.ValidateEvents(aggregateID, currentVersion, events)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	eventsInOrder := e.eventsInOrder
 
 	for _, event := range events {
 		if err != nil {
-			return err
+			return 0, err
 		}
 		evBucket = append(evBucket, event)
 		eventsInOrder = append(eventsInOrder, event)
@@ -66,7 +66,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	e.aggregateEvents[bucketName] = evBucket
 	e.eventsInOrder = eventsInOrder
 
-	return nil
+	return uint64(len(e.eventsInOrder)), nil
 }
 
 // Get aggregate events

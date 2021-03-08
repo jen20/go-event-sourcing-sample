@@ -26,6 +26,7 @@ func Test(t *testing.T, esFunc eventstoreFunc) {
 		{"should not save event with no reason", saveEventsWithEmptyReason},
 		{"should save and get event concurrently", saveAndGetEventsConcurrently},
 		{"should return error when no events", getErrWhenNoEvents},
+		{"should get global event order from save", saveReturnGlobalEventOrder},
 	}
 	for _, test := range tests {
 		t.Run(test.title, func(t *testing.T) {
@@ -106,7 +107,7 @@ func testEventOtherAggregate() eventsourcing.Event {
 }
 
 func saveAndGetEvents(t *testing.T, es eventsourcing.EventStore) {
-	err := es.Save(testEvents())
+	_, err := es.Save(testEvents())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +126,7 @@ func saveAndGetEvents(t *testing.T, es eventsourcing.EventStore) {
 	}
 
 	// Add more events to the same aggregate event stream
-	err = es.Save(testEventsPartTwo())
+	_, err = es.Save(testEventsPartTwo())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -174,7 +175,7 @@ func saveAndGetEvents(t *testing.T, es eventsourcing.EventStore) {
 }
 
 func getEventsAfterVersion(t *testing.T, es eventsourcing.EventStore) {
-	err := es.Save(testEvents())
+	_, err := es.Save(testEvents())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -196,7 +197,7 @@ func getEventsAfterVersion(t *testing.T, es eventsourcing.EventStore) {
 
 func saveEventsFromMoreThanOneAggregate(t *testing.T, es eventsourcing.EventStore) {
 	invalidEvent := append(testEvents(), testEventOtherAggregate())
-	err := es.Save(invalidEvent)
+	_, err := es.Save(invalidEvent)
 	if err == nil {
 		t.Error("should not be able to save events that belongs to more than one aggregate")
 	}
@@ -206,7 +207,7 @@ func saveEventsFromMoreThanOneAggregateType(t *testing.T, es eventsourcing.Event
 	events := testEvents()
 	events[1].AggregateType = "OtherAggregateType"
 
-	err := es.Save(events)
+	_, err := es.Save(events)
 	if err == nil {
 		t.Error("should not be able to save events that belongs to other aggregate type")
 	}
@@ -214,7 +215,7 @@ func saveEventsFromMoreThanOneAggregateType(t *testing.T, es eventsourcing.Event
 
 func saveEventsInWrongOrder(t *testing.T, es eventsourcing.EventStore) {
 	events := append(testEvents(), testEvents()[0])
-	err := es.Save(events)
+	_, err := es.Save(events)
 	if err == nil {
 		t.Error("should not be able to save events that are in wrong version order")
 	}
@@ -222,7 +223,7 @@ func saveEventsInWrongOrder(t *testing.T, es eventsourcing.EventStore) {
 
 func saveEventsInWrongVersion(t *testing.T, es eventsourcing.EventStore) {
 	events := testEventsPartTwo()
-	err := es.Save(events)
+	_, err := es.Save(events)
 	if err == nil {
 		t.Error("should not be able to save events that are out of sync compared to the storage order")
 	}
@@ -231,7 +232,7 @@ func saveEventsInWrongVersion(t *testing.T, es eventsourcing.EventStore) {
 func saveEventsWithEmptyReason(t *testing.T, es eventsourcing.EventStore) {
 	events := testEvents()
 	events[2].Reason = ""
-	err := es.Save(events)
+	_, err := es.Save(events)
 	if err == nil {
 		t.Error("should not be able to save events with empty reason")
 	}
@@ -244,7 +245,7 @@ func saveAndGetEventsConcurrently(t *testing.T, es eventsourcing.EventStore) {
 	for i := 0; i < 10; i++ {
 		events := testEventsWithID(fmt.Sprintf("id-%d", i))
 		go func() {
-			err := es.Save(events)
+			_, err := es.Save(events)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -273,5 +274,15 @@ func getErrWhenNoEvents(t *testing.T, es eventsourcing.EventStore) {
 	_, err := es.Get(aggregateID, aggregateType, 0)
 	if !errors.Is(err, eventsourcing.ErrNoEvents) {
 		t.Fatal("expect error when no events are saved for aggregate")
+	}
+}
+func saveReturnGlobalEventOrder(t *testing.T, es eventsourcing.EventStore) {
+	events := testEvents()
+	g, err := es.Save(events)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if g != 6 {
+		t.Fatalf("expected global event order 6 got %d", g)
 	}
 }

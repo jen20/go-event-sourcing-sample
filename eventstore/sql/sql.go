@@ -31,17 +31,17 @@ func (s *SQL) Close() {
 }
 
 // Save persists events to the database
-func (s *SQL) Save(events []eventsourcing.Event) error {
+func (s *SQL) Save(events []eventsourcing.Event) (uint64, error) {
 	// If no event return no error
 	if len(events) == 0 {
-		return nil
+		return 0, nil
 	}
 	aggregateID := events[0].AggregateID
 	aggregateType := events[0].AggregateType
 
 	tx, err := s.db.BeginTx(context.Background(), nil)
 	if err != nil {
-		return errors.New(fmt.Sprintf("could not start a write transaction, %v", err))
+		return 0, errors.New(fmt.Sprintf("could not start a write transaction, %v", err))
 	}
 	defer tx.Rollback()
 
@@ -50,7 +50,7 @@ func (s *SQL) Save(events []eventsourcing.Event) error {
 	selectStm := `Select version from events where id=? and type=? order by version desc limit 1`
 	err = tx.QueryRow(selectStm, aggregateID, aggregateType).Scan(&version)
 	if err != nil && err != sql.ErrNoRows {
-		return err
+		return 0, err
 	} else if err == sql.ErrNoRows {
 		// if no events are saved before set the current version to zero
 		currentVersion = eventsourcing.Version(0)
@@ -62,29 +62,31 @@ func (s *SQL) Save(events []eventsourcing.Event) error {
 	//Validate events
 	err = eventstore.ValidateEvents(aggregateID, currentVersion, events)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
+	var lastInsertedID int64
 	insert := `Insert into events (id, version, reason, type, timestamp, data, metadata) values ($1, $2, $3, $4, $5, $6, $7)`
 	for _, event := range events {
 		var e, m []byte
 
 		e, err := s.serializer.Marshal(event.Data)
 		if err != nil {
-			return err
+			return 0, err
 		}
 		if event.MetaData != nil {
 			m, err = s.serializer.Marshal(event.MetaData)
 			if err != nil {
-				return err
+				return 0, err
 			}
 		}
-		_, err = tx.Exec(insert, event.AggregateID, event.Version, event.Reason, event.AggregateType, event.Timestamp.Format(time.RFC3339), string(e), string(m))
+		res, err := tx.Exec(insert, event.AggregateID, event.Version, event.Reason, event.AggregateType, event.Timestamp.Format(time.RFC3339), string(e), string(m))
 		if err != nil {
-			return err
+			return 0, err
 		}
+		lastInsertedID, err = res.LastInsertId()
 	}
-	return tx.Commit()
+	return uint64(lastInsertedID), tx.Commit()
 }
 
 // Get the events from database
