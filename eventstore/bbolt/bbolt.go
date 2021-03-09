@@ -30,7 +30,7 @@ type BBolt struct {
 
 type boltEvent struct {
 	AggregateID   string
-	Version       int
+	Version       uint64
 	GlobalVersion uint64
 	Reason        string
 	AggregateType string
@@ -66,7 +66,7 @@ func MustOpenBBolt(dbFile string, s eventsourcing.Serializer) *BBolt {
 }
 
 // Save an aggregate (its events)
-func (e *BBolt) Save(events []eventsourcing.Event) (eventsourcing.GlobalVersion, error) {
+func (e *BBolt) Save(events []eventsourcing.Event) (eventsourcing.Version, error) {
 	// Return if there is no events to save
 	if len(events) == 0 {
 		return 0, nil
@@ -138,7 +138,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) (eventsourcing.GlobalVersion,
 		bEvent := boltEvent{
 			AggregateID:   event.AggregateID,
 			AggregateType: event.AggregateType,
-			Version:       int(event.Version),
+			Version:       uint64(event.Version),
 			GlobalVersion: globalSequence,
 			Reason:        event.Reason,
 			Timestamp:     event.Timestamp,
@@ -160,7 +160,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) (eventsourcing.GlobalVersion,
 			return 0, errors.New(fmt.Sprintf("could not save global sequence pointer for %#v", bucketName))
 		}
 	}
-	return eventsourcing.GlobalVersion(globalSequence), tx.Commit()
+	return eventsourcing.Version(globalSequence), tx.Commit()
 }
 
 // Get aggregate events
@@ -202,7 +202,7 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 			AggregateID:   bEvent.AggregateID,
 			AggregateType: bEvent.AggregateType,
 			Version:       eventsourcing.Version(bEvent.Version),
-			GlobalVersion: eventsourcing.GlobalVersion(bEvent.GlobalVersion),
+			GlobalVersion: eventsourcing.Version(bEvent.GlobalVersion),
 			Reason:        bEvent.Reason,
 			Timestamp:     bEvent.Timestamp,
 			MetaData:      bEvent.MetaData,

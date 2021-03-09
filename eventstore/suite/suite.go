@@ -331,7 +331,7 @@ func setGlobalVersionOnSavedEvents(t *testing.T, es eventsourcing.EventStore) er
 	if err != nil {
 		return err
 	}
-	var g eventsourcing.GlobalVersion
+	var g eventsourcing.Version
 	for _, e := range eventsGet {
 		g++
 		if e.GlobalVersion != g {

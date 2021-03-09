@@ -31,7 +31,7 @@ func (s *SQL) Close() {
 }
 
 // Save persists events to the database
-func (s *SQL) Save(events []eventsourcing.Event) (eventsourcing.GlobalVersion, error) {
+func (s *SQL) Save(events []eventsourcing.Event) (eventsourcing.Version, error) {
 	// If no event return no error
 	if len(events) == 0 {
 		return 0, nil
@@ -86,7 +86,7 @@ func (s *SQL) Save(events []eventsourcing.Event) (eventsourcing.GlobalVersion, e
 		}
 		lastInsertedID, err = res.LastInsertId()
 	}
-	return eventsourcing.GlobalVersion(lastInsertedID), tx.Commit()
+	return eventsourcing.Version(lastInsertedID), tx.Commit()
 }
 
 // Get the events from database
@@ -98,7 +98,7 @@ func (s *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.Ve
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var globalVersion eventsourcing.GlobalVersion
+		var globalVersion eventsourcing.Version
 		var eventMetaData map[string]interface{}
 		var version eventsourcing.Version
 		var id, reason, typ, timestamp string

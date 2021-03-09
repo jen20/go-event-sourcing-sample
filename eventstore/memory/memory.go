@@ -23,7 +23,7 @@ func Create() *Memory {
 }
 
 // Save an aggregate (its events)
-func (e *Memory) Save(events []eventsourcing.Event) (eventsourcing.GlobalVersion, error) {
+func (e *Memory) Save(events []eventsourcing.Event) (eventsourcing.Version, error) {
 	// Return if there is no events to save
 	if len(events) == 0 {
 		return 0, nil
@@ -58,14 +58,14 @@ func (e *Memory) Save(events []eventsourcing.Event) (eventsourcing.GlobalVersion
 			return 0, err
 		}
 		// set the global version on the event +1 as if the event was already on the eventsInOrder slice
-		event.GlobalVersion = eventsourcing.GlobalVersion(len(e.eventsInOrder) + 1)
+		event.GlobalVersion = eventsourcing.Version(len(e.eventsInOrder) + 1)
 		evBucket = append(evBucket, event)
 		e.eventsInOrder = append(e.eventsInOrder, event)
 	}
 
 	e.aggregateEvents[bucketName] = evBucket
 
-	return eventsourcing.GlobalVersion(len(e.eventsInOrder)), nil
+	return eventsourcing.Version(len(e.eventsInOrder)), nil
 }
 
 // Get aggregate events
