@@ -7,7 +7,7 @@ import (
 
 // EventStore interface expose the methods an event store must uphold
 type EventStore interface {
-	Save(events []Event) (uint64, error)
+	Save(events []Event) (GlobalVersion, error)
 	Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
 }
 
@@ -46,7 +46,7 @@ func NewRepository(eventStore EventStore, snapshotStore SnapshotStore) *Reposito
 }
 
 // Save an aggregates events
-func (r *Repository) Save(aggregate Aggregate) (uint64, error) {
+func (r *Repository) Save(aggregate Aggregate) (GlobalVersion, error) {
 	root := aggregate.Root()
 	globalEventNumber, err := r.eventStore.Save(root.Events())
 	if err != nil {

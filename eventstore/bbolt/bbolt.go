@@ -66,7 +66,7 @@ func MustOpenBBolt(dbFile string, s eventsourcing.Serializer) *BBolt {
 }
 
 // Save an aggregate (its events)
-func (e *BBolt) Save(events []eventsourcing.Event) (uint64, error) {
+func (e *BBolt) Save(events []eventsourcing.Event) (eventsourcing.GlobalVersion, error) {
 	// Return if there is no events to save
 	if len(events) == 0 {
 		return 0, nil
@@ -160,7 +160,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) (uint64, error) {
 			return 0, errors.New(fmt.Sprintf("could not save global sequence pointer for %#v", bucketName))
 		}
 	}
-	return globalSequence, tx.Commit()
+	return eventsourcing.GlobalVersion(globalSequence), tx.Commit()
 }
 
 // Get aggregate events
@@ -202,7 +202,7 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 			AggregateID:   bEvent.AggregateID,
 			AggregateType: bEvent.AggregateType,
 			Version:       eventsourcing.Version(bEvent.Version),
-			GlobalVersion: bEvent.GlobalVersion,
+			GlobalVersion: eventsourcing.GlobalVersion(bEvent.GlobalVersion),
 			Reason:        bEvent.Reason,
 			Timestamp:     bEvent.Timestamp,
 			MetaData:      bEvent.MetaData,

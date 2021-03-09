@@ -9,6 +9,9 @@ import (
 // Version is the event version used in event and aggregateRoot
 type Version int
 
+// GlobalVersion is the global event version
+type GlobalVersion uint64
+
 // AggregateRoot to be included into aggregates
 type AggregateRoot struct {
 	AggregateID      string
@@ -20,7 +23,7 @@ type AggregateRoot struct {
 type Event struct {
 	AggregateID   string
 	Version       Version
-	GlobalVersion uint64
+	GlobalVersion GlobalVersion
 	Reason        string
 	AggregateType string
 	Timestamp     time.Time
