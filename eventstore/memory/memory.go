@@ -53,18 +53,17 @@ func (e *Memory) Save(events []eventsourcing.Event) (uint64, error) {
 		return 0, err
 	}
 
-	eventsInOrder := e.eventsInOrder
-
 	for _, event := range events {
 		if err != nil {
 			return 0, err
 		}
+		// set the global version on the event +1 as if the event was already on the eventsInOrder slice
+		event.GlobalVersion = uint64(len(e.eventsInOrder) + 1)
 		evBucket = append(evBucket, event)
-		eventsInOrder = append(eventsInOrder, event)
+		e.eventsInOrder = append(e.eventsInOrder, event)
 	}
 
 	e.aggregateEvents[bucketName] = evBucket
-	e.eventsInOrder = eventsInOrder
 
 	return uint64(len(e.eventsInOrder)), nil
 }

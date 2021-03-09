@@ -90,20 +90,20 @@ func (s *SQL) Save(events []eventsourcing.Event) (uint64, error) {
 }
 
 // Get the events from database
-func (s *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) {
-	var events []eventsourcing.Event
-	selectStm := `Select id, version, reason, type, timestamp, data, metadata from events where id=? and type=? and version>? order by version asc`
+func (s *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.Version) (events []eventsourcing.Event, err error) {
+	selectStm := `Select seq, id, version, reason, type, timestamp, data, metadata from events where id=? and type=? and version>? order by version asc`
 	rows, err := s.db.Query(selectStm, id, aggregateType, afterVersion)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
+		var globalVersion uint64
 		var eventMetaData map[string]interface{}
 		var version eventsourcing.Version
 		var id, reason, typ, timestamp string
 		var data, metadata string
-		if err := rows.Scan(&id, &version, &reason, &typ, &timestamp, &data, &metadata); err != nil {
+		if err := rows.Scan(&globalVersion, &id, &version, &reason, &typ, &timestamp, &data, &metadata); err != nil {
 			return nil, err
 		}
 
@@ -133,6 +133,7 @@ func (s *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.Ve
 		events = append(events, eventsourcing.Event{
 			AggregateID:   id,
 			Version:       version,
+			GlobalVersion: globalVersion,
 			AggregateType: typ,
 			Reason:        reason,
 			Timestamp:     t,

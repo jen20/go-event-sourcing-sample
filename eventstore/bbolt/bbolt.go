@@ -31,6 +31,7 @@ type BBolt struct {
 type boltEvent struct {
 	AggregateID   string
 	Version       int
+	GlobalVersion uint64
 	Reason        string
 	AggregateType string
 	Timestamp     time.Time
@@ -121,6 +122,15 @@ func (e *BBolt) Save(events []eventsourcing.Event) (uint64, error) {
 		if err != nil {
 			return 0, errors.New(fmt.Sprintf("could not get sequence for %#v", bucketName))
 		}
+
+		// We need to establish a global event order that spans over all buckets. This is so that we can be
+		// able to play the event (or send) them in the order that they was entered into this database.
+		// The global sequence bucket contains an ordered line of pointer to all events on the form bucket_name:seq_num
+		globalSequence, err = globalBucket.NextSequence()
+		if err != nil {
+			return 0, errors.New("could not get next sequence for global bucket")
+		}
+
 		// marshal the event.Data separately to be able to handle the type info
 		eventData, err := e.serializer.Marshal(event.Data)
 
@@ -129,6 +139,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) (uint64, error) {
 			AggregateID:   event.AggregateID,
 			AggregateType: event.AggregateType,
 			Version:       int(event.Version),
+			GlobalVersion: globalSequence,
 			Reason:        event.Reason,
 			Timestamp:     event.Timestamp,
 			MetaData:      event.MetaData,
@@ -143,13 +154,6 @@ func (e *BBolt) Save(events []eventsourcing.Event) (uint64, error) {
 		err = evBucket.Put(itob(sequence), value)
 		if err != nil {
 			return 0, errors.New(fmt.Sprintf("could not save event %#v in bucket", event))
-		}
-		// We need to establish a global event order that spans over all buckets. This is so that we can be
-		// able to play the event (or send) them in the order that they was entered into this database.
-		// The global sequence bucket contains an ordered line of pointer to all events on the form bucket_name:seq_num
-		globalSequence, err = globalBucket.NextSequence()
-		if err != nil {
-			return 0, errors.New("could not get next sequence for global bucket")
 		}
 		err = globalBucket.Put(itob(globalSequence), value)
 		if err != nil {
@@ -198,6 +202,7 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 			AggregateID:   bEvent.AggregateID,
 			AggregateType: bEvent.AggregateType,
 			Version:       eventsourcing.Version(bEvent.Version),
+			GlobalVersion: bEvent.GlobalVersion,
 			Reason:        bEvent.Reason,
 			Timestamp:     bEvent.Timestamp,
 			MetaData:      bEvent.MetaData,

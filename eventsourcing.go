@@ -20,6 +20,7 @@ type AggregateRoot struct {
 type Event struct {
 	AggregateID   string
 	Version       Version
+	GlobalVersion uint64
 	Reason        string
 	AggregateType string
 	Timestamp     time.Time
