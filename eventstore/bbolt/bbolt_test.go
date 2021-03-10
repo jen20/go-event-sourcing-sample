@@ -2,11 +2,12 @@ package bbolt_test
 
 import (
 	"encoding/json"
+	"os"
+	"testing"
+
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/bbolt"
 	"github.com/hallgren/eventsourcing/eventstore/suite"
-	"os"
-	"testing"
 )
 
 func TestSuite(t *testing.T) {
@@ -15,12 +16,12 @@ func TestSuite(t *testing.T) {
 		ser := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
 
 		ser.RegisterTypes(&suite.FrequentFlierAccount{},
-			func() interface{} { return &suite.FrequentFlierAccountCreated{}},
-			func() interface{} { return &suite.FlightTaken{}},
-			func() interface{} { return &suite.StatusMatched{}},
+			func() interface{} { return &suite.FrequentFlierAccountCreated{} },
+			func() interface{} { return &suite.FlightTaken{} },
+			func() interface{} { return &suite.StatusMatched{} },
 		)
 		es := bbolt.MustOpenBBolt(dbFile, *ser)
-		return es, func(){
+		return es, func() {
 			es.Close()
 			os.Remove(dbFile)
 		}, nil

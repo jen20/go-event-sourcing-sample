@@ -95,6 +95,8 @@ type Event struct {
     AggregateID string
     // the aggregate version when this event was created
     Version         Version
+	// the global version is based on all events (this value is only set after the event is saved to the event store) 
+	GlobalVersion   Version
     // name of the event (Born / AgedOneYear in the example above)
     Reason          string
     // aggregate type (Person in the example above)
@@ -137,8 +139,8 @@ eventsourcing.SetIDFunc(f)
 The repository is used to save and retrieve aggregates. The main functions are:
 
 ```go
-// saves the events on the aggregate
-Save(aggregate Aggregate) error
+// saves the events on the aggregate return the last global version from the last saved event
+Save(aggregate Aggregate) (Version, error)
 
 // retrieves and build an aggregate from events based on its identifier
 Get(id string, aggregate Aggregate) error
@@ -173,7 +175,7 @@ The only thing an event store handles are events, and it must implement the foll
 
 ```go
 // saves events to an underlaying data store.
-Save(events []eventsourcing.Event) error
+Save(events []eventsourcing.Event) (Version, error)
 
 // fetches events based on identifier and type but also after a specific version. The version is used to load event that happened after a snapshot was taken.
 Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)
@@ -291,7 +293,8 @@ A custom-made event store has to implement the following functions to fulfill th
 
 ```go
 type EventStore interface {
-    Save(events []Event) error
+	// The returned Version is the last events global version stored to the event store
+    Save(events []Event) (Version, error)
     Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
 }
 ```

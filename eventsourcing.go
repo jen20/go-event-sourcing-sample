@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// Version is the event version used in event and aggregateRoot
-type Version int
+// Version is the event version used in event.Version, event.GlobalVersion and aggregateRoot
+type Version uint64
 
 // AggregateRoot to be included into aggregates
 type AggregateRoot struct {
@@ -20,6 +20,7 @@ type AggregateRoot struct {
 type Event struct {
 	AggregateID   string
 	Version       Version
+	GlobalVersion Version
 	Reason        string
 	AggregateType string
 	Timestamp     time.Time
@@ -33,7 +34,6 @@ var (
 
 	// ErrNoEvents when there is no events to get
 	ErrNoEvents = errors.New("no events")
-
 )
 
 const (

@@ -3,9 +3,10 @@ package eventsourcing_test
 import (
 	"errors"
 	"fmt"
-	"github.com/hallgren/eventsourcing"
 	"testing"
 	"time"
+
+	"github.com/hallgren/eventsourcing"
 )
 
 // Person aggregate
@@ -99,6 +100,10 @@ func TestCreateNewPerson(t *testing.T) {
 
 	if person.Events()[0].Timestamp.After(time.Now().UTC()) {
 		t.Fatal("event timestamp after current time")
+	}
+
+	if person.Events()[0].GlobalVersion != 0 {
+		t.Fatalf("global version should not be set when event is created, was %d", person.Events()[0].GlobalVersion)
 	}
 }
 

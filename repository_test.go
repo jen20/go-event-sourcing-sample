@@ -17,10 +17,16 @@ func TestSaveAndGetAggregate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = repo.Save(person)
+	gv, err := repo.Save(person)
 	if err != nil {
 		t.Fatal("could not save aggregate")
 	}
+
+	// make sure the global version is set to 1
+	if gv != 1 {
+		t.Fatalf("global version is: %d expected: 1", gv)
+	}
+
 	twin := Person{}
 	err = repo.Get(person.ID(), &twin)
 	if err != nil {
@@ -57,7 +63,7 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = repo.Save(person)
+	_, err = repo.Save(person)
 	if err != nil {
 		t.Fatal("could not save aggregate")
 	}
@@ -134,7 +140,7 @@ func TestSubscriptionAllEvent(t *testing.T) {
 	person.GrowOlder()
 	person.GrowOlder()
 
-	err = repo.Save(person)
+	_, err = repo.Save(person)
 	if err != nil {
 		t.Fatal("could not save aggregate")
 	}
@@ -161,7 +167,7 @@ func TestSubscriptionSpecificEvent(t *testing.T) {
 	person.GrowOlder()
 	person.GrowOlder()
 
-	err = repo.Save(person)
+	_, err = repo.Save(person)
 	if err != nil {
 		t.Fatal("could not save aggregate")
 	}
@@ -188,7 +194,7 @@ func TestSubscriptionAggregateType(t *testing.T) {
 	person.GrowOlder()
 	person.GrowOlder()
 
-	err = repo.Save(person)
+	_, err = repo.Save(person)
 	if err != nil {
 		t.Fatal("could not save aggregate")
 	}
@@ -216,7 +222,7 @@ func TestSubscriptionSpecificAggregate(t *testing.T) {
 	person.GrowOlder()
 	person.GrowOlder()
 
-	err = repo.Save(person)
+	_, err = repo.Save(person)
 	if err != nil {
 		t.Fatal("could not save aggregate")
 	}
@@ -276,7 +282,7 @@ func TestEventChainDoesNotHang(t *testing.T) {
 	person.GrowOlder()
 	person.GrowOlder()
 
-	err = repo.Save(person)
+	_, err = repo.Save(person)
 	if err != nil {
 		t.Fatal("could not save aggregate")
 	}
