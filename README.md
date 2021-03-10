@@ -95,8 +95,8 @@ type Event struct {
     AggregateID string
     // the aggregate version when this event was created
     Version         Version
-	// the global version is based on all events (this value is only set after the event is saved to the event store) 
-	GlobalVersion   Version
+    // the global version is based on all events (this value is only set after the event is saved to the event store) 
+    GlobalVersion   Version
     // name of the event (Born / AgedOneYear in the example above)
     Reason          string
     // aggregate type (Person in the example above)
@@ -293,7 +293,7 @@ A custom-made event store has to implement the following functions to fulfill th
 
 ```go
 type EventStore interface {
-	// The returned Version is the last events global version stored to the event store
+    // The returned Version is the last events global version stored to the event store
     Save(events []Event) (Version, error)
     Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
 }
