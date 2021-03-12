@@ -6,3 +6,5 @@ require (
 	github.com/hallgren/eventsourcing v0.0.15-0.20210310221131-4bb8960a066e // indirect
 	github.com/proullon/ramsql v0.0.0-20181213202341-817cee58a244
 )
+
+replace github.com/hallgren/eventsourcing => ../..

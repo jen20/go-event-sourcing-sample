@@ -146,3 +146,59 @@ func (s *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.Ve
 	}
 	return events, nil
 }
+
+// GlobalEvents return count events in order globaly from the start posistion
+func (s *SQL) GlobalEvents(start, count uint64) ([]eventsourcing.Event, error) {
+	var events []eventsourcing.Event
+	selectStm := `Select seq, id, version, reason, type, timestamp, data, metadata from events where seq >= ? order by seq asc LIMIT ?`
+	rows, err := s.db.Query(selectStm, start, count)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var globalVersion eventsourcing.Version
+		var eventMetaData map[string]interface{}
+		var version eventsourcing.Version
+		var id, reason, typ, timestamp string
+		var data, metadata string
+		if err := rows.Scan(&globalVersion, &id, &version, &reason, &typ, &timestamp, &data, &metadata); err != nil {
+			return nil, err
+		}
+
+		t, err := time.Parse(time.RFC3339, timestamp)
+		if err != nil {
+			return nil, err
+		}
+
+		f, ok := s.serializer.Type(typ, reason)
+		if !ok {
+			// if the typ/reason is not register jump over the event
+			continue
+		}
+
+		eventData := f()
+		err = s.serializer.Unmarshal([]byte(data), &eventData)
+		if err != nil {
+			return nil, err
+		}
+		if metadata != "" {
+			err = s.serializer.Unmarshal([]byte(metadata), &eventMetaData)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		events = append(events, eventsourcing.Event{
+			AggregateID:   id,
+			Version:       version,
+			GlobalVersion: globalVersion,
+			AggregateType: typ,
+			Reason:        reason,
+			Timestamp:     t,
+			Data:          eventData,
+			MetaData:      eventMetaData,
+		})
+	}
+	return events, nil
+}

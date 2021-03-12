@@ -86,6 +86,26 @@ func (e *Memory) Get(id string, aggregateType string, afterVersion eventsourcing
 	return events, nil
 }
 
+// GlobalEvents will return count events in order globaly from the start posistion
+func (e *Memory) GlobalEvents(start, count uint64) ([]eventsourcing.Event, error) {
+	var events []eventsourcing.Event
+	// make sure its thread safe
+	e.lock.Lock()
+	defer e.lock.Unlock()
+
+	for _, e := range e.eventsInOrder {
+		// find start position and append until counter is 0
+		if uint64(e.GlobalVersion) >= start {
+			events = append(events, e)
+			count--
+			if count == 0 {
+				break
+			}
+		}
+	}
+	return events, nil
+}
+
 // Close does nothing
 func (e *Memory) Close() {}
 

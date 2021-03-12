@@ -2,11 +2,11 @@ package eventsourcing_test
 
 import (
 	"encoding/json"
-	"fmt"
-	"github.com/hallgren/eventsourcing"
 	"reflect"
 	"sync"
 	"testing"
+
+	"github.com/hallgren/eventsourcing"
 )
 
 func initSerializers(t *testing.T) []*eventsourcing.Serializer {
@@ -52,7 +52,6 @@ func TestSerializeDeserialize(t *testing.T) {
 			if err != nil {
 				t.Fatalf("could not Marshal data, %v", err)
 			}
-			fmt.Println(string(d))
 
 			f, ok := s.Type("SomeAggregate", "SomeData")
 			if !ok {
