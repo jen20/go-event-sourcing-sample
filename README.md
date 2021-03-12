@@ -144,6 +144,9 @@ Save(aggregate Aggregate) (Version, error)
 
 // retrieves and build an aggregate from events based on its identifier
 Get(id string, aggregate Aggregate) error
+
+// return count number of events in global order starting at the start position
+GlobalEvents(start, count uint64) ([]Event, error) {
 ```
 
 It is possible to save a snapshot of an aggregate reducing the amount of event needed to be fetched and applied.
@@ -179,6 +182,9 @@ Save(events []eventsourcing.Event) (Version, error)
 
 // fetches events based on identifier and type but also after a specific version. The version is used to load event that happened after a snapshot was taken.
 Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)
+
+// return count number of events in global order starting at the start position
+GlobalEvents(start, count uint64) ([]Event, error) {
 ```
 
 Currently, there are three implementations.
@@ -296,6 +302,7 @@ type EventStore interface {
     // The returned Version is the last events global version stored to the event store
     Save(events []Event) (Version, error)
     Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
+	GlobalEvents(start, count uint64) ([]Event, error) {
 }
 ```
 

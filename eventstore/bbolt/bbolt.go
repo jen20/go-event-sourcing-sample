@@ -216,6 +216,52 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 	return events, nil
 }
 
+// GlobalEvents return count events in order globaly from the start posistion
+func (e *BBolt) GlobalEvents(start, count uint64) ([]eventsourcing.Event, error) {
+	var events []eventsourcing.Event
+	tx, err := e.db.Begin(false)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	globalBucket := tx.Bucket([]byte(globalEventOrderBucketName))
+	cursor := globalBucket.Cursor()
+	for k, obj := cursor.Seek(itob(start)); k != nil; k, obj = cursor.Next() {
+		bEvent := boltEvent{}
+		err := e.serializer.Unmarshal(obj, &bEvent)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("could not deserialize event, %v", err))
+		}
+		f, ok := e.serializer.Type(bEvent.AggregateType, bEvent.Reason)
+		if !ok {
+			// if the typ/reason is not register jump over the event
+			continue
+		}
+		eventData := f()
+		err = e.serializer.Unmarshal(bEvent.Data, &eventData)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("could not deserialize event data, %v", err))
+		}
+		event := eventsourcing.Event{
+			AggregateID:   bEvent.AggregateID,
+			AggregateType: bEvent.AggregateType,
+			Version:       eventsourcing.Version(bEvent.Version),
+			GlobalVersion: eventsourcing.Version(bEvent.GlobalVersion),
+			Reason:        bEvent.Reason,
+			Timestamp:     bEvent.Timestamp,
+			MetaData:      bEvent.MetaData,
+			Data:          eventData,
+		}
+		events = append(events, event)
+		count--
+		if count == 0 {
+			break
+		}
+	}
+	return events, nil
+}
+
 // Close closes the event stream and the underlying database
 func (e *BBolt) Close() error {
 	return e.db.Close()

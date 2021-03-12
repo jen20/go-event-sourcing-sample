@@ -15,7 +15,7 @@ type eventstoreFunc = func() (eventsourcing.EventStore, func(), error)
 func Test(t *testing.T, esFunc eventstoreFunc) {
 	tests := []struct {
 		title string
-		run   func(t *testing.T, es eventsourcing.EventStore) error
+		run   func(es eventsourcing.EventStore) error
 	}{
 		{"should save and get events", saveAndGetEvents},
 		{"should get events after version", getEventsAfterVersion},
@@ -28,6 +28,7 @@ func Test(t *testing.T, esFunc eventstoreFunc) {
 		{"should return error when no events", getErrWhenNoEvents},
 		{"should get global event order from save", saveReturnGlobalEventOrder},
 		{"should set global event on event when saved", setGlobalVersionOnSavedEvents},
+		{"should get global events", getGlobalEvents},
 	}
 	for _, test := range tests {
 		t.Run(test.title, func(t *testing.T) {
@@ -35,7 +36,7 @@ func Test(t *testing.T, esFunc eventstoreFunc) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = test.run(t, es)
+			err = test.run(es)
 			if err != nil {
 				// make use of t.Error instead of t.Fatal to make sure the closeFunc is executed
 				t.Error(err)
@@ -111,7 +112,7 @@ func testEventOtherAggregate() eventsourcing.Event {
 	return eventsourcing.Event{AggregateID: aggregateIDOther, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Timestamp: timestamp, Data: &FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}}
 }
 
-func saveAndGetEvents(t *testing.T, es eventsourcing.EventStore) error {
+func saveAndGetEvents(es eventsourcing.EventStore) error {
 	_, err := es.Save(testEvents())
 	if err != nil {
 		return err
@@ -181,7 +182,7 @@ func saveAndGetEvents(t *testing.T, es eventsourcing.EventStore) error {
 	return nil
 }
 
-func getEventsAfterVersion(t *testing.T, es eventsourcing.EventStore) error {
+func getEventsAfterVersion(es eventsourcing.EventStore) error {
 	_, err := es.Save(testEvents())
 	if err != nil {
 		return err
@@ -203,7 +204,7 @@ func getEventsAfterVersion(t *testing.T, es eventsourcing.EventStore) error {
 	return nil
 }
 
-func saveEventsFromMoreThanOneAggregate(t *testing.T, es eventsourcing.EventStore) error {
+func saveEventsFromMoreThanOneAggregate(es eventsourcing.EventStore) error {
 	invalidEvent := append(testEvents(), testEventOtherAggregate())
 	_, err := es.Save(invalidEvent)
 	if err == nil {
@@ -212,7 +213,7 @@ func saveEventsFromMoreThanOneAggregate(t *testing.T, es eventsourcing.EventStor
 	return nil
 }
 
-func saveEventsFromMoreThanOneAggregateType(t *testing.T, es eventsourcing.EventStore) error {
+func saveEventsFromMoreThanOneAggregateType(es eventsourcing.EventStore) error {
 	events := testEvents()
 	events[1].AggregateType = "OtherAggregateType"
 
@@ -223,7 +224,7 @@ func saveEventsFromMoreThanOneAggregateType(t *testing.T, es eventsourcing.Event
 	return nil
 }
 
-func saveEventsInWrongOrder(t *testing.T, es eventsourcing.EventStore) error {
+func saveEventsInWrongOrder(es eventsourcing.EventStore) error {
 	events := append(testEvents(), testEvents()[0])
 	_, err := es.Save(events)
 	if err == nil {
@@ -232,7 +233,7 @@ func saveEventsInWrongOrder(t *testing.T, es eventsourcing.EventStore) error {
 	return nil
 }
 
-func saveEventsInWrongVersion(t *testing.T, es eventsourcing.EventStore) error {
+func saveEventsInWrongVersion(es eventsourcing.EventStore) error {
 	events := testEventsPartTwo()
 	_, err := es.Save(events)
 	if err == nil {
@@ -241,7 +242,7 @@ func saveEventsInWrongVersion(t *testing.T, es eventsourcing.EventStore) error {
 	return nil
 }
 
-func saveEventsWithEmptyReason(t *testing.T, es eventsourcing.EventStore) error {
+func saveEventsWithEmptyReason(es eventsourcing.EventStore) error {
 	events := testEvents()
 	events[2].Reason = ""
 	_, err := es.Save(events)
@@ -251,7 +252,7 @@ func saveEventsWithEmptyReason(t *testing.T, es eventsourcing.EventStore) error 
 	return nil
 }
 
-func saveAndGetEventsConcurrently(t *testing.T, es eventsourcing.EventStore) error {
+func saveAndGetEventsConcurrently(es eventsourcing.EventStore) error {
 	wg := sync.WaitGroup{}
 	var err error
 
@@ -294,14 +295,14 @@ func saveAndGetEventsConcurrently(t *testing.T, es eventsourcing.EventStore) err
 	return nil
 }
 
-func getErrWhenNoEvents(t *testing.T, es eventsourcing.EventStore) error {
+func getErrWhenNoEvents(es eventsourcing.EventStore) error {
 	_, err := es.Get(aggregateID, aggregateType, 0)
 	if !errors.Is(err, eventsourcing.ErrNoEvents) {
 		return fmt.Errorf("expect error when no events are saved for aggregate")
 	}
 	return nil
 }
-func saveReturnGlobalEventOrder(t *testing.T, es eventsourcing.EventStore) error {
+func saveReturnGlobalEventOrder(es eventsourcing.EventStore) error {
 	events := testEvents()
 	g, err := es.Save(events)
 	if err != nil {
@@ -321,7 +322,7 @@ func saveReturnGlobalEventOrder(t *testing.T, es eventsourcing.EventStore) error
 	return nil
 }
 
-func setGlobalVersionOnSavedEvents(t *testing.T, es eventsourcing.EventStore) error {
+func setGlobalVersionOnSavedEvents(es eventsourcing.EventStore) error {
 	events := testEvents()
 	_, err := es.Save(events)
 	if err != nil {
@@ -337,6 +338,35 @@ func setGlobalVersionOnSavedEvents(t *testing.T, es eventsourcing.EventStore) er
 		if e.GlobalVersion != g {
 			return fmt.Errorf("expected global version to be in sequens exp: %d, was: %d", g, e.GlobalVersion)
 		}
+	}
+	return nil
+}
+
+func getGlobalEvents(es eventsourcing.EventStore) error {
+	events := testEvents()
+	_, err := es.Save(events)
+	if err != nil {
+		return err
+	}
+	eventsGet, err := es.GlobalEvents(3, 100)
+	if err != nil {
+		return err
+	}
+	if eventsGet[0].GlobalVersion != 3 {
+		return fmt.Errorf("expected global version on first event to be 3 was %d", eventsGet[0].GlobalVersion)
+	}
+	if len(eventsGet) != 4 {
+		return fmt.Errorf("expected event count to be 4 was %d", len(eventsGet))
+	}
+	eventsGet, err = es.GlobalEvents(1, 1)
+	if err != nil {
+		return err
+	}
+	if eventsGet[0].GlobalVersion != 1 {
+		return fmt.Errorf("expected global version on first event to be 1 was %d", eventsGet[0].GlobalVersion)
+	}
+	if len(eventsGet) != 1 {
+		return fmt.Errorf("expected event count to be 1 was %d", len(eventsGet))
 	}
 	return nil
 }
