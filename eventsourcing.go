@@ -92,6 +92,7 @@ func (state *AggregateRoot) nextVersion() Version {
 func (state *AggregateRoot) updateVersion() {
 	if len(state.aggregateEvents) > 0 {
 		state.AggregateVersion = state.aggregateEvents[len(state.aggregateEvents)-1].Version
+		state.AggregateGlobalVersion = state.aggregateEvents[len(state.aggregateEvents)-1].GlobalVersion
 		state.aggregateEvents = []Event{}
 	}
 }

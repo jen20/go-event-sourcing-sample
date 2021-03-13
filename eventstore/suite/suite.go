@@ -113,11 +113,11 @@ func testEventOtherAggregate() eventsourcing.Event {
 }
 
 func saveAndGetEvents(es eventsourcing.EventStore) error {
-	_, err := es.Save(testEvents())
+	events := testEvents()
+	err := es.Save(events)
 	if err != nil {
 		return err
 	}
-
 	fetchedEvents, err := es.Get(aggregateID, aggregateType, 0)
 	if err != nil {
 		return err
@@ -133,7 +133,7 @@ func saveAndGetEvents(es eventsourcing.EventStore) error {
 	}
 
 	// Add more events to the same aggregate event stream
-	_, err = es.Save(testEventsPartTwo())
+	err = es.Save(testEventsPartTwo())
 	if err != nil {
 		return err
 	}
@@ -183,7 +183,7 @@ func saveAndGetEvents(es eventsourcing.EventStore) error {
 }
 
 func getEventsAfterVersion(es eventsourcing.EventStore) error {
-	_, err := es.Save(testEvents())
+	err := es.Save(testEvents())
 	if err != nil {
 		return err
 	}
@@ -206,7 +206,7 @@ func getEventsAfterVersion(es eventsourcing.EventStore) error {
 
 func saveEventsFromMoreThanOneAggregate(es eventsourcing.EventStore) error {
 	invalidEvent := append(testEvents(), testEventOtherAggregate())
-	_, err := es.Save(invalidEvent)
+	err := es.Save(invalidEvent)
 	if err == nil {
 		return errors.New("should not be able to save events that belongs to more than one aggregate")
 	}
@@ -217,7 +217,7 @@ func saveEventsFromMoreThanOneAggregateType(es eventsourcing.EventStore) error {
 	events := testEvents()
 	events[1].AggregateType = "OtherAggregateType"
 
-	_, err := es.Save(events)
+	err := es.Save(events)
 	if err == nil {
 		return errors.New("should not be able to save events that belongs to other aggregate type")
 	}
@@ -226,7 +226,7 @@ func saveEventsFromMoreThanOneAggregateType(es eventsourcing.EventStore) error {
 
 func saveEventsInWrongOrder(es eventsourcing.EventStore) error {
 	events := append(testEvents(), testEvents()[0])
-	_, err := es.Save(events)
+	err := es.Save(events)
 	if err == nil {
 		return errors.New("should not be able to save events that are in wrong version order")
 	}
@@ -235,7 +235,7 @@ func saveEventsInWrongOrder(es eventsourcing.EventStore) error {
 
 func saveEventsInWrongVersion(es eventsourcing.EventStore) error {
 	events := testEventsPartTwo()
-	_, err := es.Save(events)
+	err := es.Save(events)
 	if err == nil {
 		return errors.New("should not be able to save events that are out of sync compared to the storage order")
 	}
@@ -245,7 +245,7 @@ func saveEventsInWrongVersion(es eventsourcing.EventStore) error {
 func saveEventsWithEmptyReason(es eventsourcing.EventStore) error {
 	events := testEvents()
 	events[2].Reason = ""
-	_, err := es.Save(events)
+	err := es.Save(events)
 	if err == nil {
 		return errors.New("should not be able to save events with empty reason")
 	}
@@ -260,7 +260,7 @@ func saveAndGetEventsConcurrently(es eventsourcing.EventStore) error {
 	for i := 0; i < 10; i++ {
 		events := testEventsWithID(fmt.Sprintf("id-%d", i))
 		go func() {
-			_, e := es.Save(events)
+			e := es.Save(events)
 			if e != nil {
 				err = e
 			}
@@ -304,27 +304,27 @@ func getErrWhenNoEvents(es eventsourcing.EventStore) error {
 }
 func saveReturnGlobalEventOrder(es eventsourcing.EventStore) error {
 	events := testEvents()
-	g, err := es.Save(events)
+	err := es.Save(events)
 	if err != nil {
 		return err
 	}
-	if g != 6 {
-		return fmt.Errorf("expected global event order 6 got %d", g)
+	if events[len(events)-1].GlobalVersion != 6 {
+		return fmt.Errorf("expected global event order 6 on last event got %d", events[len(events)-1].GlobalVersion)
 	}
-	events2 := testEventOtherAggregate()
-	g, err = es.Save([]eventsourcing.Event{events2})
+	events2 := []eventsourcing.Event{testEventOtherAggregate()}
+	err = es.Save(events2)
 	if err != nil {
 		return err
 	}
-	if g != 7 {
-		return fmt.Errorf("expected global event order 7 got %d", g)
+	if events2[0].GlobalVersion != 7 {
+		return fmt.Errorf("expected global event order 7 got %d", events2[0].GlobalVersion)
 	}
 	return nil
 }
 
 func setGlobalVersionOnSavedEvents(es eventsourcing.EventStore) error {
 	events := testEvents()
-	_, err := es.Save(events)
+	err := es.Save(events)
 	if err != nil {
 		return err
 	}
@@ -344,7 +344,7 @@ func setGlobalVersionOnSavedEvents(es eventsourcing.EventStore) error {
 
 func getGlobalEvents(es eventsourcing.EventStore) error {
 	events := testEvents()
-	_, err := es.Save(events)
+	err := es.Save(events)
 	if err != nil {
 		return err
 	}

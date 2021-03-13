@@ -7,7 +7,7 @@ import (
 
 // EventStore interface expose the methods an event store must uphold
 type EventStore interface {
-	Save(events []Event) (Version, error)
+	Save(events []Event) error
 	Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
 	GlobalEvents(start, count uint64) ([]Event, error)
 }
@@ -49,7 +49,7 @@ func NewRepository(eventStore EventStore, snapshotStore SnapshotStore) *Reposito
 // Save an aggregates events
 func (r *Repository) Save(aggregate Aggregate) error {
 	root := aggregate.Root()
-	globalEventVersion, err := r.eventStore.Save(root.Events())
+	err := r.eventStore.Save(root.Events())
 	if err != nil {
 		return err
 	}
@@ -59,7 +59,6 @@ func (r *Repository) Save(aggregate Aggregate) error {
 
 	// aggregate are saved to the event store now its safe to update the internal aggregate state
 	root.updateVersion()
-	root.AggregateGlobalVersion = globalEventVersion
 	return nil
 }
 
