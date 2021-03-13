@@ -66,10 +66,10 @@ func MustOpenBBolt(dbFile string, s eventsourcing.Serializer) *BBolt {
 }
 
 // Save an aggregate (its events)
-func (e *BBolt) Save(events []eventsourcing.Event) (eventsourcing.Version, error) {
+func (e *BBolt) Save(events []eventsourcing.Event) error {
 	// Return if there is no events to save
 	if len(events) == 0 {
-		return 0, nil
+		return nil
 	}
 
 	// get bucket name from first event
@@ -79,7 +79,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) (eventsourcing.Version, error
 
 	tx, err := e.db.Begin(true)
 	if err != nil {
-		return 0, err
+		return err
 	}
 	defer tx.Rollback()
 
@@ -88,7 +88,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) (eventsourcing.Version, error
 		// Ensure that we have a bucket named events_aggregateType_aggregateID for the given aggregate
 		err = e.createBucket([]byte(bucketName), tx)
 		if err != nil {
-			return 0, errors.New("could not create aggregate events bucket")
+			return errors.New("could not create aggregate events bucket")
 		}
 		evBucket = tx.Bucket([]byte(bucketName))
 	}
@@ -100,7 +100,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) (eventsourcing.Version, error
 		lastEvent := eventsourcing.Event{}
 		err := e.serializer.Unmarshal(obj, &lastEvent)
 		if err != nil {
-			return 0, errors.New(fmt.Sprintf("could not serialize event, %v", err))
+			return errors.New(fmt.Sprintf("could not serialize event, %v", err))
 		}
 		currentVersion = lastEvent.Version
 	}
@@ -108,19 +108,19 @@ func (e *BBolt) Save(events []eventsourcing.Event) (eventsourcing.Version, error
 	//Validate events
 	err = eventstore.ValidateEvents(aggregateID, currentVersion, events)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
 	globalBucket := tx.Bucket([]byte(globalEventOrderBucketName))
 	if globalBucket == nil {
-		return 0, errors.New("global bucket not found")
+		return errors.New("global bucket not found")
 	}
 
 	var globalSequence uint64
-	for _, event := range events {
+	for i, event := range events {
 		sequence, err := evBucket.NextSequence()
 		if err != nil {
-			return 0, errors.New(fmt.Sprintf("could not get sequence for %#v", bucketName))
+			return errors.New(fmt.Sprintf("could not get sequence for %#v", bucketName))
 		}
 
 		// We need to establish a global event order that spans over all buckets. This is so that we can be
@@ -128,7 +128,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) (eventsourcing.Version, error
 		// The global sequence bucket contains an ordered line of pointer to all events on the form bucket_name:seq_num
 		globalSequence, err = globalBucket.NextSequence()
 		if err != nil {
-			return 0, errors.New("could not get next sequence for global bucket")
+			return errors.New("could not get next sequence for global bucket")
 		}
 
 		// marshal the event.Data separately to be able to handle the type info
@@ -148,19 +148,22 @@ func (e *BBolt) Save(events []eventsourcing.Event) (eventsourcing.Version, error
 
 		value, err := e.serializer.Marshal(bEvent)
 		if err != nil {
-			return 0, errors.New(fmt.Sprintf("could not serialize event, %v", err))
+			return errors.New(fmt.Sprintf("could not serialize event, %v", err))
 		}
 
 		err = evBucket.Put(itob(sequence), value)
 		if err != nil {
-			return 0, errors.New(fmt.Sprintf("could not save event %#v in bucket", event))
+			return errors.New(fmt.Sprintf("could not save event %#v in bucket", event))
 		}
 		err = globalBucket.Put(itob(globalSequence), value)
 		if err != nil {
-			return 0, errors.New(fmt.Sprintf("could not save global sequence pointer for %#v", bucketName))
+			return errors.New(fmt.Sprintf("could not save global sequence pointer for %#v", bucketName))
 		}
+		event.GlobalVersion = eventsourcing.Version(globalSequence)
+		// override the event in the slice exposing the GlobalVersion to the caller
+		events[i] = event
 	}
-	return eventsourcing.Version(globalSequence), tx.Commit()
+	return tx.Commit()
 }
 
 // Get aggregate events

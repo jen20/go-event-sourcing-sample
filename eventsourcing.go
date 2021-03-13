@@ -13,6 +13,7 @@ type Version uint64
 type AggregateRoot struct {
 	AggregateID      string
 	AggregateVersion Version
+	AggregateGlobalVersion Version
 	aggregateEvents  []Event
 }
 
@@ -78,6 +79,7 @@ func (state *AggregateRoot) BuildFromHistory(a Aggregate, events []Event) {
 		state.AggregateID = event.AggregateID
 		// Make sure the aggregate is in the correct version (the last event)
 		state.AggregateVersion = event.Version
+		state.AggregateGlobalVersion = event.GlobalVersion
 	}
 }
 
@@ -85,11 +87,13 @@ func (state *AggregateRoot) nextVersion() Version {
 	return state.Version() + 1
 }
 
-// updateVersion sets the AggregateVersion to the AggregateVersion in the last event if reset the events
-// called by the Save func in the repository after the events are stored
-func (state *AggregateRoot) updateVersion() {
+// update sets the AggregateVersion and AggregateGlobalVersion to the values in the last event
+// This function is called after the aggregate is saved in the repository
+func (state *AggregateRoot) update() {
 	if len(state.aggregateEvents) > 0 {
-		state.AggregateVersion = state.aggregateEvents[len(state.aggregateEvents)-1].Version
+		lastEvent := state.aggregateEvents[len(state.aggregateEvents)-1]
+		state.AggregateVersion = lastEvent.Version
+		state.AggregateGlobalVersion = lastEvent.GlobalVersion
 		state.aggregateEvents = []Event{}
 	}
 }
@@ -127,6 +131,10 @@ func (state *AggregateRoot) Version() Version {
 		return state.aggregateEvents[len(state.aggregateEvents)-1].Version
 	}
 	return state.AggregateVersion
+}
+
+func (state *AggregateRoot) GlobalVersion() Version {
+	return state.AggregateGlobalVersion
 }
 
 // Events return the aggregate events from the aggregate

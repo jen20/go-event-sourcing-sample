@@ -23,10 +23,10 @@ func Create() *Memory {
 }
 
 // Save an aggregate (its events)
-func (e *Memory) Save(events []eventsourcing.Event) (eventsourcing.Version, error) {
+func (e *Memory) Save(events []eventsourcing.Event) error {
 	// Return if there is no events to save
 	if len(events) == 0 {
-		return 0, nil
+		return nil
 	}
 
 	// make sure its thread safe
@@ -50,22 +50,23 @@ func (e *Memory) Save(events []eventsourcing.Event) (eventsourcing.Version, erro
 	//Validate events
 	err := eventstore.ValidateEvents(aggregateID, currentVersion, events)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	for _, event := range events {
+	for i, event := range events {
 		if err != nil {
-			return 0, err
+			return err
 		}
 		// set the global version on the event +1 as if the event was already on the eventsInOrder slice
 		event.GlobalVersion = eventsourcing.Version(len(e.eventsInOrder) + 1)
 		evBucket = append(evBucket, event)
 		e.eventsInOrder = append(e.eventsInOrder, event)
+		// override the event in the slice exposing the GlobalVersion to the caller
+		events[i] = event
 	}
 
 	e.aggregateEvents[bucketName] = evBucket
-
-	return eventsourcing.Version(len(e.eventsInOrder)), nil
+	return nil
 }
 
 // Get aggregate events
