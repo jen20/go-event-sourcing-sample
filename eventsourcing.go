@@ -87,12 +87,13 @@ func (state *AggregateRoot) nextVersion() Version {
 	return state.Version() + 1
 }
 
-// updateVersion sets the AggregateVersion to the AggregateVersion in the last event if reset the events
-// called by the Save func in the repository after the events are stored
-func (state *AggregateRoot) updateVersion() {
+// update sets the AggregateVersion and AggregateGlobalVersion to the values in the last event
+// This function is called after the aggregate is saved in the repository
+func (state *AggregateRoot) update() {
 	if len(state.aggregateEvents) > 0 {
-		state.AggregateVersion = state.aggregateEvents[len(state.aggregateEvents)-1].Version
-		state.AggregateGlobalVersion = state.aggregateEvents[len(state.aggregateEvents)-1].GlobalVersion
+		lastEvent := state.aggregateEvents[len(state.aggregateEvents)-1]
+		state.AggregateVersion = lastEvent.Version
+		state.AggregateGlobalVersion = lastEvent.GlobalVersion
 		state.aggregateEvents = []Event{}
 	}
 }

@@ -49,16 +49,16 @@ func NewRepository(eventStore EventStore, snapshotStore SnapshotStore) *Reposito
 // Save an aggregates events
 func (r *Repository) Save(aggregate Aggregate) error {
 	root := aggregate.Root()
-	err := r.eventStore.Save(root.Events())
+	events := root.Events()
+	err := r.eventStore.Save(events)
 	if err != nil {
 		return err
 	}
+	// update the internal aggregate state
+	root.update()
 
 	// publish the saved events to subscribers
-	r.Update(*root, root.Events())
-
-	// aggregate are saved to the event store now its safe to update the internal aggregate state
-	root.updateVersion()
+	r.Update(*root, events)
 	return nil
 }
 
