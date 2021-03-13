@@ -85,6 +85,9 @@ func (s *SQL) Save(events []eventsourcing.Event) (eventsourcing.Version, error) 
 			return 0, err
 		}
 		lastInsertedID, err = res.LastInsertId()
+		if err != nil {
+			return 0, err
+		}
 	}
 	return eventsourcing.Version(lastInsertedID), tx.Commit()
 }
