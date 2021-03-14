@@ -27,6 +27,8 @@ github.com/hallgren/eventsourcing v0.0.15-0.20210313144026-b38f9554394c h1:em/0y
 github.com/hallgren/eventsourcing v0.0.15-0.20210313144026-b38f9554394c/go.mod h1:rODloJ0HuAQ4fGafaKciOMA/6vyTuCA01Ht1hyK2EWA=
 github.com/hallgren/eventsourcing v0.0.15-0.20210314145608-b55ddc5cb95b h1:WgcXIYe0SR79q+5AAhJXwmkYrRdPfG2bhJ8iaTTm/Uw=
 github.com/hallgren/eventsourcing v0.0.15-0.20210314145608-b55ddc5cb95b/go.mod h1:rODloJ0HuAQ4fGafaKciOMA/6vyTuCA01Ht1hyK2EWA=
+github.com/hallgren/eventsourcing v0.0.15 h1:frMhbjokgNcFPmCSaxi2RNKwJLp04GPd0/Vx7qXLFAY=
+github.com/hallgren/eventsourcing v0.0.15/go.mod h1:rODloJ0HuAQ4fGafaKciOMA/6vyTuCA01Ht1hyK2EWA=
 github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/proullon/ramsql v0.0.0-20181213202341-817cee58a244 h1:fdX2U+a2Rmc4BjRYcOKzjYXtYTE4ga1B2lb8i7BlefU=
 github.com/proullon/ramsql v0.0.0-20181213202341-817cee58a244/go.mod h1:jG8oAQG0ZPHPyxg5QlMERS31airDC+ZuqiAe8DUvFVo=
