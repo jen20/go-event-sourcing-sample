@@ -12,6 +12,8 @@ github.com/hallgren/eventsourcing v0.0.15-0.20210312153409-f001132bb326 h1:C3Rh/
 github.com/hallgren/eventsourcing v0.0.15-0.20210312153409-f001132bb326/go.mod h1:rODloJ0HuAQ4fGafaKciOMA/6vyTuCA01Ht1hyK2EWA=
 github.com/hallgren/eventsourcing v0.0.15-0.20210313144026-b38f9554394c h1:em/0yxf4y9c3j7/0H1F8h+byG98whOchQinnuvSa0rQ=
 github.com/hallgren/eventsourcing v0.0.15-0.20210313144026-b38f9554394c/go.mod h1:rODloJ0HuAQ4fGafaKciOMA/6vyTuCA01Ht1hyK2EWA=
+github.com/hallgren/eventsourcing v0.0.15-0.20210314145608-b55ddc5cb95b h1:WgcXIYe0SR79q+5AAhJXwmkYrRdPfG2bhJ8iaTTm/Uw=
+github.com/hallgren/eventsourcing v0.0.15-0.20210314145608-b55ddc5cb95b/go.mod h1:rODloJ0HuAQ4fGafaKciOMA/6vyTuCA01Ht1hyK2EWA=
 go.etcd.io/bbolt v1.3.4 h1:hi1bXHMVrlQh6WwxAy+qZCV/SYIlqo+Ushwdpa4tAKg=
 go.etcd.io/bbolt v1.3.4/go.mod h1:G5EMThwa9y8QZGBClrRx5EY+Yw9kAhnjy3bSjsnlVTQ=
 golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5 h1:LfCXLvNmTYH9kEmVgqbnsWfruoXZIrh4YBgqVHtDvw0=
