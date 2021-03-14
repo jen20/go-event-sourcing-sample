@@ -88,9 +88,8 @@ func (s *SQL) Save(events []eventsourcing.Event) error {
 		if err != nil {
 			return err
 		}
-		event.GlobalVersion = eventsourcing.Version(lastInsertedID)
 		// override the event in the slice exposing the GlobalVersion to the caller
-		events[i] = event
+		events[i].GlobalVersion = eventsourcing.Version(lastInsertedID)
 	}
 	return tx.Commit()
 }

@@ -159,9 +159,9 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 		if err != nil {
 			return errors.New(fmt.Sprintf("could not save global sequence pointer for %#v", bucketName))
 		}
-		event.GlobalVersion = eventsourcing.Version(globalSequence)
+
 		// override the event in the slice exposing the GlobalVersion to the caller
-		events[i] = event
+		events[i].GlobalVersion = eventsourcing.Version(globalSequence)
 	}
 	return tx.Commit()
 }

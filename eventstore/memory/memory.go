@@ -54,15 +54,12 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	}
 
 	for i, event := range events {
-		if err != nil {
-			return err
-		}
 		// set the global version on the event +1 as if the event was already on the eventsInOrder slice
 		event.GlobalVersion = eventsourcing.Version(len(e.eventsInOrder) + 1)
 		evBucket = append(evBucket, event)
 		e.eventsInOrder = append(e.eventsInOrder, event)
 		// override the event in the slice exposing the GlobalVersion to the caller
-		events[i] = event
+		events[i].GlobalVersion = event.GlobalVersion
 	}
 
 	e.aggregateEvents[bucketName] = evBucket
