@@ -301,7 +301,7 @@ A custom-made event store has to implement the following functions to fulfill th
 type EventStore interface {
     Save(events []Event) error
     Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
-	GlobalEvents(start, count uint64) ([]Event, error) {
+    GlobalEvents(start, count uint64) ([]Event, error) {
 }
 ```
 
