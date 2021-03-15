@@ -203,3 +203,14 @@ func TestIDFuncGeneratingRandomIDs(t *testing.T) {
 		ids[person.ID()] = struct{}{}
 	}
 }
+
+func TestMutateEvents(t *testing.T) {
+	var reason = "mutated from the outside"
+	person, _ := CreatePerson("kalle")
+
+	events := person.Events()
+	events[0].Reason = reason
+	if person.Events()[0].Reason == reason {
+		t.Fatal("events should not be mutated from the outside")
+	}
+}
