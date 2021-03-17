@@ -7,14 +7,20 @@ import (
 
 // Handler of snapshot store
 type Handler struct {
-	store      map[string][]byte
+	store      map[string]snapshot
 	serializer eventsourcing.Serializer
+}
+
+type snapshot struct {
+	State         []byte
+	Version       eventsourcing.Version
+	GlobalVersion eventsourcing.Version
 }
 
 // New handler for the snapshot service
 func New(serializer eventsourcing.Serializer) *Handler {
 	return &Handler{
-		store:      make(map[string][]byte),
+		store:      make(map[string]snapshot),
 		serializer: serializer,
 	}
 }
@@ -25,7 +31,16 @@ func (h *Handler) Get(id string, s eventsourcing.Aggregate) error {
 	if !ok {
 		return eventsourcing.ErrSnapshotNotFound
 	}
-	return h.serializer.Unmarshal(v, s)
+
+	err := h.serializer.Unmarshal(v.State, s)
+	if err != nil {
+		return err
+	}
+	// TODO: include when version and globalVersion in not exported on the AggregateRoot
+	// r := s.Root()
+	// r.AggregateVersion = v.Version
+	// r.AggregateGlobalVersion = v.GlobalVersion
+	return nil
 }
 
 // Save persists the snapshot
@@ -41,6 +56,12 @@ func (h *Handler) Save(a eventsourcing.Aggregate) error {
 		return err
 	}
 
-	h.store[root.ID()] = data
+	s := snapshot{
+		State:         data,
+		Version:       root.AggregateVersion,
+		GlobalVersion: root.AggregateGlobalVersion,
+	}
+
+	h.store[root.ID()] = s
 	return nil
 }

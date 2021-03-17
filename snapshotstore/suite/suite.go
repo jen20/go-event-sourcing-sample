@@ -87,6 +87,7 @@ func TestSnapshot(t *testing.T, snapshot eventsourcing.SnapshotStore) {
 	person.Name = "Test"
 	person.AggregateID = "123"
 	person.AggregateVersion = 10
+	person.AggregateGlobalVersion = 5
 
 	err := snapshot.Save(&person)
 	if err != nil {
@@ -109,6 +110,9 @@ func TestSnapshot(t *testing.T, snapshot eventsourcing.SnapshotStore) {
 	}
 	if p.Version() != person.Version() {
 		t.Fatalf("wrong version %d %d", p.Version(), person.Version())
+	}
+	if p.GlobalVersion() != person.GlobalVersion() {
+		t.Fatalf("wrong global version %d %d", p.GlobalVersion(), person.GlobalVersion())
 	}
 
 	// store the snapshot once more
