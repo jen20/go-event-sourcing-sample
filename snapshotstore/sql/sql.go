@@ -40,18 +40,26 @@ func (s *SQL) Get(id string, a eventsourcing.Aggregate) error {
 	}
 	defer tx.Rollback()
 
-	statement := `SELECT data from snapshots where id=$1 AND type=$2 LIMIT 1`
-	var data []byte
-	err = tx.QueryRow(statement, id, typ).Scan(&data)
+	statement := `SELECT state, version, global_version from snapshots where id=$1 AND type=$2 LIMIT 1`
+	var state []byte
+	var version uint64
+	var globalVersion uint64
+	err = tx.QueryRow(statement, id, typ).Scan(&state, &version, &globalVersion)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	} else if err == sql.ErrNoRows {
 		return eventsourcing.ErrSnapshotNotFound
 	}
-	err = s.serializer.Unmarshal(data, a)
+	err = s.serializer.Unmarshal(state, a)
 	if err != nil {
 		return err
 	}
+	r := a.Root()
+	snapshot := eventsourcing.Snapshot{
+		Version:       eventsourcing.Version(version),
+		GlobalVersion: eventsourcing.Version(globalVersion),
+	}
+	r.BuildFromSnapshot(a, snapshot)
 	return nil
 }
 
@@ -81,17 +89,17 @@ func (s *SQL) Save(a eventsourcing.Aggregate) error {
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	if err == sql.ErrNoRows  {
+	if err == sql.ErrNoRows {
 		// insert
-		statement = `INSERT INTO snapshots (data, id, type) VALUES ($1, $2, $3)`
-		_, err = tx.Exec(statement, string(data), root.ID(), typ)
+		statement = `INSERT INTO snapshots (state, id, type, version, global_version) VALUES ($1, $2, $3, $4, $5)`
+		_, err = tx.Exec(statement, string(data), root.ID(), typ, root.Version(), root.GlobalVersion())
 		if err != nil {
 			return err
 		}
 	} else {
 		// update
-		statement = `UPDATE snapshots set data=$1 where id=$2 AND type=$3`
-		_, err = tx.Exec(statement, string(data), root.ID(), typ)
+		statement = `UPDATE snapshots set state=$1, version=$2, global_version=$3 where id=$4 AND type=$5`
+		_, err = tx.Exec(statement, string(data), root.Version(), root.GlobalVersion(), root.ID(), typ)
 		if err != nil {
 			return err
 		}

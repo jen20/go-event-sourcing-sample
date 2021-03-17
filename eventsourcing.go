@@ -92,6 +92,7 @@ func (state *AggregateRoot) BuildFromHistory(a Aggregate, events []Event) {
 func (state *AggregateRoot) BuildFromSnapshot(a Aggregate, s Snapshot) {
 	state.aggregateVersion = s.Version
 	state.aggregateGlobalVersion = s.GlobalVersion
+	state.aggregateEvents = []Event{}
 }
 
 func (state *AggregateRoot) nextVersion() Version {
