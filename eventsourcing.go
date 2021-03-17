@@ -12,8 +12,8 @@ type Version uint64
 // AggregateRoot to be included into aggregates
 type AggregateRoot struct {
 	AggregateID            string
-	AggregateVersion       Version
-	AggregateGlobalVersion Version
+	aggregateVersion       Version
+	aggregateGlobalVersion Version
 	aggregateEvents        []Event
 }
 
@@ -27,6 +27,12 @@ type Event struct {
 	Timestamp     time.Time
 	Data          interface{}
 	MetaData      map[string]interface{}
+}
+
+type Snapshot struct {
+	State         []byte
+	Version       Version
+	GlobalVersion Version
 }
 
 var (
@@ -78,9 +84,14 @@ func (state *AggregateRoot) BuildFromHistory(a Aggregate, events []Event) {
 		//Set the aggregate ID
 		state.AggregateID = event.AggregateID
 		// Make sure the aggregate is in the correct version (the last event)
-		state.AggregateVersion = event.Version
-		state.AggregateGlobalVersion = event.GlobalVersion
+		state.aggregateVersion = event.Version
+		state.aggregateGlobalVersion = event.GlobalVersion
 	}
+}
+
+func (state *AggregateRoot) BuildFromSnapshot(a Aggregate, s Snapshot) {
+	state.aggregateVersion = s.Version
+	state.aggregateGlobalVersion = s.GlobalVersion
 }
 
 func (state *AggregateRoot) nextVersion() Version {
@@ -92,8 +103,8 @@ func (state *AggregateRoot) nextVersion() Version {
 func (state *AggregateRoot) update() {
 	if len(state.aggregateEvents) > 0 {
 		lastEvent := state.aggregateEvents[len(state.aggregateEvents)-1]
-		state.AggregateVersion = lastEvent.Version
-		state.AggregateGlobalVersion = lastEvent.GlobalVersion
+		state.aggregateVersion = lastEvent.Version
+		state.aggregateGlobalVersion = lastEvent.GlobalVersion
 		state.aggregateEvents = []Event{}
 	}
 }
@@ -130,11 +141,11 @@ func (state *AggregateRoot) Version() Version {
 	if len(state.aggregateEvents) > 0 {
 		return state.aggregateEvents[len(state.aggregateEvents)-1].Version
 	}
-	return state.AggregateVersion
+	return state.aggregateVersion
 }
 
 func (state *AggregateRoot) GlobalVersion() Version {
-	return state.AggregateGlobalVersion
+	return state.aggregateGlobalVersion
 }
 
 // Events return the aggregate events from the aggregate

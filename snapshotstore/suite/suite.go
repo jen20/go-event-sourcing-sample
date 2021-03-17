@@ -86,8 +86,13 @@ func TestSnapshot(t *testing.T, snapshot eventsourcing.SnapshotStore) {
 	person.Age = 38
 	person.Name = "Test"
 	person.AggregateID = "123"
-	person.AggregateVersion = 10
-	person.AggregateGlobalVersion = 5
+	a := person.Root()
+	a.BuildFromSnapshot(&person, eventsourcing.Snapshot{
+		Version:       10,
+		GlobalVersion: 5,
+	})
+	//person.AggregateVersion = 10
+	//person.AggregateGlobalVersion = 5
 
 	err := snapshot.Save(&person)
 	if err != nil {
