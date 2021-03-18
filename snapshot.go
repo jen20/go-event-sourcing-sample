@@ -5,6 +5,7 @@ import (
 	"reflect"
 )
 
+// Snapshot holds current state of an aggregate
 type Snapshot struct {
 	ID            string
 	Type          string
@@ -13,19 +14,22 @@ type Snapshot struct {
 	GlobalVersion Version
 }
 
-type S struct {
+// SnapshotHandler gets and saves snapshots
+type SnapshotHandler struct {
 	snapshotStore SnapshotStore
 	serializer    Serializer
 }
 
-func SnapshotNew(ss SnapshotStore, ser Serializer) *S {
-	return &S{
+// SnapshotNew constructs a SnapshotHandler
+func SnapshotNew(ss SnapshotStore, ser Serializer) *SnapshotHandler {
+	return &SnapshotHandler{
 		snapshotStore: ss,
 		serializer:    ser,
 	}
 }
 
-func (s *S) Save(a Aggregate) error {
+// Save transform an aggregate to a snapshot
+func (s *SnapshotHandler) Save(a Aggregate) error {
 	root := a.Root()
 	err := validate(*root)
 	if err != nil {
@@ -46,7 +50,8 @@ func (s *S) Save(a Aggregate) error {
 	return s.snapshotStore.Save(snap)
 }
 
-func (s *S) Get(id string, a Aggregate) error {
+// Get fetch a snapshot and reconstruct an aggregate
+func (s *SnapshotHandler) Get(id string, a Aggregate) error {
 	typ := reflect.TypeOf(a).Elem().Name()
 	snap, err := s.snapshotStore.Get(id, typ)
 	if err != nil {
@@ -61,6 +66,7 @@ func (s *S) Get(id string, a Aggregate) error {
 	return nil
 }
 
+// validate make sure the aggregate is valid to be saved
 func validate(root AggregateRoot) error {
 	if root.ID() == "" {
 		return fmt.Errorf("empty id")

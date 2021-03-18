@@ -34,11 +34,11 @@ var ErrAggregateNotFound = errors.New("aggregate not found")
 type Repository struct {
 	*EventStream
 	eventStore EventStore
-	snapshot   *S
+	snapshot   *SnapshotHandler
 }
 
 // NewRepository factory function
-func NewRepository(eventStore EventStore, snapshot *S) *Repository {
+func NewRepository(eventStore EventStore, snapshot *SnapshotHandler) *Repository {
 	return &Repository{
 		eventStore:  eventStore,
 		snapshot:    snapshot,
