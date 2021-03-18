@@ -83,10 +83,10 @@ func (state *AggregateRoot) BuildFromHistory(a Aggregate, events []Event) {
 	}
 }
 
-func (state *AggregateRoot) BuildFromSnapshot(a Aggregate, s Snapshot) {
-	state.AggregateID = s.ID
-	state.aggregateVersion = s.Version
-	state.aggregateGlobalVersion = s.GlobalVersion
+func (state *AggregateRoot) setInternals(id string, version, globalVersion Version) {
+	state.AggregateID = id
+	state.aggregateVersion = version
+	state.aggregateGlobalVersion = globalVersion
 	state.aggregateEvents = []Event{}
 }
 

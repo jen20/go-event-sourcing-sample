@@ -65,11 +65,7 @@ func (r *Repository) Save(aggregate Aggregate) error {
 // SaveSnapshot saves the current state of the aggregate but only if it has no unsaved events
 func (r *Repository) SaveSnapshot(aggregate Aggregate) error {
 	if r.snapshot == nil {
-		return errors.New("no snapshot store has been initialized in the repository")
-	}
-	root := aggregate.Root()
-	if root.UnsavedEvents() {
-		return errors.New("can't save snapshot with unsaved events")
+		return errors.New("no snapshot store has been initialized")
 	}
 	return r.snapshot.Save(aggregate)
 }

@@ -27,7 +27,7 @@ func SnapshotNew(ss SnapshotStore, ser Serializer) *S {
 
 func (s *S) Save(a Aggregate) error {
 	root := a.Root()
-	err := Validate(*root)
+	err := validate(*root)
 	if err != nil {
 		return err
 	}
@@ -57,11 +57,11 @@ func (s *S) Get(id string, a Aggregate) error {
 		return err
 	}
 	root := a.Root()
-	root.BuildFromSnapshot(a, snap)
+	root.setInternals(snap.ID, snap.Version, snap.GlobalVersion)
 	return nil
 }
 
-func Validate(root AggregateRoot) error {
+func validate(root AggregateRoot) error {
 	if root.ID() == "" {
 		return fmt.Errorf("empty id")
 	}

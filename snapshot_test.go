@@ -2,6 +2,7 @@ package eventsourcing_test
 
 import (
 	"encoding/xml"
+	memory2 "github.com/hallgren/eventsourcing/eventstore/memory"
 	"testing"
 
 	"github.com/hallgren/eventsourcing"
@@ -12,18 +13,14 @@ import (
 func TestSnapshot(t *testing.T) {
 	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
 	s := eventsourcing.SnapshotNew(memory.New(), *ser)
-	person := Person{
-		Age:  3,
-		Name: "Kalle",
-	}
 
-	state, err := ser.Marshal(person)
-	if err != nil {
-		t.Fatal(err)
-	}
-	person.BuildFromSnapshot(&person, eventsourcing.Snapshot{ID: "123", State: state})
+	// use repo to reset events on person to be able to save snapshot
+	repo := eventsourcing.NewRepository(memory2.Create(), s)
 
-	err = s.Save(&person)
+	person, err := CreatePersonWithID("123", "kalle")
+	repo.Save(person)
+
+	err = s.Save(person)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,7 +48,7 @@ func TestSnapshot(t *testing.T) {
 
 	// store the snapshot once more
 	person.Age = 99
-	s.Save(&person)
+	s.Save(person)
 
 	err = s.Get(person.ID(), &p)
 	if err != nil {
@@ -62,9 +59,9 @@ func TestSnapshot(t *testing.T) {
 	}
 }
 func TestGetNoneExistingSnapshot(t *testing.T) {
-	p := Person{}
 	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
 	s := eventsourcing.SnapshotNew(memsnap.New(), *ser)
+	p := Person{}
 	err := s.Get("noneExistingID", &p)
 	if err == nil {
 		t.Fatalf("could get none existing snapshot %v", err)
@@ -72,9 +69,9 @@ func TestGetNoneExistingSnapshot(t *testing.T) {
 }
 
 func TestSaveEmptySnapshotID(t *testing.T) {
-	p := Person{}
 	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
 	s := eventsourcing.SnapshotNew(memsnap.New(), *ser)
+	p := Person{}
 	err := s.Save(&p)
 	if err == nil {
 		t.Fatalf("could save blank snapshot id %v", err)

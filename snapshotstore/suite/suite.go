@@ -101,34 +101,17 @@ func TestSnapshot(t *testing.T, snapshot eventsourcing.SnapshotStore) {
 	if snap.ID != snap2.ID {
 		t.Fatalf("wrong ID in snapshot %q expected: %q", snap.ID, snap2.ID)
 	}
-	/*
-		if p.Age != person.Age {
-			t.Fatalf("wrong Age in snapshot %d expected: %d", p.Age, person.Age)
-		}
-		if p.ID() != person.ID() {
-			t.Fatalf("wrong id %s %s", p.ID(), person.ID())
-		}
-		if p.Version() != person.Version() {
-			t.Fatalf("wrong version %d %d", p.Version(), person.Version())
-		}
-		if p.GlobalVersion() != person.GlobalVersion() {
-			t.Fatalf("wrong global version %d %d", p.GlobalVersion(), person.GlobalVersion())
-		}
-
-		// store the snapshot once more
-		person.Age = 99
-		snapshot.Save(&person)
-
-		err = snapshot.Get(person.ID(), &p)
-		if err != nil {
-			t.Fatalf("could not get snapshot %v", err)
-		}
-		if p.Age != person.Age {
-			t.Fatalf("wrong age %d %d", p.Age, person.Age)
-		}
-	*/
+	if snap.Type != snap2.Type {
+		t.Fatalf("wrong Type in snapshot %q expected: %q", snap.Type, snap2.Type)
+	}
+	if snap.GlobalVersion != snap2.GlobalVersion {
+		t.Fatalf("wrong GlobalVersion in snapshot %q expected: %q", snap.GlobalVersion, snap2.GlobalVersion)
+	}
+	if snap.Version != snap2.Version {
+		t.Fatalf("wrong Version in snapshot %q expected: %q", snap.Version, snap2.Version)
+	}
+	if string(snap.State) != string(snap2.State) {
+		t.Fatalf("wrong State in snapshot %q expected: %q", snap.State, snap2.State)
+	}
 }
 
-/*
-
- */
