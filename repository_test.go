@@ -56,8 +56,7 @@ func TestGetNoneExistingAggregate(t *testing.T) {
 
 func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
-	snapshot := memsnap.New(*ser)
-	repo := eventsourcing.NewRepository(memory.Create(), snapshot)
+	repo := eventsourcing.NewRepository(memory.Create(), eventsourcing.SnapshotNew(memsnap.New(), *ser))
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -94,8 +93,7 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 
 func TestSaveSnapshotWithUnsavedEvents(t *testing.T) {
 	ser := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
-	snapshot := memsnap.New(*ser)
-	repo := eventsourcing.NewRepository(memory.Create(), snapshot)
+	repo := eventsourcing.NewRepository(memory.Create(), eventsourcing.SnapshotNew(memsnap.New(), *ser))
 
 	person, err := CreatePerson("kalle")
 	if err != nil {

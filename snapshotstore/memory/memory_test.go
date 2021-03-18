@@ -1,7 +1,6 @@
 package memory_test
 
 import (
-	"encoding/xml"
 	"testing"
 
 	"github.com/hallgren/eventsourcing"
@@ -12,7 +11,7 @@ import (
 type provider struct{}
 
 func (p *provider) Setup() (eventsourcing.SnapshotStore, error) {
-	return memory.New(*eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)), nil
+	return memory.New(), nil
 }
 
 func (p *provider) Cleanup() {}

@@ -29,12 +29,6 @@ type Event struct {
 	MetaData      map[string]interface{}
 }
 
-type Snapshot struct {
-	State         []byte
-	Version       Version
-	GlobalVersion Version
-}
-
 var (
 	// ErrAggregateAlreadyExists returned if the AggregateID is set more than one time
 	ErrAggregateAlreadyExists = errors.New("its not possible to set ID on already existing aggregate")
@@ -90,6 +84,7 @@ func (state *AggregateRoot) BuildFromHistory(a Aggregate, events []Event) {
 }
 
 func (state *AggregateRoot) BuildFromSnapshot(a Aggregate, s Snapshot) {
+	state.AggregateID = s.ID
 	state.aggregateVersion = s.Version
 	state.aggregateGlobalVersion = s.GlobalVersion
 	state.aggregateEvents = []Event{}

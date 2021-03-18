@@ -14,8 +14,8 @@ type EventStore interface {
 
 // SnapshotStore interface expose the methods an snapshot store must uphold
 type SnapshotStore interface {
-	Get(id string, a Aggregate) error
-	Save(a Aggregate) error
+	Get(id, typ string) (Snapshot, error)
+	Save(s Snapshot) error
 }
 
 // Aggregate interface to use the aggregate root specific methods
@@ -33,16 +33,16 @@ var ErrAggregateNotFound = errors.New("aggregate not found")
 // Repository is the returned instance from the factory function
 type Repository struct {
 	*EventStream
-	eventStore    EventStore
-	snapshotStore SnapshotStore
+	eventStore EventStore
+	snapshot   *S
 }
 
 // NewRepository factory function
-func NewRepository(eventStore EventStore, snapshotStore SnapshotStore) *Repository {
+func NewRepository(eventStore EventStore, snapshot *S) *Repository {
 	return &Repository{
-		eventStore:    eventStore,
-		snapshotStore: snapshotStore,
-		EventStream:   NewEventStream(),
+		eventStore:  eventStore,
+		snapshot:    snapshot,
+		EventStream: NewEventStream(),
 	}
 }
 
@@ -64,14 +64,14 @@ func (r *Repository) Save(aggregate Aggregate) error {
 
 // SaveSnapshot saves the current state of the aggregate but only if it has no unsaved events
 func (r *Repository) SaveSnapshot(aggregate Aggregate) error {
-	if r.snapshotStore == nil {
+	if r.snapshot == nil {
 		return errors.New("no snapshot store has been initialized in the repository")
 	}
 	root := aggregate.Root()
 	if root.UnsavedEvents() {
 		return errors.New("can't save snapshot with unsaved events")
 	}
-	return r.snapshotStore.Save(aggregate)
+	return r.snapshot.Save(aggregate)
 }
 
 // Get fetches the aggregates event and build up the aggregate
@@ -81,15 +81,15 @@ func (r *Repository) Get(id string, aggregate Aggregate) error {
 	if reflect.ValueOf(aggregate).Kind() != reflect.Ptr {
 		return errors.New("aggregate needs to be a pointer")
 	}
-	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
 	// if there is a snapshot store try fetch aggregate snapshot
-	if r.snapshotStore != nil {
-		err := r.snapshotStore.Get(id, aggregate)
+	if r.snapshot != nil {
+		err := r.snapshot.Get(id, aggregate)
 		if err != nil && !errors.Is(err, ErrSnapshotNotFound) {
 			return err
 		}
 	}
 	root := aggregate.Root()
+	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
 	// fetch events after the current version of the aggregate that could be fetched from the snapshot store
 	events, err := r.eventStore.Get(id, aggregateType, root.Version())
 	if err != nil && !errors.Is(err, ErrNoEvents) {
