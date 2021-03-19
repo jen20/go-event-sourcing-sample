@@ -5,23 +5,19 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"reflect"
 
 	"github.com/hallgren/eventsourcing"
-	"github.com/hallgren/eventsourcing/snapshotstore"
 )
 
 // SQL is the struct holding the underlying database and serializer
 type SQL struct {
-	db         *sql.DB
-	serializer eventsourcing.Serializer
+	db *sql.DB
 }
 
 // New returns a SQL struct
-func New(db *sql.DB, serializer eventsourcing.Serializer) *SQL {
+func New(db *sql.DB) *SQL {
 	return &SQL{
-		db:         db,
-		serializer: serializer,
+		db: db,
 	}
 }
 
@@ -31,44 +27,35 @@ func (s *SQL) Close() {
 }
 
 // Get retrieves the persisted snapshot
-func (s *SQL) Get(id string, a eventsourcing.Aggregate) error {
-	typ := reflect.TypeOf(a).Elem().Name()
-
+func (s *SQL) Get(id, typ string) (eventsourcing.Snapshot, error) {
 	tx, err := s.db.BeginTx(context.Background(), nil)
 	if err != nil {
-		return err
+		return eventsourcing.Snapshot{}, err
 	}
 	defer tx.Rollback()
 
-	statement := `SELECT data from snapshots where id=$1 AND type=$2 LIMIT 1`
-	var data []byte
-	err = tx.QueryRow(statement, id, typ).Scan(&data)
+	statement := `SELECT state, version, global_version from snapshots where id=$1 AND type=$2 LIMIT 1`
+	var state []byte
+	var version uint64
+	var globalVersion uint64
+	err = tx.QueryRow(statement, id, typ).Scan(&state, &version, &globalVersion)
 	if err != nil && err != sql.ErrNoRows {
-		return err
+		return eventsourcing.Snapshot{}, err
 	} else if err == sql.ErrNoRows {
-		return eventsourcing.ErrSnapshotNotFound
+		return eventsourcing.Snapshot{}, eventsourcing.ErrSnapshotNotFound
 	}
-	err = s.serializer.Unmarshal(data, a)
-	if err != nil {
-		return err
+	snap := eventsourcing.Snapshot{
+		ID:            id,
+		Type:          typ,
+		State:         state,
+		Version:       eventsourcing.Version(version),
+		GlobalVersion: eventsourcing.Version(globalVersion),
 	}
-	return nil
+	return snap, nil
 }
 
 // Save persists the snapshot
-func (s *SQL) Save(a eventsourcing.Aggregate) error {
-	root := a.Root()
-	err := snapshotstore.Validate(*root)
-	if err != nil {
-		return err
-	}
-
-	typ := reflect.TypeOf(a).Elem().Name()
-	data, err := s.serializer.Marshal(a)
-	if err != nil {
-		return err
-	}
-
+func (s *SQL) Save(snap eventsourcing.Snapshot) error {
 	tx, err := s.db.BeginTx(context.Background(), nil)
 	if err != nil {
 		return errors.New(fmt.Sprintf("could not start a write transaction, %v", err))
@@ -77,21 +64,21 @@ func (s *SQL) Save(a eventsourcing.Aggregate) error {
 
 	statement := `SELECT id from snapshots where id=$1 AND type=$2 LIMIT 1`
 	var id string
-	err = tx.QueryRow(statement, root.ID(), typ).Scan(&id)
+	err = tx.QueryRow(statement, snap.ID, snap.Type).Scan(&id)
 	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
-	if err == sql.ErrNoRows  {
+	if err == sql.ErrNoRows {
 		// insert
-		statement = `INSERT INTO snapshots (data, id, type) VALUES ($1, $2, $3)`
-		_, err = tx.Exec(statement, string(data), root.ID(), typ)
+		statement = `INSERT INTO snapshots (state, id, type, version, global_version) VALUES ($1, $2, $3, $4, $5)`
+		_, err = tx.Exec(statement, string(snap.State), snap.ID, snap.Type, snap.Version, snap.GlobalVersion)
 		if err != nil {
 			return err
 		}
 	} else {
 		// update
-		statement = `UPDATE snapshots set data=$1 where id=$2 AND type=$3`
-		_, err = tx.Exec(statement, string(data), root.ID(), typ)
+		statement = `UPDATE snapshots set state=$1, version=$2, global_version=$3 where id=$4 AND type=$5`
+		_, err = tx.Exec(statement, string(snap.State), snap.Version, snap.GlobalVersion, snap.ID, snap.Type)
 		if err != nil {
 			return err
 		}

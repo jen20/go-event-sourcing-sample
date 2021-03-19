@@ -2,7 +2,6 @@ package sql_test
 
 import (
 	sqldriver "database/sql"
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -31,7 +30,7 @@ func (p *provider) Setup() (eventsourcing.SnapshotStore, error) {
 		return nil, err
 	}
 
-	store := sql.New(db, *eventsourcing.NewSerializer(json.Marshal, json.Unmarshal))
+	store := sql.New(db)
 	err = store.MigrateTest()
 	return store, err
 }

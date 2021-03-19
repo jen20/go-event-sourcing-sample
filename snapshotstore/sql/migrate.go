@@ -2,7 +2,7 @@ package sql
 
 import "context"
 
-const createTable = `create table snapshots (id VARCHAR NOT NULL, type VARCHAR, data BLOB);`
+const createTable = `create table snapshots (id VARCHAR NOT NULL, type VARCHAR, version INTEGER, global_version INTEGER, state BLOB);`
 
 // Migrate the database
 func (s *SQL) Migrate() error {
