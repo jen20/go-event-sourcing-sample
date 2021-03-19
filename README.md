@@ -202,19 +202,31 @@ Submodules needs to be fetched separately via go get.
 
 The memory based event store is part of the main module and does not need to be fetched separately.
 
-### Snapshot Store
+### Snapshot Handler and Snapshot Store
 
-A snapshot store handles snapshots. The properties of an aggregate have to be exported for them to be saved in the snapshot.
+A snapshot store save and gets aggregate snapshots. A snapshot is a fix state of an aggregate on a specific Version. The properties of an aggregate have to be exported for them to be saved in the snapshot.
+
+The Snapshot Handler is the top layer that integrates with the repository.
 
 ```go
- // get snapshot by identifier
-Get(id string, a interface{}) error
+// Save transform an aggregate to a snapshot
+Save(a Aggregate) error {
 
-// saves snapshot
-Save(id string, a interface{}) error
+// Get fetch a snapshot and reconstruct an aggregate
+Get(id string, a Aggregate) error {
 ```
 
-Currently, there are two implementations.
+A Snapshot store is the actual layer that stores the snapshot.
+
+```go
+// get snapshot by identifier
+Get(id, typ string) (eventsource.Snapshot, error)
+
+// saves snapshot
+Save(s eventsourcing.Snapshot) error
+```
+
+Currently, there are two implementations of the snapshot store.
 
 * SQL
 * RAM Memory
