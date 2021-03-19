@@ -1,9 +1,15 @@
 package eventsourcing
 
 import (
-	"fmt"
+	"errors"
 	"reflect"
 )
+
+// ErrEmptyID indicates that the aggregate ID was empty
+var ErrEmptyID = errors.New("aggregate id is empty")
+
+// ErrUnsavedEvents aggregate events must be saved before creating snapshot
+var ErrUnsavedEvents = errors.New("aggregate holds unsaved events")
 
 // Snapshot holds current state of an aggregate
 type Snapshot struct {
@@ -69,10 +75,10 @@ func (s *SnapshotHandler) Get(id string, a Aggregate) error {
 // validate make sure the aggregate is valid to be saved
 func validate(root AggregateRoot) error {
 	if root.ID() == "" {
-		return fmt.Errorf("empty id")
+		return ErrEmptyID
 	}
 	if root.UnsavedEvents() {
-		return fmt.Errorf("unsaved events")
+		return ErrUnsavedEvents
 	}
 	return nil
 }

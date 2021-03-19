@@ -1,7 +1,6 @@
 package suite
 
 import (
-	"errors"
 	"testing"
 
 	"github.com/hallgren/eventsourcing"
@@ -22,8 +21,6 @@ func Test(t *testing.T, provider storeProvider) {
 		run   func(t *testing.T, es eventsourcing.SnapshotStore)
 	}{
 		{"Basics", TestSnapshot},
-		//{"Save empty ID", TestSaveEmptySnapshotID},
-		//{"Save with unsaved events", TestGetNoneExistingSnapshot},
 	}
 	store, err := provider.Setup()
 	if err != nil {
@@ -35,48 +32,6 @@ func Test(t *testing.T, provider storeProvider) {
 			test.run(t, store)
 			provider.Cleanup()
 		})
-	}
-}
-
-// Person aggregate
-type Person struct {
-	eventsourcing.AggregateRoot
-	Name string
-	Age  int
-	Dead int
-}
-
-// Born event
-type Born struct {
-	Name string
-}
-
-// AgedOneYear event
-type AgedOneYear struct{}
-
-// CreatePerson constructor for the Person
-func CreatePerson(name string) (*Person, error) {
-	if name == "" {
-		return nil, errors.New("name can't be blank")
-	}
-	person := Person{}
-	person.TrackChange(&person, &Born{Name: name})
-	return &person, nil
-}
-
-// GrowOlder command
-func (person *Person) GrowOlder() {
-	person.TrackChange(person, &AgedOneYear{})
-}
-
-// Transition the person state dependent on the events
-func (person *Person) Transition(event eventsourcing.Event) {
-	switch e := event.Data.(type) {
-	case *Born:
-		person.Age = 0
-		person.Name = e.Name
-	case *AgedOneYear:
-		person.Age++
 	}
 }
 
@@ -114,4 +69,3 @@ func TestSnapshot(t *testing.T, snapshot eventsourcing.SnapshotStore) {
 		t.Fatalf("wrong State in snapshot %q expected: %q", snap.State, snap2.State)
 	}
 }
-
