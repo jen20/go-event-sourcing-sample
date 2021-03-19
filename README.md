@@ -204,7 +204,7 @@ The memory based event store is part of the main module and does not need to be 
 
 ### Snapshot Handler and Snapshot Store
 
-A snapshot store save and gets aggregate snapshots. A snapshot is a fix state of an aggregate on a specific Version. The properties of an aggregate have to be exported for them to be saved in the snapshot.
+A snapshot store save and get aggregate snapshots. A snapshot is a fix state of an aggregate on a specific version. The properties of an aggregate have to be exported for them to be saved in the snapshot.
 
 The Snapshot Handler is the top layer that integrates with the repository.
 
