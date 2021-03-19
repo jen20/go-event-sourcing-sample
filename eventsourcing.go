@@ -11,10 +11,10 @@ type Version uint64
 
 // AggregateRoot to be included into aggregates
 type AggregateRoot struct {
-	AggregateID      string
-	AggregateVersion Version
+	AggregateID            string
+	AggregateVersion       Version
 	AggregateGlobalVersion Version
-	aggregateEvents  []Event
+	aggregateEvents        []Event
 }
 
 // Event holding meta data and the application specific event in the Data property
@@ -138,8 +138,11 @@ func (state *AggregateRoot) GlobalVersion() Version {
 }
 
 // Events return the aggregate events from the aggregate
+// make a copy of the slice preventing outsiders modifying events.
 func (state *AggregateRoot) Events() []Event {
-	return state.aggregateEvents
+	e := make([]Event, len(state.aggregateEvents))
+	copy(e, state.aggregateEvents)
+	return e
 }
 
 // UnsavedEvents return true if there's unsaved events on the aggregate
