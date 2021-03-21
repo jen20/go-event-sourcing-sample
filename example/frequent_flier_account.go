@@ -132,5 +132,5 @@ func (f FrequentFlierAccountAggregate) String() string {
 	(Pending aggregateEvents: %d)
 	(aggregateVersion: %d)
 `
-	return fmt.Sprintf(format, f.AggregateID, f.miles, f.tierPoints, f.status, reason, aggregateType, len(f.Events()), f.AggregateVersion)
+	return fmt.Sprintf(format, f.ID(), f.miles, f.tierPoints, f.status, reason, aggregateType, len(f.Events()), f.Version())
 }
