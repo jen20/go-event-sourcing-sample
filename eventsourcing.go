@@ -140,6 +140,7 @@ func (state *AggregateRoot) Version() Version {
 	return state.aggregateVersion
 }
 
+// GlobalVersion returns the global version based on the last stored event
 func (state *AggregateRoot) GlobalVersion() Version {
 	return state.aggregateGlobalVersion
 }
