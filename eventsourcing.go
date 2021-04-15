@@ -22,11 +22,18 @@ type Event struct {
 	AggregateID   string
 	Version       Version
 	GlobalVersion Version
-	Reason        string
 	AggregateType string
 	Timestamp     time.Time
 	Data          interface{}
 	MetaData      map[string]interface{}
+}
+
+// Reason returns the name of the data struct as a string
+func (e Event) Reason() string {
+	if e.Data != nil {
+		return reflect.TypeOf(e.Data).Elem().Name()
+	}
+	return ""
 }
 
 var (
@@ -56,12 +63,10 @@ func (state *AggregateRoot) TrackChangeWithMetaData(a Aggregate, data interface{
 		state.aggregateID = idFunc()
 	}
 
-	reason := reflect.TypeOf(data).Elem().Name()
 	name := reflect.TypeOf(a).Elem().Name()
 	event := Event{
 		AggregateID:   state.aggregateID,
 		Version:       state.nextVersion(),
-		Reason:        reason,
 		AggregateType: name,
 		Timestamp:     time.Now().UTC(),
 		Data:          data,

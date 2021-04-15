@@ -25,8 +25,8 @@ func (a *AnotherAggregate) Transition(e eventsourcing.Event) {}
 
 type AnotherEvent struct{}
 
-var event = eventsourcing.Event{Version: 123, Data: &AnEvent{Name: "123"}, Reason: "AnEvent", AggregateType: "AnAggregate"}
-var otherEvent = eventsourcing.Event{Version: 456, Data: &AnotherEvent{}, Reason: "AnotherEvent", AggregateType: "AnotherAggregate"}
+var event = eventsourcing.Event{Version: 123, Data: &AnEvent{Name: "123"}, AggregateType: "AnAggregate"}
+var otherEvent = eventsourcing.Event{Version: 456, Data: &AnotherEvent{}, AggregateType: "AnotherAggregate"}
 
 func TestAll(t *testing.T) {
 	var streamEvent *eventsourcing.Event
@@ -278,7 +278,7 @@ func TestParallelUpdates(t *testing.T) {
 		if j%4 == 0 {
 			lastEvent = event
 		} else {
-			if lastEvent.Reason != event.Reason {
+			if lastEvent.Reason() != event.Reason() {
 				t.Fatal("same event should come in couple of four")
 			}
 		}

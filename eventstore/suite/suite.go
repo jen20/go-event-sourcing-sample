@@ -86,12 +86,12 @@ func testEventsWithID(aggregateID string) []eventsourcing.Event {
 	metaData := make(map[string]interface{})
 	metaData["test"] = "hello"
 	history := []eventsourcing.Event{
-		{AggregateID: aggregateID, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Timestamp: timestamp, Data: &FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}, MetaData: metaData},
-		{AggregateID: aggregateID, Version: 2, Reason: "StatusMatched", AggregateType: aggregateType, Timestamp: timestamp, Data: &StatusMatched{NewStatus: StatusSilver}, MetaData: metaData},
-		{AggregateID: aggregateID, Version: 3, Reason: "FlightTaken", AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 2525, TierPointsAdded: 5}, MetaData: metaData},
-		{AggregateID: aggregateID, Version: 4, Reason: "FlightTaken", AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 2512, TierPointsAdded: 5}, MetaData: metaData},
-		{AggregateID: aggregateID, Version: 5, Reason: "FlightTaken", AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 5600, TierPointsAdded: 5}, MetaData: metaData},
-		{AggregateID: aggregateID, Version: 6, Reason: "FlightTaken", AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 3000, TierPointsAdded: 3}, MetaData: metaData},
+		{AggregateID: aggregateID, Version: 1, AggregateType: aggregateType, Timestamp: timestamp, Data: &FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}, MetaData: metaData},
+		{AggregateID: aggregateID, Version: 2, AggregateType: aggregateType, Timestamp: timestamp, Data: &StatusMatched{NewStatus: StatusSilver}, MetaData: metaData},
+		{AggregateID: aggregateID, Version: 3, AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 2525, TierPointsAdded: 5}, MetaData: metaData},
+		{AggregateID: aggregateID, Version: 4, AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 2512, TierPointsAdded: 5}, MetaData: metaData},
+		{AggregateID: aggregateID, Version: 5, AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 5600, TierPointsAdded: 5}, MetaData: metaData},
+		{AggregateID: aggregateID, Version: 6, AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 3000, TierPointsAdded: 3}, MetaData: metaData},
 	}
 	return history
 }
@@ -102,14 +102,14 @@ func testEvents() []eventsourcing.Event {
 
 func testEventsPartTwo() []eventsourcing.Event {
 	history := []eventsourcing.Event{
-		{AggregateID: aggregateID, Version: 7, Reason: "FlightTaken", AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 5600, TierPointsAdded: 5}},
-		{AggregateID: aggregateID, Version: 8, Reason: "FlightTaken", AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 3000, TierPointsAdded: 3}},
+		{AggregateID: aggregateID, Version: 7, AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 5600, TierPointsAdded: 5}},
+		{AggregateID: aggregateID, Version: 8, AggregateType: aggregateType, Timestamp: timestamp, Data: &FlightTaken{MilesAdded: 3000, TierPointsAdded: 3}},
 	}
 	return history
 }
 
 func testEventOtherAggregate() eventsourcing.Event {
-	return eventsourcing.Event{AggregateID: aggregateIDOther, Version: 1, Reason: "FrequentFlierAccountCreated", AggregateType: aggregateType, Timestamp: timestamp, Data: &FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}}
+	return eventsourcing.Event{AggregateID: aggregateIDOther, Version: 1, AggregateType: aggregateType, Timestamp: timestamp, Data: &FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}}
 }
 
 func saveAndGetEvents(es eventsourcing.EventStore) error {
@@ -159,7 +159,7 @@ func saveAndGetEvents(es eventsourcing.EventStore) error {
 		return errors.New("wrong event aggregateType returned")
 	}
 
-	if fetchedEventsIncludingPartTwo[0].Reason != testEvents()[0].Reason {
+	if fetchedEventsIncludingPartTwo[0].Reason() != testEvents()[0].Reason() {
 		return errors.New("wrong event aggregateType returned")
 	}
 
@@ -244,7 +244,7 @@ func saveEventsInWrongVersion(es eventsourcing.EventStore) error {
 
 func saveEventsWithEmptyReason(es eventsourcing.EventStore) error {
 	events := testEvents()
-	events[2].Reason = ""
+	events[2].Data = nil
 	err := es.Save(events)
 	if err == nil {
 		return errors.New("should not be able to save events with empty reason")

@@ -146,8 +146,8 @@ func TestPersonAgedOneYear(t *testing.T) {
 		t.Fatal("There should be two event on the person aggregateRoot", person.Events())
 	}
 
-	if person.Events()[len(person.Events())-1].Reason != "AgedOneYear" {
-		t.Fatal("The last event reason should be AgedOneYear", person.Events()[len(person.Events())-1].Reason)
+	if person.Events()[len(person.Events())-1].Reason() != "AgedOneYear" {
+		t.Fatal("The last event reason should be AgedOneYear", person.Events()[len(person.Events())-1].Reason())
 	}
 
 	d, ok := person.Events()[1].MetaData["foo"]
@@ -205,12 +205,12 @@ func TestIDFuncGeneratingRandomIDs(t *testing.T) {
 }
 
 func TestMutateEvents(t *testing.T) {
-	var reason = "mutated from the outside"
+	var m = "mutated from the outside"
 	person, _ := CreatePerson("kalle")
 
 	events := person.Events()
-	events[0].Reason = reason
-	if person.Events()[0].Reason == reason {
+	events[0].AggregateType = m
+	if person.Events()[0].AggregateType == m {
 		t.Fatal("events should not be mutated from the outside")
 	}
 }
