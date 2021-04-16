@@ -97,8 +97,6 @@ type Event struct {
     Version         Version
     // the global version is based on all events (this value is only set after the event is saved to the event store) 
     GlobalVersion   Version
-    // name of the event (Born / AgedOneYear in the example above)
-    Reason          string
     // aggregate type (Person in the example above)
     AggregateType   string
     // UTC time when the event was created  

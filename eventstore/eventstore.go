@@ -35,7 +35,7 @@ func ValidateEvents(aggregateID string, currentVersion eventsourcing.Version, ev
 			return ErrConcurrency
 		}
 
-		if event.Reason == "" {
+		if event.Reason() == "" {
 			return ErrReasonMissing
 		}
 

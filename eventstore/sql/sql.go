@@ -80,7 +80,7 @@ func (s *SQL) Save(events []eventsourcing.Event) error {
 				return err
 			}
 		}
-		res, err := tx.Exec(insert, event.AggregateID, event.Version, event.Reason, event.AggregateType, event.Timestamp.Format(time.RFC3339), string(e), string(m))
+		res, err := tx.Exec(insert, event.AggregateID, event.Version, event.Reason(), event.AggregateType, event.Timestamp.Format(time.RFC3339), string(e), string(m))
 		if err != nil {
 			return err
 		}
@@ -160,7 +160,6 @@ func (s *SQL) eventsFromRows(rows *sql.Rows) ([]eventsourcing.Event, error) {
 			Version:       version,
 			GlobalVersion: globalVersion,
 			AggregateType: typ,
-			Reason:        reason,
 			Timestamp:     t,
 			Data:          eventData,
 			MetaData:      eventMetaData,
