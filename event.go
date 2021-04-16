@@ -20,10 +20,10 @@ type Event struct {
 	MetaData      map[string]interface{}
 }
 
-// Reason returns the name of the data struct as a string
+// Reason returns the name of the data struct
 func (e Event) Reason() string {
-	if e.Data != nil {
-		return reflect.TypeOf(e.Data).Elem().Name()
+	if e.Data == nil {
+		return ""
 	}
-	return ""
+	return reflect.TypeOf(e.Data).Elem().Name()
 }
