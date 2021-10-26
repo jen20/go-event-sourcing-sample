@@ -101,5 +101,5 @@ func (r *Repository) Get(id string, aggregate Aggregate) error {
 
 // GlobalEvents will return count events in order globally from the start position
 func (r *Repository) GlobalEvents(start, count uint64) ([]Event, error) {
-	return r.GlobalEvents(start, count)
+	return r.eventStore.GlobalEvents(start, count)
 }
