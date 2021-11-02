@@ -18,6 +18,7 @@ type snapshot struct {
 }
 
 type Event struct{}
+type Event2 struct {}
 
 func New() *snapshot {
 	s := snapshot{}
@@ -25,11 +26,18 @@ func New() *snapshot {
 	return &s
 }
 
+func (s *snapshot) Command() {
+	s.TrackChange(s ,&Event2{})
+}
+
 func (s *snapshot) Transition(e eventsourcing.Event) {
 	switch e.Data.(type) {
 	case *Event:
 		s.unexported = "unexported"
 		s.Exported = "Exported"
+	case *Event2:
+		s.unexported = "unexported2"
+		s.Exported = "Exported2"
 	}
 }
 
@@ -70,6 +78,10 @@ func TestSnapshotNoneExported(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	snap.Command()
+	repo.Save(snap)
+
 	snap2 := snapshot{}
 	err = repo.Get(snap.ID(), &snap2)
 
