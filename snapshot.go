@@ -20,6 +20,13 @@ type Snapshot struct {
 	GlobalVersion Version
 }
 
+// SnapshotAggregate is an Aggregate plus extra methods to help serialize into a snapshot
+type SnapshotAggregate interface {
+	Aggregate
+	Marshal() (interface{}, error)
+	UnMarshal(i interface{}) error
+}
+
 // SnapshotHandler gets and saves snapshots
 type SnapshotHandler struct {
 	snapshotStore SnapshotStore
@@ -35,14 +42,30 @@ func SnapshotNew(ss SnapshotStore, ser Serializer) *SnapshotHandler {
 }
 
 // Save transform an aggregate to a snapshot
-func (s *SnapshotHandler) Save(a Aggregate) error {
-	root := a.Root()
+func (s *SnapshotHandler) Save(i interface{}) error {
+	sa, ok := i.(SnapshotAggregate)
+	if ok {
+		return s.saveSnapshotAggregate(sa)
+	}
+	a, ok := i.(Aggregate)
+	if ok {
+		return s.saveAggregate(a)
+	}
+	return errors.New("not an aggregate")
+}
+
+func (s *SnapshotHandler) saveSnapshotAggregate(sa SnapshotAggregate) error {
+	return nil
+}
+
+func (s *SnapshotHandler) saveAggregate(sa Aggregate) error {
+	root := sa.Root()
 	err := validate(*root)
 	if err != nil {
 		return err
 	}
-	typ := reflect.TypeOf(a).Elem().Name()
-	b, err := s.serializer.Marshal(a)
+	typ := reflect.TypeOf(sa).Elem().Name()
+	b, err := s.serializer.Marshal(sa)
 	if err != nil {
 		return err
 	}
