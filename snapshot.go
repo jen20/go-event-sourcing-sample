@@ -23,8 +23,8 @@ type Snapshot struct {
 // SnapshotAggregate is an Aggregate plus extra methods to help serialize into a snapshot
 type SnapshotAggregate interface {
 	Aggregate
-	Marshal() (interface{}, error)
-	UnMarshal(i interface{}) error
+	Marshal(m MarshalSnapshot) ([]byte, error)
+	UnMarshal(m UnmarshalSnapshot, b []byte) error
 }
 
 // SnapshotHandler gets and saves snapshots
@@ -55,7 +55,24 @@ func (s *SnapshotHandler) Save(i interface{}) error {
 }
 
 func (s *SnapshotHandler) saveSnapshotAggregate(sa SnapshotAggregate) error {
-	return nil
+	root := sa.Root()
+	err := validate(*root)
+	if err != nil {
+		return err
+	}
+	typ := reflect.TypeOf(sa).Elem().Name()
+	b, err := sa.Marshal(s.serializer.Marshal)
+	if err != nil {
+		return err
+	}
+	snap := Snapshot{
+		ID:            root.ID(),
+		Type:          typ,
+		Version:       root.Version(),
+		GlobalVersion: root.GlobalVersion(),
+		State:         b,
+	}
+	return s.snapshotStore.Save(snap)
 }
 
 func (s *SnapshotHandler) saveAggregate(sa Aggregate) error {
@@ -80,18 +97,30 @@ func (s *SnapshotHandler) saveAggregate(sa Aggregate) error {
 }
 
 // Get fetch a snapshot and reconstruct an aggregate
-func (s *SnapshotHandler) Get(id string, a Aggregate) error {
-	typ := reflect.TypeOf(a).Elem().Name()
+func (s *SnapshotHandler) Get(id string, i interface{}) error {
+	typ := reflect.TypeOf(i).Elem().Name()
 	snap, err := s.snapshotStore.Get(id, typ)
 	if err != nil {
 		return err
 	}
-	err = s.serializer.Unmarshal(snap.State, a)
-	if err != nil {
-		return err
+	switch a := i.(type) {
+	case SnapshotAggregate:
+		err := a.UnMarshal(s.serializer.Unmarshal, snap.State)
+		if err != nil {
+			return err
+		}
+		root := a.Root()
+		root.setInternals(snap.ID, snap.Version, snap.GlobalVersion)
+	case Aggregate:
+		err = s.serializer.Unmarshal(snap.State, a)
+		if err != nil {
+			return err
+		}
+		root := a.Root()
+		root.setInternals(snap.ID, snap.Version, snap.GlobalVersion)
+	default:
+		return errors.New("not an aggregate")
 	}
-	root := a.Root()
-	root.setInternals(snap.ID, snap.Version, snap.GlobalVersion)
 	return nil
 }
 

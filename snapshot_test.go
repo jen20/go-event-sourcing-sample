@@ -2,13 +2,82 @@ package eventsourcing_test
 
 import (
 	"encoding/xml"
-	memory2 "github.com/hallgren/eventsourcing/eventstore/memory"
 	"testing"
+
+	memory2 "github.com/hallgren/eventsourcing/eventstore/memory"
 
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/snapshotstore/memory"
 	memsnap "github.com/hallgren/eventsourcing/snapshotstore/memory"
 )
+
+type snapShot struct {
+	eventsourcing.AggregateRoot
+	noneExported string
+	Exported     string
+}
+
+type Event struct {
+}
+
+func New() *snapShot {
+	s := snapShot{}
+	s.TrackChange(&s, &Event{})
+	return &s
+}
+
+func (s *snapShot) Transition(e eventsourcing.Event) {
+	switch e.Data.(type) {
+	case *Event:
+		s.noneExported = "noneExported"
+		s.Exported = "Exported"
+	}
+}
+
+type snapshot struct {
+	NoneExported string
+	Exported     string
+}
+
+func (s *snapShot) Marshal(m eventsourcing.MarshalSnapshot) ([]byte, error) {
+	snap := snapshot{
+		NoneExported: s.noneExported,
+		Exported:     s.Exported,
+	}
+	return m(snap)
+}
+
+func (s *snapShot) UnMarshal(m eventsourcing.UnmarshalSnapshot, b []byte) error {
+	snap := snapshot{}
+	err := m(b, &snap)
+	if err != nil {
+		return err
+	}
+	s.noneExported = snap.NoneExported
+	s.Exported = snap.Exported
+	return nil
+}
+
+func TestSnapshotNoneExported(t *testing.T) {
+	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
+	s := eventsourcing.SnapshotNew(memory.New(), *ser)
+
+	// use repo to reset events on person to be able to save snapshot
+	repo := eventsourcing.NewRepository(memory2.Create(), s)
+
+	snap := New()
+	repo.Save(snap)
+	err := s.Save(snap)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snap2 := snapShot{}
+	err = repo.Get(snap.ID(), &snap2)
+
+	if snap.noneExported != snap2.noneExported {
+		t.Fatalf("none exported value differed %s %s", snap.noneExported, snap2.noneExported)
+	}
+}
 
 func TestSnapshot(t *testing.T) {
 	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
