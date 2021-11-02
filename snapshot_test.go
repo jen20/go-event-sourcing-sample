@@ -11,49 +11,48 @@ import (
 	memsnap "github.com/hallgren/eventsourcing/snapshotstore/memory"
 )
 
-type snapShot struct {
+type snapshot struct {
 	eventsourcing.AggregateRoot
-	noneExported string
-	Exported     string
+	unexported string
+	Exported   string
 }
 
-type Event struct {
-}
+type Event struct{}
 
-func New() *snapShot {
-	s := snapShot{}
+func New() *snapshot {
+	s := snapshot{}
 	s.TrackChange(&s, &Event{})
 	return &s
 }
 
-func (s *snapShot) Transition(e eventsourcing.Event) {
+func (s *snapshot) Transition(e eventsourcing.Event) {
 	switch e.Data.(type) {
 	case *Event:
-		s.noneExported = "noneExported"
+		s.unexported = "unexported"
 		s.Exported = "Exported"
 	}
 }
 
-type snapshot struct {
-	NoneExported string
-	Exported     string
+type snapshotInternal struct {
+	UnExported string
+	Exported   string
 }
 
-func (s *snapShot) Marshal(m eventsourcing.MarshalSnapshot) ([]byte, error) {
-	snap := snapshot{
-		NoneExported: s.noneExported,
-		Exported:     s.Exported,
+func (s *snapshot) Marshal(m eventsourcing.MarshalSnapshotFunc) ([]byte, error) {
+	snap := snapshotInternal{
+		UnExported: s.unexported,
+		Exported:   s.Exported,
 	}
 	return m(snap)
 }
 
-func (s *snapShot) UnMarshal(m eventsourcing.UnmarshalSnapshot, b []byte) error {
-	snap := snapshot{}
+func (s *snapshot) Unmarshal(m eventsourcing.UnmarshalSnapshotFunc, b []byte) error {
+	snap := snapshotInternal{}
 	err := m(b, &snap)
 	if err != nil {
 		return err
 	}
-	s.noneExported = snap.NoneExported
+	s.unexported = snap.UnExported
 	s.Exported = snap.Exported
 	return nil
 }
@@ -71,11 +70,15 @@ func TestSnapshotNoneExported(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	snap2 := snapShot{}
+	snap2 := snapshot{}
 	err = repo.Get(snap.ID(), &snap2)
 
-	if snap.noneExported != snap2.noneExported {
-		t.Fatalf("none exported value differed %s %s", snap.noneExported, snap2.noneExported)
+	if snap.unexported != snap2.unexported {
+		t.Fatalf("none exported value differed %s %s", snap.unexported, snap2.unexported)
+	}
+
+	if snap.Exported != snap2.Exported {
+		t.Fatalf("exported value differed %s %s", snap.Exported, snap2.Exported)
 	}
 }
 

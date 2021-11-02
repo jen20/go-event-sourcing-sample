@@ -23,8 +23,8 @@ type Snapshot struct {
 // SnapshotAggregate is an Aggregate plus extra methods to help serialize into a snapshot
 type SnapshotAggregate interface {
 	Aggregate
-	Marshal(m MarshalSnapshot) ([]byte, error)
-	UnMarshal(m UnmarshalSnapshot, b []byte) error
+	Marshal(m MarshalSnapshotFunc) ([]byte, error)
+	Unmarshal(m UnmarshalSnapshotFunc, b []byte) error
 }
 
 // SnapshotHandler gets and saves snapshots
@@ -105,7 +105,7 @@ func (s *SnapshotHandler) Get(id string, i interface{}) error {
 	}
 	switch a := i.(type) {
 	case SnapshotAggregate:
-		err := a.UnMarshal(s.serializer.Unmarshal, snap.State)
+		err := a.Unmarshal(s.serializer.Unmarshal, snap.State)
 		if err != nil {
 			return err
 		}
