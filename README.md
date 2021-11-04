@@ -204,14 +204,57 @@ The memory based event store is part of the main module and does not need to be 
 
 A snapshot store save and get aggregate snapshots. A snapshot is a fix state of an aggregate on a specific version. The properties of an aggregate have to be exported for them to be saved in the snapshot.
 
+If you want to keep the properties unexported the aggregate has to implement the Marshal/Unmarshal methods.
+
+```go
+Marshal(m eventsourcing.MarshalSnapshotFunc) ([]byte, error) {
+Unmarshal(m eventsourcing.UnmarshalSnapshotFunc, b []byte) error {
+```
+ 
+Here is an exampel how the Marshal/Unmarshal methods is used in the snapshot aggregate. Marshal mapps its properties to a new internal struct with all its
+propererties exported. The Unmarshal method unmarshal the internal struct and sets the aggregate properties.
+
+```go
+type snapshot struct {
+	eventsourcing.AggregateRoot
+	unexported string
+	Exported   string
+}
+
+type snapshotInternal struct {
+	UnExported string
+	Exported   string
+}
+
+func (s *snapshot) Marshal(m eventsourcing.MarshalSnapshotFunc) ([]byte, error) {
+	snap := snapshotInternal{
+		UnExported: s.unexported,
+		Exported:   s.Exported,
+	}
+	return m(snap)
+}
+
+func (s *snapshot) Unmarshal(m eventsourcing.UnmarshalSnapshotFunc, b []byte) error {
+	snap := snapshotInternal{}
+	err := m(b, &snap)
+	if err != nil {
+		return err
+	}
+	s.unexported = snap.UnExported
+	s.Exported = snap.Exported
+	return nil
+}
+```
+
+
 The Snapshot Handler is the top layer that integrates with the repository.
 
 ```go
 // Save transform an aggregate to a snapshot
-Save(a Aggregate) error {
+Save(a interface{}) error {
 
 // Get fetch a snapshot and reconstruct an aggregate
-Get(id string, a Aggregate) error {
+Get(id string, a interface{}) error {
 ```
 
 A Snapshot store is the actual layer that stores the snapshot.
@@ -242,7 +285,7 @@ To be open to different storage solution the serializer takes as parameter to it
 that follows the declaration from the `"encoding/json"` package.
 
 ```go
-NewSerializer(marshalF func (v interface{}) ([]byte, error), unmarshalF func(data []byte, v interface{}) error) *Serializer
+NewSerializer(marshalF MarshalSnapshotFunc, unmarshalF UnmarshalSnapshotFunc) *Serializer
 
 creating a json based serializer: 
 serializer := NewSerializer(json.Marshal, json.Unmarshal)
