@@ -207,8 +207,8 @@ A snapshot store save and get aggregate snapshots. A snapshot is a fix state of 
 If you want to keep the properties unexported the aggregate has to implement the Marshal/Unmarshal methods.
 
 ```go
-Marshal(m eventsourcing.MarshalSnapshotFunc) ([]byte, error) {
-Unmarshal(m eventsourcing.UnmarshalSnapshotFunc, b []byte) error {
+Marshal(m eventsourcing.MarshalSnapshotFunc) ([]byte, error)
+Unmarshal(m eventsourcing.UnmarshalSnapshotFunc, b []byte) error
 ```
  
 Here is an exampel how the Marshal/Unmarshal methods is used in the snapshot aggregate. Marshal maps its properties to a new internal struct with all its
