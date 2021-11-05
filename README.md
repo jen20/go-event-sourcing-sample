@@ -211,7 +211,7 @@ Marshal(m eventsourcing.MarshalSnapshotFunc) ([]byte, error) {
 Unmarshal(m eventsourcing.UnmarshalSnapshotFunc, b []byte) error {
 ```
  
-Here is an exampel how the Marshal/Unmarshal methods is used in the snapshot aggregate. Marshal mapps its properties to a new internal struct with all its
+Here is an exampel how the Marshal/Unmarshal methods is used in the snapshot aggregate. Marshal maps its properties to a new internal struct with all its
 properties exported. The Unmarshal method unmarshal the internal struct and sets the aggregate properties.
 
 ```go
