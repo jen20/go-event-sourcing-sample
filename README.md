@@ -228,7 +228,7 @@ type snapshotInternal struct {
 
 func (s *snapshot) Marshal(m eventsourcing.MarshalSnapshotFunc) ([]byte, error) {
 	snap := snapshotInternal{
-		UnExported: s.unexported,
+		Unexported: s.unexported,
 		Exported:   s.Exported,
 	}
 	return m(snap)
