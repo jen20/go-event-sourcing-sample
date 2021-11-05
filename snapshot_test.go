@@ -2,13 +2,97 @@ package eventsourcing_test
 
 import (
 	"encoding/xml"
-	memory2 "github.com/hallgren/eventsourcing/eventstore/memory"
 	"testing"
+
+	memory2 "github.com/hallgren/eventsourcing/eventstore/memory"
 
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/snapshotstore/memory"
 	memsnap "github.com/hallgren/eventsourcing/snapshotstore/memory"
 )
+
+type snapshot struct {
+	eventsourcing.AggregateRoot
+	unexported string
+	Exported   string
+}
+
+type Event struct{}
+type Event2 struct {}
+
+func New() *snapshot {
+	s := snapshot{}
+	s.TrackChange(&s, &Event{})
+	return &s
+}
+
+func (s *snapshot) Command() {
+	s.TrackChange(s ,&Event2{})
+}
+
+func (s *snapshot) Transition(e eventsourcing.Event) {
+	switch e.Data.(type) {
+	case *Event:
+		s.unexported = "unexported"
+		s.Exported = "Exported"
+	case *Event2:
+		s.unexported = "unexported2"
+		s.Exported = "Exported2"
+	}
+}
+
+type snapshotInternal struct {
+	UnExported string
+	Exported   string
+}
+
+func (s *snapshot) Marshal(m eventsourcing.MarshalSnapshotFunc) ([]byte, error) {
+	snap := snapshotInternal{
+		UnExported: s.unexported,
+		Exported:   s.Exported,
+	}
+	return m(snap)
+}
+
+func (s *snapshot) Unmarshal(m eventsourcing.UnmarshalSnapshotFunc, b []byte) error {
+	snap := snapshotInternal{}
+	err := m(b, &snap)
+	if err != nil {
+		return err
+	}
+	s.unexported = snap.UnExported
+	s.Exported = snap.Exported
+	return nil
+}
+
+func TestSnapshotNoneExported(t *testing.T) {
+	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
+	s := eventsourcing.SnapshotNew(memory.New(), *ser)
+
+	// use repo to reset events on person to be able to save snapshot
+	repo := eventsourcing.NewRepository(memory2.Create(), s)
+
+	snap := New()
+	repo.Save(snap)
+	err := s.Save(snap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	snap.Command()
+	repo.Save(snap)
+
+	snap2 := snapshot{}
+	err = repo.Get(snap.ID(), &snap2)
+
+	if snap.unexported != snap2.unexported {
+		t.Fatalf("none exported value differed %s %s", snap.unexported, snap2.unexported)
+	}
+
+	if snap.Exported != snap2.Exported {
+		t.Fatalf("exported value differed %s %s", snap.Exported, snap2.Exported)
+	}
+}
 
 func TestSnapshot(t *testing.T) {
 	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)

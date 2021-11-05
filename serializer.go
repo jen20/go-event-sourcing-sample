@@ -6,18 +6,18 @@ import (
 )
 
 type eventFunc = func() interface{}
-type marshal func(v interface{}) ([]byte, error)
-type unmarshal func(data []byte, v interface{}) error
+type MarshalSnapshotFunc func(v interface{}) ([]byte, error)
+type UnmarshalSnapshotFunc func(data []byte, v interface{}) error
 
 // Serializer for json serializes
 type Serializer struct {
 	eventRegister map[string]eventFunc
-	marshal       marshal
-	unmarshal     unmarshal
+	marshal       MarshalSnapshotFunc
+	unmarshal     UnmarshalSnapshotFunc
 }
 
 // NewSerializer returns a json Handle
-func NewSerializer(marshalF marshal, unmarshalF unmarshal) *Serializer {
+func NewSerializer(marshalF MarshalSnapshotFunc, unmarshalF UnmarshalSnapshotFunc) *Serializer {
 	return &Serializer{
 		eventRegister: make(map[string]eventFunc),
 		marshal:       marshalF,
