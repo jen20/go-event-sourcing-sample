@@ -18,7 +18,7 @@ type snapshot struct {
 }
 
 type Event struct{}
-type Event2 struct {}
+type Event2 struct{}
 
 func New() *snapshot {
 	s := snapshot{}
@@ -27,7 +27,7 @@ func New() *snapshot {
 }
 
 func (s *snapshot) Command() {
-	s.TrackChange(s ,&Event2{})
+	s.TrackChange(s, &Event2{})
 }
 
 func (s *snapshot) Transition(e eventsourcing.Event) {
