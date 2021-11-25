@@ -40,3 +40,5 @@ github.com/hallgren/eventsourcing v0.0.17/go.mod h1:rODloJ0HuAQ4fGafaKciOMA/6vyT
 github.com/lib/pq v1.0.0/go.mod h1:5WUZQaWbwv1U+lTReE5YruASi9Al49XbQIvNi/34Woo=
 github.com/proullon/ramsql v0.0.0-20181213202341-817cee58a244 h1:fdX2U+a2Rmc4BjRYcOKzjYXtYTE4ga1B2lb8i7BlefU=
 github.com/proullon/ramsql v0.0.0-20181213202341-817cee58a244/go.mod h1:jG8oAQG0ZPHPyxg5QlMERS31airDC+ZuqiAe8DUvFVo=
+github.com/proullon/ramsql v0.0.0-20211120092837-c8d0a408b939 h1:mtMU7aT8cTAyNL3O4RyOfe/OOUxwCN525SIbKQoUvw0=
+github.com/proullon/ramsql v0.0.0-20211120092837-c8d0a408b939/go.mod h1:jG8oAQG0ZPHPyxg5QlMERS31airDC+ZuqiAe8DUvFVo=
