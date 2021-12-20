@@ -36,6 +36,11 @@ var (
 	ErrEventNameMissing = errors.New("missing event name")
 )
 
+// Event is a helper function to make the event type registration simpler to use
+func (h *Serializer) Event(d interface{}) eventFunc {
+	return func() interface{} { return d }
+}
+
 // RegisterTypes events aggregate
 func (h *Serializer) RegisterTypes(aggregate Aggregate, events ...eventFunc) error {
 	typ := reflect.TypeOf(aggregate).Elem().Name()

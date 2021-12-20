@@ -12,7 +12,7 @@ import (
 func initSerializers(t *testing.T) []*eventsourcing.Serializer {
 	var result []*eventsourcing.Serializer
 	s := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
-	err := s.RegisterTypes(&SomeAggregate{}, func() interface{} { return &SomeData{} }, func() interface{} { return &SomeData2{} })
+	err := s.RegisterTypes(&SomeAggregate{}, s.Event(&SomeData{}), s.Event(&SomeData2{}))
 	if err != nil {
 		t.Fatalf("could not register aggregate events %v", err)
 	}
