@@ -293,11 +293,12 @@ serializer := NewSerializer(json.Marshal, json.Unmarshal)
 
 The registered event function is used internally inside the event store to set the correct type info when unmarshalling
 event data into the `eventsourcing.Event`.
+
 ```go
 RegisterTypes(aggregate Aggregate, events ...func() interface{})
 
-register the aggregate Person and the event Born:
-serializer.RegisterTypes(&Person{}, func() interface{} { return &Born{}})
+Register the aggregate Person and the event Born (Makes use of the helper method `Event` from the serializer.):
+serializer.RegisterTypes(&Person{}, serializer.Event(&Born{}))
 ```
 
 ### Event Subscription
