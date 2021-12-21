@@ -116,7 +116,7 @@ func (f FrequentFlierAccountAggregate) String() string {
 	var aggregateType string
 
 	if len(f.Events()) > 0 {
-		reason = f.Events()[0].Reason
+		reason = f.Events()[0].Reason()
 		aggregateType = f.Events()[0].AggregateType
 	} else {
 		reason = "No reason"
