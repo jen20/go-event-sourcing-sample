@@ -36,8 +36,22 @@ var (
 	ErrEventNameMissing = errors.New("missing event name")
 )
 
-// RegisterTypes events aggregate
-func (h *Serializer) RegisterTypes(aggregate Aggregate, events ...eventFunc) error {
+func event(event interface{}) eventFunc {
+	return func() interface{} { return event }
+}
+
+// Events is a helper function to make the event type registration simpler
+func (h *Serializer) Events(events ...interface{}) []eventFunc {
+	res := []eventFunc{}
+	for _, e := range events {
+		res = append(res, event(e))
+	}
+	return res
+}
+
+// Register will hold a map of aggregate_event to be able to set the currect type when
+// the data is unmarhaled.
+func (h *Serializer) Register(aggregate Aggregate, events []eventFunc) error {
 	typ := reflect.TypeOf(aggregate).Elem().Name()
 	if typ == "" {
 		return ErrAggregateNameMissing
@@ -55,6 +69,11 @@ func (h *Serializer) RegisterTypes(aggregate Aggregate, events ...eventFunc) err
 		h.eventRegister[typ+"_"+reason] = f
 	}
 	return nil
+}
+
+// RegisterTypes events aggregate
+func (h *Serializer) RegisterTypes(aggregate Aggregate, events ...eventFunc) error {
+	return h.Register(aggregate, events)
 }
 
 // Type return a struct from the registry
