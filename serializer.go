@@ -49,8 +49,9 @@ func (h *Serializer) Events(events ...interface{}) []eventFunc {
 	return res
 }
 
-// RegisterTypes events aggregate
-func (h *Serializer) RegisterTypes(aggregate Aggregate, events []eventFunc) error {
+// Register will hold a map of aggregate_event to be able to set the currect type when
+// the data is unmarhaled.
+func (h *Serializer) Register(aggregate Aggregate, events []eventFunc) error {
 	typ := reflect.TypeOf(aggregate).Elem().Name()
 	if typ == "" {
 		return ErrAggregateNameMissing
@@ -68,6 +69,11 @@ func (h *Serializer) RegisterTypes(aggregate Aggregate, events []eventFunc) erro
 		h.eventRegister[typ+"_"+reason] = f
 	}
 	return nil
+}
+
+// RegisterTypes events aggregate
+func (h *Serializer) RegisterTypes(aggregate Aggregate, events ...eventFunc) error {
+	return h.Register(aggregate, events)
 }
 
 // Type return a struct from the registry
