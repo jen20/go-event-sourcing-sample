@@ -26,6 +26,8 @@ github.com/hallgren/eventsourcing v0.0.17 h1:q0238t2Idswm2YYx03y+73O4ik/PIgMjgJy
 github.com/hallgren/eventsourcing v0.0.17/go.mod h1:rODloJ0HuAQ4fGafaKciOMA/6vyTuCA01Ht1hyK2EWA=
 github.com/hallgren/eventsourcing v0.0.18-0.20211221094849-f9df34ba1774 h1:bBAhj/sdwbzFVuQ86t/1g84PNrWwfTbIm600OlfGmj0=
 github.com/hallgren/eventsourcing v0.0.18-0.20211221094849-f9df34ba1774/go.mod h1:rODloJ0HuAQ4fGafaKciOMA/6vyTuCA01Ht1hyK2EWA=
+github.com/hallgren/eventsourcing v0.0.18 h1:gHhT32bXakIOsE53dNDsw053AJESAUCDyQqgYy6sAxo=
+github.com/hallgren/eventsourcing v0.0.18/go.mod h1:rODloJ0HuAQ4fGafaKciOMA/6vyTuCA01Ht1hyK2EWA=
 go.etcd.io/bbolt v1.3.4 h1:hi1bXHMVrlQh6WwxAy+qZCV/SYIlqo+Ushwdpa4tAKg=
 go.etcd.io/bbolt v1.3.4/go.mod h1:G5EMThwa9y8QZGBClrRx5EY+Yw9kAhnjy3bSjsnlVTQ=
 go.etcd.io/bbolt v1.3.5 h1:XAzx9gjCb0Rxj7EoqcClPD1d5ZBxZJk0jbuoPHenBt0=
