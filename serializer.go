@@ -36,13 +36,21 @@ var (
 	ErrEventNameMissing = errors.New("missing event name")
 )
 
-// Event is a helper function to make the event type registration simpler to use
-func (h *Serializer) Event(d interface{}) eventFunc {
-	return func() interface{} { return d }
+func event(event interface{}) eventFunc {
+	return func() interface{} { return event }
+}
+
+// Events is a helper function to make the event type registration simpler
+func (h *Serializer) Events(events ...interface{}) []eventFunc {
+	res := []eventFunc{}
+	for _, e := range events {
+		res = append(res, event(e))
+	}
+	return res
 }
 
 // RegisterTypes events aggregate
-func (h *Serializer) RegisterTypes(aggregate Aggregate, events ...eventFunc) error {
+func (h *Serializer) RegisterTypes(aggregate Aggregate, events []eventFunc) error {
 	typ := reflect.TypeOf(aggregate).Elem().Name()
 	if typ == "" {
 		return ErrAggregateNameMissing
