@@ -15,10 +15,12 @@ func TestSuite(t *testing.T) {
 		dbFile := "bolt.db"
 		ser := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
 
-		ser.RegisterTypes(&suite.FrequentFlierAccount{},
-			func() interface{} { return &suite.FrequentFlierAccountCreated{} },
-			func() interface{} { return &suite.FlightTaken{} },
-			func() interface{} { return &suite.StatusMatched{} },
+		ser.Register(&suite.FrequentFlierAccount{},
+			ser.Events(
+				&suite.FrequentFlierAccountCreated{},
+				&suite.FlightTaken{},
+				&suite.StatusMatched{},
+			),
 		)
 		es := bbolt.MustOpenBBolt(dbFile, *ser)
 		return es, func() {
