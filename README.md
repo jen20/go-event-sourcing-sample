@@ -295,10 +295,10 @@ The registered event function is used internally inside the event store to set t
 event data into the `eventsourcing.Event`.
 
 ```go
-RegisterTypes(aggregate Aggregate, events []func() interface{})
+Register(aggregate Aggregate, events []func() interface{})
 
 Register the aggregate Person and the events Born and AgedOneYear (Makes use of the helper method `Events` from the serializer instance):
-serializer.RegisterTypes(&Person{}, serializer.Events(&Born{}, &AgedOneYear{}))
+serializer.Register(&Person{}, serializer.Events(&Born{}, &AgedOneYear{}))
 ```
 
 ### Event Subscription
