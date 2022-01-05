@@ -15,8 +15,7 @@ import (
 	_ "github.com/proullon/ramsql/driver"
 )
 
-var seededRand = rand.New(
-	rand.NewSource(time.Now().UnixNano()))
+var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func TestSuite(t *testing.T) {
 	f := func() (eventsourcing.EventStore, func(), error) {
