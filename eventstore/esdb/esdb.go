@@ -62,7 +62,9 @@ func (es *ESDB) Save(events []eventsourcing.Event) error {
 	}
 
 	if version > 1 {
-		streamOptions.ExpectedRevision = esdb.StreamRevision{Value: uint64(version)-2}
+		streamOptions.ExpectedRevision = esdb.StreamRevision{Value: uint64(version) - 2}
+	} else if version == 1 {
+		streamOptions.ExpectedRevision = esdb.NoStream{}
 	}
 	_, err := es.client.AppendToStream(context.Background(), stream, streamOptions, esdbEvents...)
 	return err
