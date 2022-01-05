@@ -112,8 +112,8 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 		stream := strings.Split(event.Event.StreamID, "_")
 		events = append(events, eventsourcing.Event{
 			AggregateID:   stream[1],
-			Version: eventsourcing.Version(event.Event.EventNumber)+1,
-			GlobalVersion:       eventsourcing.Version(event.Event.Position.Commit),
+			Version:       eventsourcing.Version(event.Event.EventNumber) + 1,
+			GlobalVersion: eventsourcing.Version(event.Event.Position.Commit),
 			AggregateType: stream[0],
 			Timestamp:     event.Event.CreatedDate,
 			Data:          eventData,
