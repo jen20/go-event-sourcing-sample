@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/hallgren/eventsourcing/eventstore"
 	"io"
 	"strings"
 
@@ -36,6 +37,11 @@ func (es *ESDB) Save(events []eventsourcing.Event) error {
 	version := events[0].Version
 	stream := aggregateType + "_" + aggregateID
 
+	err := eventstore.ValidateEventsNoVersionCheck(aggregateID, events)
+	if err != nil {
+		return err
+	}
+
 	esdbEvents := make([]esdb.EventData, len(events))
 
 	for i, event := range events {
@@ -66,7 +72,7 @@ func (es *ESDB) Save(events []eventsourcing.Event) error {
 	} else if version == 1 {
 		streamOptions.ExpectedRevision = esdb.NoStream{}
 	}
-	_, err := es.client.AppendToStream(context.Background(), stream, streamOptions, esdbEvents...)
+	_, err = es.client.AppendToStream(context.Background(), stream, streamOptions, esdbEvents...)
 	return err
 }
 
@@ -77,6 +83,9 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 	from := esdb.StreamRevision{Value: uint64(afterVersion)}
 	stream, err := es.client.ReadStream(context.Background(), streamID, esdb.ReadStreamOptions{From: from}, 10)
 	if err != nil {
+		if err == esdb.ErrStreamNotFound {
+			return nil, eventsourcing.ErrNoEvents
+		}
 		return nil, err
 	}
 	defer stream.Close()
