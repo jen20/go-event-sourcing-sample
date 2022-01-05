@@ -72,8 +72,14 @@ func (es *ESDB) Save(events []eventsourcing.Event) error {
 	} else if version == 1 {
 		streamOptions.ExpectedRevision = esdb.NoStream{}
 	}
-	_, err = es.client.AppendToStream(context.Background(), stream, streamOptions, esdbEvents...)
-	return err
+	wr, err := es.client.AppendToStream(context.Background(), stream, streamOptions, esdbEvents...)
+	if err != nil {
+		return err
+	}
+	for i, _ := range events {
+		events[i].GlobalVersion = eventsourcing.Version(wr.CommitPosition)
+	}
+	return nil
 }
 
 func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) {
@@ -124,6 +130,7 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 			Timestamp:     event.Event.CreatedDate,
 			Data:          eventData,
 			MetaData:      eventMetaData,
+			GlobalVersion: eventsourcing.Version(event.Event.Position.Commit),
 		})
 	}
 	return events, nil

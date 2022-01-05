@@ -34,6 +34,7 @@ func Test(t *testing.T, esFunc eventstoreFunc) {
 		{"should not save event with no reason", saveEventsWithEmptyReason},
 		{"should save and get event concurrently", saveAndGetEventsConcurrently},
 		{"should return error when no events", getErrWhenNoEvents},
+		{"should get global event order from save", saveReturnGlobalEventOrder},
 	}
 	for _, test := range tests {
 		t.Run(test.title, func(t *testing.T) {
@@ -312,6 +313,28 @@ func getErrWhenNoEvents(es eventsourcing.EventStore) error {
 	_, err := es.Get(aggregateID, aggregateType, 0)
 	if !errors.Is(err, eventsourcing.ErrNoEvents) {
 		return fmt.Errorf("expect error when no events are saved for aggregate")
+	}
+	return nil
+}
+
+func saveReturnGlobalEventOrder(es eventsourcing.EventStore) error {
+	aggregateID := AggregateID()
+	aggregateID2 := AggregateID()
+	events := testEvents(aggregateID)
+	err := es.Save(events)
+	if err != nil {
+		return err
+	}
+	if events[len(events)-1].GlobalVersion == 0 {
+		return fmt.Errorf("expected global event order > 0 on last event got %d", events[len(events)-1].GlobalVersion)
+	}
+	events2 := []eventsourcing.Event{testEventOtherAggregate(aggregateID2)}
+	err = es.Save(events2)
+	if err != nil {
+		return err
+	}
+	if events2[0].GlobalVersion <= events[len(events)-1].GlobalVersion {
+		return fmt.Errorf("expected larger global event order got %d", events2[0].GlobalVersion)
 	}
 	return nil
 }
