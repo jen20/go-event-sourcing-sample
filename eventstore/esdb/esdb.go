@@ -3,7 +3,6 @@ package esdb
 import (
 	"context"
 	"errors"
-	"fmt"
 	"github.com/hallgren/eventsourcing/eventstore"
 	"io"
 	"strings"
@@ -99,8 +98,6 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 		if err != nil {
 			return nil, err
 		}
-
-		fmt.Println("Get", event.Event.EventType)
 
 		f, ok := es.serializer.Type(aggregateType, event.Event.EventType)
 		if !ok {
