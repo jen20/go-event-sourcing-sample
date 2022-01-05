@@ -35,6 +35,7 @@ func Test(t *testing.T, esFunc eventstoreFunc) {
 		{"should save and get event concurrently", saveAndGetEventsConcurrently},
 		{"should return error when no events", getErrWhenNoEvents},
 		{"should get global event order from save", saveReturnGlobalEventOrder},
+		{"should set global event on event when saved", setGlobalVersionOnSavedEvents},
 	}
 	for _, test := range tests {
 		t.Run(test.title, func(t *testing.T) {
@@ -335,6 +336,27 @@ func saveReturnGlobalEventOrder(es eventsourcing.EventStore) error {
 	}
 	if events2[0].GlobalVersion <= events[len(events)-1].GlobalVersion {
 		return fmt.Errorf("expected larger global event order got %d", events2[0].GlobalVersion)
+	}
+	return nil
+}
+
+func setGlobalVersionOnSavedEvents(es eventsourcing.EventStore) error {
+	aggregateID := AggregateID()
+	events := testEvents(aggregateID)
+	err := es.Save(events)
+	if err != nil {
+		return err
+	}
+	eventsGet, err := es.Get(events[0].AggregateID, events[0].AggregateType, 0)
+	if err != nil {
+		return err
+	}
+	var g eventsourcing.Version = eventsGet[0].GlobalVersion
+	for _, e := range eventsGet[1:] {
+		if e.GlobalVersion < g {
+			return fmt.Errorf("expected global version to be in sequens exp: %d, was: %d", g, e.GlobalVersion)
+		}
+		g = e.GlobalVersion
 	}
 	return nil
 }
