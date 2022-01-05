@@ -290,34 +290,3 @@ func TestEventChainDoesNotHang(t *testing.T) {
 		t.Errorf("wrong number in ageCounter expected 6, got %v", ageCounter)
 	}
 }
-
-func TestGetGlobalEvents(t *testing.T) {
-	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
-	repo := eventsourcing.NewRepository(memory.Create(), eventsourcing.SnapshotNew(memsnap.New(), *ser))
-
-	person, err := CreatePerson("kalle")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = repo.Save(person)
-	if err != nil {
-		t.Fatal("could not save aggregate")
-	}
-	ge, err := repo.GlobalEvents(0, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(ge) != 1 {
-		t.Fatalf("expected one event got %d", len(ge))
-	}
-	if ge[0].Reason() != "Born" {
-		t.Fatalf("expexted a Born event got %s", ge[0].Reason())
-	}
-	ge, err = repo.GlobalEvents(100, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(ge) != 0 {
-		t.Fatalf("expecting 0 events got %d", len(ge))
-	}
-}

@@ -34,9 +34,6 @@ func Test(t *testing.T, esFunc eventstoreFunc) {
 		{"should not save event with no reason", saveEventsWithEmptyReason},
 		{"should save and get event concurrently", saveAndGetEventsConcurrently},
 		{"should return error when no events", getErrWhenNoEvents},
-		{"should get global event order from save", saveReturnGlobalEventOrder},
-		{"should set global event on event when saved", setGlobalVersionOnSavedEvents},
-		{"should get global events", getGlobalEvents},
 	}
 	for _, test := range tests {
 		t.Run(test.title, func(t *testing.T) {
@@ -273,7 +270,7 @@ func saveAndGetEventsConcurrently(es eventsourcing.EventStore) error {
 
 	wg.Add(10)
 	for i := 0; i < 10; i++ {
-		events := testEventsWithID(fmt.Sprintf("%s-%d",aggregateID, i))
+		events := testEventsWithID(fmt.Sprintf("%s-%d", aggregateID, i))
 		go func() {
 			e := es.Save(events)
 			if e != nil {
@@ -289,7 +286,7 @@ func saveAndGetEventsConcurrently(es eventsourcing.EventStore) error {
 	wg.Wait()
 	wg.Add(10)
 	for i := 0; i < 10; i++ {
-		eventID := fmt.Sprintf("%s-%d",aggregateID, i)
+		eventID := fmt.Sprintf("%s-%d", aggregateID, i)
 		go func() {
 			defer wg.Done()
 			events, e := es.Get(eventID, aggregateType, 0)
@@ -315,78 +312,6 @@ func getErrWhenNoEvents(es eventsourcing.EventStore) error {
 	_, err := es.Get(aggregateID, aggregateType, 0)
 	if !errors.Is(err, eventsourcing.ErrNoEvents) {
 		return fmt.Errorf("expect error when no events are saved for aggregate")
-	}
-	return nil
-}
-func saveReturnGlobalEventOrder(es eventsourcing.EventStore) error {
-	aggregateID := AggregateID()
-	aggregateIDOther := AggregateID()
-	events := testEvents(aggregateID)
-	err := es.Save(events)
-	if err != nil {
-		return err
-	}
-	if events[len(events)-1].GlobalVersion != 6 {
-		return fmt.Errorf("expected global event order 6 on last event got %d", events[len(events)-1].GlobalVersion)
-	}
-	events2 := []eventsourcing.Event{testEventOtherAggregate(aggregateIDOther)}
-	err = es.Save(events2)
-	if err != nil {
-		return err
-	}
-	if events2[0].GlobalVersion != 7 {
-		return fmt.Errorf("expected global event order 7 got %d", events2[0].GlobalVersion)
-	}
-	return nil
-}
-
-func setGlobalVersionOnSavedEvents(es eventsourcing.EventStore) error {
-	aggregateID := AggregateID()
-	events := testEvents(aggregateID)
-	err := es.Save(events)
-	if err != nil {
-		return err
-	}
-	eventsGet, err := es.Get(events[0].AggregateID, events[0].AggregateType, 0)
-	if err != nil {
-		return err
-	}
-	var g eventsourcing.Version
-	for _, e := range eventsGet {
-		g++
-		if e.GlobalVersion != g {
-			return fmt.Errorf("expected global version to be in sequens exp: %d, was: %d", g, e.GlobalVersion)
-		}
-	}
-	return nil
-}
-
-func getGlobalEvents(es eventsourcing.EventStore) error {
-	aggregateID := AggregateID()
-	events := testEvents(aggregateID)
-	err := es.Save(events)
-	if err != nil {
-		return err
-	}
-	eventsGet, err := es.GlobalEvents(3, 100)
-	if err != nil {
-		return err
-	}
-	if eventsGet[0].GlobalVersion != 3 {
-		return fmt.Errorf("expected global version on first event to be 3 was %d", eventsGet[0].GlobalVersion)
-	}
-	if len(eventsGet) != 4 {
-		return fmt.Errorf("expected event count to be 4 was %d", len(eventsGet))
-	}
-	eventsGet, err = es.GlobalEvents(1, 1)
-	if err != nil {
-		return err
-	}
-	if eventsGet[0].GlobalVersion != 1 {
-		return fmt.Errorf("expected global version on first event to be 1 was %d", eventsGet[0].GlobalVersion)
-	}
-	if len(eventsGet) != 1 {
-		return fmt.Errorf("expected event count to be 1 was %d", len(eventsGet))
 	}
 	return nil
 }

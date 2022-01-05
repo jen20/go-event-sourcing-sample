@@ -1,3 +1,6 @@
+// +build manual
+// make these tests manual as they are dependent on a running event store db.
+
 package esdb_test
 
 import (
