@@ -269,10 +269,11 @@ func saveEventsWithEmptyReason(es eventsourcing.EventStore) error {
 func saveAndGetEventsConcurrently(es eventsourcing.EventStore) error {
 	wg := sync.WaitGroup{}
 	var err error
+	aggregateID := AggregateID()
 
 	wg.Add(10)
 	for i := 0; i < 10; i++ {
-		events := testEventsWithID(fmt.Sprintf("id-%d", i))
+		events := testEventsWithID(fmt.Sprintf("%s-%d",aggregateID, i))
 		go func() {
 			e := es.Save(events)
 			if e != nil {
@@ -288,7 +289,7 @@ func saveAndGetEventsConcurrently(es eventsourcing.EventStore) error {
 	wg.Wait()
 	wg.Add(10)
 	for i := 0; i < 10; i++ {
-		eventID := fmt.Sprintf("id-%d", i)
+		eventID := fmt.Sprintf("%s-%d",aggregateID, i)
 		go func() {
 			defer wg.Done()
 			events, e := es.Get(eventID, aggregateType, 0)
