@@ -85,7 +85,6 @@ type FlightTaken struct {
 }
 
 var aggregateType = "FrequentFlierAccount"
-var aggregateIDOther = "666"
 var timestamp = time.Now()
 
 func testEventsWithID(aggregateID string) []eventsourcing.Event {
@@ -174,10 +173,10 @@ func saveAndGetEvents(es eventsourcing.EventStore) error {
 		return errors.New("wrong event meta data returned")
 	}
 	/*
-	if fetchedEventsIncludingPartTwo[0].Timestamp.Format(time.RFC3339) != timestamp.Format(time.RFC3339) {
-		return fmt.Errorf("wrong timestamp exp: %s got: %s", fetchedEventsIncludingPartTwo[0].Timestamp.Format(time.RFC3339), timestamp.Format(time.RFC3339))
-	}
-	 */
+		if fetchedEventsIncludingPartTwo[0].Timestamp.Format(time.RFC3339) != timestamp.Format(time.RFC3339) {
+			return fmt.Errorf("wrong timestamp exp: %s got: %s", fetchedEventsIncludingPartTwo[0].Timestamp.Format(time.RFC3339), timestamp.Format(time.RFC3339))
+		}
+	*/
 
 	data, ok := fetchedEventsIncludingPartTwo[0].Data.(*FrequentFlierAccountCreated)
 	if !ok {
@@ -215,6 +214,7 @@ func getEventsAfterVersion(es eventsourcing.EventStore) error {
 
 func saveEventsFromMoreThanOneAggregate(es eventsourcing.EventStore) error {
 	aggregateID := AggregateID()
+	aggregateIDOther := AggregateID()
 	invalidEvent := append(testEvents(aggregateID), testEventOtherAggregate(aggregateIDOther))
 	err := es.Save(invalidEvent)
 	if err == nil {
@@ -319,6 +319,7 @@ func getErrWhenNoEvents(es eventsourcing.EventStore) error {
 }
 func saveReturnGlobalEventOrder(es eventsourcing.EventStore) error {
 	aggregateID := AggregateID()
+	aggregateIDOther := AggregateID()
 	events := testEvents(aggregateID)
 	err := es.Save(events)
 	if err != nil {
