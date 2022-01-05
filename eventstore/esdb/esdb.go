@@ -74,7 +74,8 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 	var events []eventsourcing.Event
 	streamID := aggregateType + "_" + id
 
-	stream, err := es.client.ReadStream(context.Background(), streamID, esdb.ReadStreamOptions{}, 10)
+	from := esdb.StreamRevision{Value: uint64(afterVersion)}
+	stream, err := es.client.ReadStream(context.Background(), streamID, esdb.ReadStreamOptions{From: from}, 10)
 	if err != nil {
 		return nil, err
 	}
