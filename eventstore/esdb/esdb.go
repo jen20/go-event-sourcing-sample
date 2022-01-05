@@ -3,9 +3,10 @@ package esdb
 import (
 	"context"
 	"errors"
-	"github.com/hallgren/eventsourcing/eventstore"
 	"io"
 	"strings"
+
+	"github.com/hallgren/eventsourcing/eventstore"
 
 	"github.com/EventStore/EventStore-Client-Go/esdb"
 	"github.com/hallgren/eventsourcing"
@@ -99,7 +100,8 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 			return nil, err
 		}
 
-		f, ok := es.serializer.Type(aggregateType, event.Event.EventType)
+		stream := strings.Split(event.Event.StreamID, "_")
+		f, ok := es.serializer.Type(stream[0], event.Event.EventType)
 		if !ok {
 			// if the typ/reason is not register jump over the event
 			continue
@@ -115,11 +117,9 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 				return nil, err
 			}
 		}
-		stream := strings.Split(event.Event.StreamID, "_")
 		events = append(events, eventsourcing.Event{
 			AggregateID:   stream[1],
 			Version:       eventsourcing.Version(event.Event.EventNumber) + 1,
-			GlobalVersion: eventsourcing.Version(event.Event.Position.Commit),
 			AggregateType: stream[0],
 			Timestamp:     event.Event.CreatedDate,
 			Data:          eventData,
@@ -127,8 +127,4 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 		})
 	}
 	return events, nil
-}
-
-func (es *ESDB) GlobalEvents(start, count uint64) ([]eventsourcing.Event, error) {
-	return nil, nil
 }
