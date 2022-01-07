@@ -76,7 +76,8 @@ func (es *ESDB) Save(events []eventsourcing.Event) error {
 	if err != nil {
 		return err
 	}
-	for i, _ := range events {
+	for i := range events {
+		// Set all events GlobalVersion to the last events commit position.
 		events[i].GlobalVersion = eventsourcing.Version(wr.CommitPosition)
 	}
 	return nil
@@ -130,7 +131,8 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 			Timestamp:     event.Event.CreatedDate,
 			Data:          eventData,
 			MetaData:      eventMetaData,
-			GlobalVersion: eventsourcing.Version(event.Event.Position.Commit),
+			// Can't get the global version when using the ReadStream method
+			//GlobalVersion: eventsourcing.Version(event.Event.Position.Commit),
 		})
 	}
 	return events, nil
