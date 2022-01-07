@@ -13,14 +13,21 @@ import (
 )
 
 type ESDB struct {
-	client     *esdb.Client
-	serializer eventsourcing.Serializer
+	client      *esdb.Client
+	serializer  eventsourcing.Serializer
+	contentType esdb.ContentType
 }
 
-func Open(client *esdb.Client, serializer eventsourcing.Serializer) *ESDB {
+func Open(client *esdb.Client, serializer eventsourcing.Serializer, jsonSerializer bool) *ESDB {
+	// defaults to binary
+	var contentType esdb.ContentType
+	if jsonSerializer {
+		contentType = esdb.JsonContentType
+	}
 	return &ESDB{
-		client:     client,
-		serializer: serializer,
+		client:      client,
+		serializer:  serializer,
+		contentType: contentType,
 	}
 }
 
@@ -58,7 +65,7 @@ func (es *ESDB) Save(events []eventsourcing.Event) error {
 			}
 		}
 		eventData := esdb.EventData{
-			ContentType: esdb.JsonContentType,
+			ContentType: es.contentType,
 			EventType:   event.Reason(),
 			Data:        e,
 			Metadata:    m,

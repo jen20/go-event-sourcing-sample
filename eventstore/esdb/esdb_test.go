@@ -36,7 +36,7 @@ func TestSuite(t *testing.T) {
 			),
 		)
 
-		es := es.Open(db, *ser)
+		es := es.Open(db, *ser, true)
 		return es, func() {
 		}, nil
 	}
