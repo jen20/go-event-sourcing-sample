@@ -57,7 +57,7 @@ func CreatePersonWithID(id, name string) (*Person, error) {
 func (person *Person) GrowOlder() {
 	metaData := make(map[string]interface{})
 	metaData["foo"] = "bar"
-	person.TrackChangeWithMetaData(person, &AgedOneYear{}, metaData)
+	person.TrackChangeWithMetadata(person, &AgedOneYear{}, metaData)
 }
 
 // Transition the person state dependent on the events
@@ -150,7 +150,7 @@ func TestPersonAgedOneYear(t *testing.T) {
 		t.Fatal("The last event reason should be AgedOneYear", person.Events()[len(person.Events())-1].Reason())
 	}
 
-	d, ok := person.Events()[1].MetaData["foo"]
+	d, ok := person.Events()[1].Metadata["foo"]
 
 	if !ok {
 		t.Fatal("meta data not present")

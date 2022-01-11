@@ -84,7 +84,7 @@ func (person *Person) GrowOlder() {
 
 Internally the `TrackChange` functions calls the `Transition` function on the aggregate to transform the aggregate based on the newly created event.
 
-To bind meta data to events use the `TrackChangeWithMetaData` function.
+To bind metadata to events use the `TrackChangeWithMetadata` function.
   
 
 The internal `Event` looks like this.
@@ -104,7 +104,7 @@ type Event struct {
     // the specific event data specified in the application (Born{}, AgedOneYear{})
     Data            interface{}
     // data that don´t belongs to the application state (could be correlation id or other request references)
-    MetaData        map[string]interface{}
+    Metadata        map[string]interface{}
 }
 ```
 
@@ -277,7 +277,7 @@ Where the SQL snapshot store is a submodule and can be fetched via `go get githu
 ## Serializer
 
 To store events and snapshots they have to be serialised into `[]byte`. This is handled differently depending on event
-store implementation. The sql event store only marshal the event.Data and event.MetaData properties. (The rest is stored
+store implementation. The sql event store only marshal the event.Data and event.Metadata properties. (The rest is stored
 in separate columns), while the bbolt event store marshal the hole event in its key / value database. The memory based event
 store does not use a serializer due to it never serialise events to `[]byte`.
 

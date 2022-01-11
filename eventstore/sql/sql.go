@@ -74,8 +74,8 @@ func (s *SQL) Save(events []eventsourcing.Event) error {
 		if err != nil {
 			return err
 		}
-		if event.MetaData != nil {
-			m, err = s.serializer.Marshal(event.MetaData)
+		if event.Metadata != nil {
+			m, err = s.serializer.Marshal(event.Metadata)
 			if err != nil {
 				return err
 			}
@@ -124,7 +124,7 @@ func (s *SQL) eventsFromRows(rows *sql.Rows) ([]eventsourcing.Event, error) {
 	var events []eventsourcing.Event
 	for rows.Next() {
 		var globalVersion eventsourcing.Version
-		var eventMetaData map[string]interface{}
+		var eventMetadata map[string]interface{}
 		var version eventsourcing.Version
 		var id, reason, typ, timestamp string
 		var data, metadata string
@@ -149,7 +149,7 @@ func (s *SQL) eventsFromRows(rows *sql.Rows) ([]eventsourcing.Event, error) {
 			return nil, err
 		}
 		if metadata != "" {
-			err = s.serializer.Unmarshal([]byte(metadata), &eventMetaData)
+			err = s.serializer.Unmarshal([]byte(metadata), &eventMetadata)
 			if err != nil {
 				return nil, err
 			}
@@ -162,7 +162,7 @@ func (s *SQL) eventsFromRows(rows *sql.Rows) ([]eventsourcing.Event, error) {
 			AggregateType: typ,
 			Timestamp:     t,
 			Data:          eventData,
-			MetaData:      eventMetaData,
+			Metadata:      eventMetadata,
 		})
 	}
 	return events, nil

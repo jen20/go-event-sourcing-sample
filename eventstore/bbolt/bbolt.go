@@ -36,7 +36,7 @@ type boltEvent struct {
 	AggregateType string
 	Timestamp     time.Time
 	Data          []byte
-	MetaData      map[string]interface{}
+	Metadata      map[string]interface{}
 }
 
 // MustOpenBBolt opens the event stream found in the given file. If the file is not found it will be created and
@@ -142,7 +142,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 			GlobalVersion: globalSequence,
 			Reason:        event.Reason(),
 			Timestamp:     event.Timestamp,
-			MetaData:      event.MetaData,
+			Metadata:      event.Metadata,
 			Data:          eventData,
 		}
 
@@ -207,7 +207,7 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 			Version:       eventsourcing.Version(bEvent.Version),
 			GlobalVersion: eventsourcing.Version(bEvent.GlobalVersion),
 			Timestamp:     bEvent.Timestamp,
-			MetaData:      bEvent.MetaData,
+			Metadata:      bEvent.Metadata,
 			Data:          eventData,
 		}
 		events = append(events, event)
@@ -251,7 +251,7 @@ func (e *BBolt) GlobalEvents(start, count uint64) ([]eventsourcing.Event, error)
 			Version:       eventsourcing.Version(bEvent.Version),
 			GlobalVersion: eventsourcing.Version(bEvent.GlobalVersion),
 			Timestamp:     bEvent.Timestamp,
-			MetaData:      bEvent.MetaData,
+			Metadata:      bEvent.Metadata,
 			Data:          eventData,
 		}
 		events = append(events, event)
