@@ -17,7 +17,7 @@ type Event struct {
 	AggregateType string
 	Timestamp     time.Time
 	Data          interface{}
-	MetaData      map[string]interface{}
+	Metadata      map[string]interface{}
 }
 
 // Reason returns the name of the data struct

@@ -7,4 +7,4 @@ require (
 	github.com/proullon/ramsql v0.0.0-20211120092837-c8d0a408b939
 )
 
-//replace github.com/hallgren/eventsourcing => ../..
+replace github.com/hallgren/eventsourcing => ../..
