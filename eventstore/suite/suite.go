@@ -349,3 +349,25 @@ func saveReturnGlobalEventOrder(es eventsourcing.EventStore) error {
 	}
 	return nil
 }
+
+/* re-activate when esdb eventstore have global event order on each stream
+func setGlobalVersionOnSavedEvents(es eventsourcing.EventStore) error {
+	events := testEvents()
+	err := es.Save(events)
+	if err != nil {
+		return err
+	}
+	eventsGet, err := es.Get(events[0].AggregateID, events[0].AggregateType, 0)
+	if err != nil {
+		return err
+	}
+	var g eventsourcing.Version
+	for _, e := range eventsGet {
+		g++
+		if e.GlobalVersion != g {
+			return fmt.Errorf("expected global version to be in sequens exp: %d, was: %d", g, e.GlobalVersion)
+		}
+	}
+	return nil
+}
+*/
