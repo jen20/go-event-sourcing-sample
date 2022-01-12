@@ -77,6 +77,8 @@ func (es *ESDB) Save(events []eventsourcing.Event) error {
 	}
 
 	if version > 1 {
+		// StreamRevision value -2 due to version in the eventsourcing pkg start on 1 but in esdb on 0
+		// and also the AppendToStream streamOptions expected revision is one version before the first appended event.
 		streamOptions.ExpectedRevision = esdb.StreamRevision{Value: uint64(version) - 2}
 	} else if version == 1 {
 		streamOptions.ExpectedRevision = esdb.NoStream{}
@@ -135,7 +137,7 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 		}
 		events = append(events, eventsourcing.Event{
 			AggregateID:   stream[1],
-			Version:       eventsourcing.Version(event.Event.EventNumber) + 1,
+			Version:       eventsourcing.Version(event.Event.EventNumber) + 1, // +1 as the eventsourcing Version starts on 1 but the esdb event version starts on 0
 			AggregateType: stream[0],
 			Timestamp:     event.Event.CreatedDate,
 			Data:          eventData,
