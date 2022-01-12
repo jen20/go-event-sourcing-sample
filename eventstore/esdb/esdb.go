@@ -12,6 +12,8 @@ import (
 	"github.com/hallgren/eventsourcing"
 )
 
+const streamSeparator = "_"
+
 type ESDB struct {
 	client      *esdb.Client
 	serializer  eventsourcing.Serializer
@@ -42,7 +44,7 @@ func (es *ESDB) Save(events []eventsourcing.Event) error {
 	aggregateID := events[0].AggregateID
 	aggregateType := events[0].AggregateType
 	version := events[0].Version
-	stream := aggregateType + "_" + aggregateID
+	stream := stream(aggregateType, aggregateID)
 
 	err := eventstore.ValidateEventsNoVersionCheck(aggregateID, events)
 	if err != nil {
@@ -92,7 +94,7 @@ func (es *ESDB) Save(events []eventsourcing.Event) error {
 
 func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) {
 	var events []eventsourcing.Event
-	streamID := aggregateType + "_" + id
+	streamID := stream(aggregateType, id)
 
 	from := esdb.StreamRevision{Value: uint64(afterVersion)}
 	stream, err := es.client.ReadStream(context.Background(), streamID, esdb.ReadStreamOptions{From: from}, ^uint64(0))
@@ -114,7 +116,7 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 			return nil, err
 		}
 
-		stream := strings.Split(event.Event.StreamID, "_")
+		stream := strings.Split(event.Event.StreamID, streamSeparator)
 		f, ok := es.serializer.Type(stream[0], event.Event.EventType)
 		if !ok {
 			// if the typ/reason is not register jump over the event
@@ -143,4 +145,8 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 		})
 	}
 	return events, nil
+}
+
+func stream(aggregateType, aggregateID string) string {
+	return aggregateType + streamSeparator + aggregateID
 }
