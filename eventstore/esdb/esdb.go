@@ -58,8 +58,8 @@ func (es *ESDB) Save(events []eventsourcing.Event) error {
 		if err != nil {
 			return err
 		}
-		if event.MetaData != nil {
-			m, err = es.serializer.Marshal(event.MetaData)
+		if event.Metadata != nil {
+			m, err = es.serializer.Marshal(event.Metadata)
 			if err != nil {
 				return err
 			}
@@ -105,7 +105,7 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 	defer stream.Close()
 
 	for {
-		var eventMetaData map[string]interface{}
+		var eventMetadata map[string]interface{}
 		event, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
 			break
@@ -126,7 +126,7 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 			return nil, err
 		}
 		if event.Event.UserMetadata != nil {
-			err = es.serializer.Unmarshal(event.Event.UserMetadata, &eventMetaData)
+			err = es.serializer.Unmarshal(event.Event.UserMetadata, &eventMetadata)
 			if err != nil {
 				return nil, err
 			}
@@ -137,7 +137,7 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 			AggregateType: stream[0],
 			Timestamp:     event.Event.CreatedDate,
 			Data:          eventData,
-			MetaData:      eventMetaData,
+			Metadata:      eventMetadata,
 			// Can't get the global version when using the ReadStream method
 			//GlobalVersion: eventsourcing.Version(event.Event.Position.Commit),
 		})
