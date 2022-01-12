@@ -1,7 +1,6 @@
 package bbolt_test
 
 import (
-	"encoding/json"
 	"os"
 	"testing"
 
@@ -11,18 +10,9 @@ import (
 )
 
 func TestSuite(t *testing.T) {
-	f := func() (eventsourcing.EventStore, func(), error) {
+	f := func(ser eventsourcing.Serializer) (eventsourcing.EventStore, func(), error) {
 		dbFile := "bolt.db"
-		ser := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
-
-		ser.Register(&suite.FrequentFlierAccount{},
-			ser.Events(
-				&suite.FrequentFlierAccountCreated{},
-				&suite.FlightTaken{},
-				&suite.StatusMatched{},
-			),
-		)
-		es := bbolt.MustOpenBBolt(dbFile, *ser)
+		es := bbolt.MustOpenBBolt(dbFile, ser)
 		return es, func() {
 			es.Close()
 			os.Remove(dbFile)

@@ -1,6 +1,7 @@
 package suite
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -18,7 +19,7 @@ func AggregateID() string {
 	return fmt.Sprintf("%d", r)
 }
 
-type eventstoreFunc = func() (eventsourcing.EventStore, func(), error)
+type eventstoreFunc = func(ser eventsourcing.Serializer) (eventsourcing.EventStore, func(), error)
 
 func Test(t *testing.T, esFunc eventstoreFunc) {
 	tests := []struct {
@@ -36,9 +37,19 @@ func Test(t *testing.T, esFunc eventstoreFunc) {
 		{"should return error when no events", getErrWhenNoEvents},
 		{"should get global event order from save", saveReturnGlobalEventOrder},
 	}
+	ser := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
+
+	ser.Register(&FrequentFlierAccount{},
+		ser.Events(
+			&FrequentFlierAccountCreated{},
+			&FlightTaken{},
+			&StatusMatched{},
+		),
+	)
+
 	for _, test := range tests {
 		t.Run(test.title, func(t *testing.T) {
-			es, closeFunc, err := esFunc()
+			es, closeFunc, err := esFunc(*ser)
 			if err != nil {
 				t.Fatal(err)
 			}

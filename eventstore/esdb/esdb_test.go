@@ -4,7 +4,6 @@
 package esdb_test
 
 import (
-	"encoding/json"
 	"testing"
 
 	"github.com/EventStore/EventStore-Client-Go/esdb"
@@ -14,7 +13,7 @@ import (
 )
 
 func TestSuite(t *testing.T) {
-	f := func() (eventsourcing.EventStore, func(), error) {
+	f := func(ser eventsourcing.Serializer) (eventsourcing.EventStore, func(), error) {
 		// region createClient
 		settings, err := esdb.ParseConnectionString("esdb://localhost:2113?tls=false")
 		if err != nil {
@@ -26,17 +25,7 @@ func TestSuite(t *testing.T) {
 			return nil, nil, err
 		}
 
-		ser := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
-
-		ser.Register(&suite.FrequentFlierAccount{},
-			ser.Events(
-				&suite.FrequentFlierAccountCreated{},
-				&suite.FlightTaken{},
-				&suite.StatusMatched{},
-			),
-		)
-
-		es := es.Open(db, *ser, true)
+		es := es.Open(db, ser, true)
 		return es, func() {
 		}, nil
 	}
