@@ -1,14 +1,15 @@
 package memory_test
 
 import (
+	"testing"
+
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
 	"github.com/hallgren/eventsourcing/eventstore/suite"
-	"testing"
 )
 
 func TestSuite(t *testing.T) {
-	f := func() (eventsourcing.EventStore, func(), error) {
+	f := func(ser eventsourcing.Serializer) (eventsourcing.EventStore, func(), error) {
 		es := memory.Create()
 		return es, func() { es.Close() }, nil
 	}

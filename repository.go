@@ -9,7 +9,6 @@ import (
 type EventStore interface {
 	Save(events []Event) error
 	Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
-	GlobalEvents(start, count uint64) ([]Event, error)
 }
 
 // SnapshotStore interface expose the methods an snapshot store must uphold
@@ -97,9 +96,4 @@ func (r *Repository) Get(id string, aggregate Aggregate) error {
 	// apply the event on the aggregate
 	root.BuildFromHistory(aggregate, events)
 	return nil
-}
-
-// GlobalEvents will return count events in order globally from the start position
-func (r *Repository) GlobalEvents(start, count uint64) ([]Event, error) {
-	return r.eventStore.GlobalEvents(start, count)
 }

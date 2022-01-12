@@ -189,14 +189,16 @@ Currently, there are three implementations.
 
 * SQL
 * Bolt
+* Event Store DB
 * RAM Memory
 
-Post release v0.0.7 event stores `bbolt` and `sql` is their own submodules.
+Post release v0.0.7 event stores `bbolt`, `sql` and `esdb` are their own submodules.
 This reduces the dependency graph of the `github.com/hallgren/eventsourcing` module, as each submodule contains their own dependencies not pollute the main module.
 Submodules needs to be fetched separately via go get.
 
 `go get github.com/hallgren/eventsourcing/eventstore/sql`  
 `go get github.com/hallgren/eventsourcing/eventstore/bbolt`
+`go get github.com/hallgren/eventsourcing/eventstore/esdb`
 
 The memory based event store is part of the main module and does not need to be fetched separately.
 
