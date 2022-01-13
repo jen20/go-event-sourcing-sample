@@ -27,3 +27,12 @@ func (e Event) Reason() string {
 	}
 	return reflect.TypeOf(e.Data).Elem().Name()
 }
+
+type Iterator interface {
+	Next() (Event, error)
+	Close()
+}
+
+type EventIterator struct {
+	Iterator
+}
