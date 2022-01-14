@@ -352,8 +352,13 @@ func saveAndGetEventsConcurrently(es eventsourcing.EventStore) error {
 
 func getErrWhenNoEvents(es eventsourcing.EventStore) error {
 	aggregateID := AggregateID()
-	_, err := es.Get(aggregateID, aggregateType, 0)
-	if !errors.Is(err, eventsourcing.ErrNoEvents) {
+	iterator, err := es.Get(aggregateID, aggregateType, 0)
+	if err != nil {
+		return err
+	}
+	defer iterator.Close()
+	_, err = iterator.Next()
+	if !errors.Is(err, eventsourcing.ErrNoMoreEvents) {
 		return fmt.Errorf("expect error when no events are saved for aggregate")
 	}
 	return nil
