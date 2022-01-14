@@ -94,8 +94,7 @@ func (es *ESDB) Save(events []eventsourcing.Event) error {
 	return nil
 }
 
-func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) {
-	var events []eventsourcing.Event
+func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.EventIterator, error) {
 	streamID := stream(aggregateType, id)
 
 	from := esdb.StreamRevision{Value: uint64(afterVersion)}
@@ -106,47 +105,56 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 		}
 		return nil, err
 	}
-	defer stream.Close()
+	return &iterator{stream: stream, serializer: es.serializer}, nil
+}
 
-	for {
-		var eventMetadata map[string]interface{}
-		event, err := stream.Recv()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return nil, err
-		}
+type iterator struct {
+	stream     *esdb.ReadStream
+	serializer eventsourcing.Serializer
+}
 
-		stream := strings.Split(event.Event.StreamID, streamSeparator)
-		f, ok := es.serializer.Type(stream[0], event.Event.EventType)
-		if !ok {
-			// if the typ/reason is not register jump over the event
-			continue
-		}
-		eventData := f()
-		err = es.serializer.Unmarshal(event.Event.Data, &eventData)
-		if err != nil {
-			return nil, err
-		}
-		if event.Event.UserMetadata != nil {
-			err = es.serializer.Unmarshal(event.Event.UserMetadata, &eventMetadata)
-			if err != nil {
-				return nil, err
-			}
-		}
-		events = append(events, eventsourcing.Event{
-			AggregateID:   stream[1],
-			Version:       eventsourcing.Version(event.Event.EventNumber) + 1, // +1 as the eventsourcing Version starts on 1 but the esdb event version starts on 0
-			AggregateType: stream[0],
-			Timestamp:     event.Event.CreatedDate,
-			Data:          eventData,
-			Metadata:      eventMetadata,
-			// Can't get the global version when using the ReadStream method
-			//GlobalVersion: eventsourcing.Version(event.Event.Position.Commit),
-		})
+func (i *iterator) Close() {
+	i.stream.Close()
+}
+
+func (i *iterator) Next() (eventsourcing.Event, error) {
+	var eventMetadata map[string]interface{}
+	eventESDB, err := i.stream.Recv()
+	if errors.Is(err, io.EOF) {
+		return eventsourcing.Event{}, eventsourcing.ErrNoMoreEvents
 	}
-	return events, nil
+	if err != nil {
+		return eventsourcing.Event{}, err
+	}
+
+	stream := strings.Split(eventESDB.Event.StreamID, streamSeparator)
+	f, ok := i.serializer.Type(stream[0], eventESDB.Event.EventType)
+	if !ok {
+		// if the typ/reason is not register jump over the event
+		return i.Next()
+	}
+	eventData := f()
+	err = i.serializer.Unmarshal(eventESDB.Event.Data, &eventData)
+	if err != nil {
+		return eventsourcing.Event{}, err
+	}
+	if eventESDB.Event.UserMetadata != nil {
+		err = i.serializer.Unmarshal(eventESDB.Event.UserMetadata, &eventMetadata)
+		if err != nil {
+			return eventsourcing.Event{}, err
+		}
+	}
+	event := eventsourcing.Event{
+		AggregateID:   stream[1],
+		Version:       eventsourcing.Version(eventESDB.Event.EventNumber) + 1, // +1 as the eventsourcing Version starts on 1 but the esdb event version starts on 0
+		AggregateType: stream[0],
+		Timestamp:     eventESDB.Event.CreatedDate,
+		Data:          eventData,
+		Metadata:      eventMetadata,
+		// Can't get the global version when using the ReadStream method
+		//GlobalVersion: eventsourcing.Version(event.Event.Position.Commit),
+	}
+	return event, nil
 }
 
 func stream(aggregateType, aggregateID string) string {
