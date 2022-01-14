@@ -140,8 +140,11 @@ func saveAndGetEvents(es eventsourcing.EventStore) error {
 	}
 	for {
 		event, err := iterator.Next()
-		if err != nil {
+		if errors.Is(err, eventsourcing.ErrNoMoreEvents) {
 			break
+		}
+		if err != nil {
+			return err
 		}
 		fetchedEvents = append(fetchedEvents, event)
 	}
