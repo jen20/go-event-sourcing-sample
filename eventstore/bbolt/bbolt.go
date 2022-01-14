@@ -167,9 +167,11 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 }
 
 type iterator struct {
-	tx         *bbolt.Tx
-	cursor     *bbolt.Cursor
-	serializer eventsourcing.Serializer
+	tx              *bbolt.Tx
+	bucket          *bbolt.Bucket
+	firstEventIndex uint64
+	cursor          *bbolt.Cursor
+	serializer      eventsourcing.Serializer
 }
 
 func (i *iterator) Close() {
@@ -177,7 +179,16 @@ func (i *iterator) Close() {
 }
 
 func (i *iterator) Next() (eventsourcing.Event, error) {
-	k, obj := i.cursor.Next()
+	var k, obj []byte
+	if i.cursor == nil {
+		i.cursor = i.bucket.Cursor()
+		k, obj = i.cursor.Seek(itob(i.firstEventIndex))
+		if k == nil {
+			return eventsourcing.Event{}, eventsourcing.ErrNoEvents
+		}
+	} else {
+		k, obj = i.cursor.Next()
+	}
 	if k == nil {
 		return eventsourcing.Event{}, eventsourcing.ErrNoMoreEvents
 	}
@@ -217,18 +228,20 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 		return nil, err
 	}
 
+	firstEvent := afterVersion + 1
 	evBucket := tx.Bucket([]byte(bucketName))
 	if evBucket == nil {
+		tx.Rollback()
+		return nil, eventsourcing.ErrNoEvents
+	}
+	cursor := evBucket.Cursor()
+	k, _ := cursor.Seek(itob(uint64(firstEvent)))
+	if k == nil {
+		tx.Rollback()
 		return nil, eventsourcing.ErrNoEvents
 	}
 
-	cursor := evBucket.Cursor()
-	firstEvent := afterVersion + 1
-	k, _ := cursor.Seek(itob(uint64(firstEvent)))
-	if k == nil {
-		return nil, errors.New("No events")
-	}
-	i := iterator{tx: tx, cursor: cursor, serializer: e.serializer}
+	i := iterator{tx: tx, bucket: evBucket, firstEventIndex: uint64(firstEvent), serializer: e.serializer}
 	return &i, nil
 
 }
