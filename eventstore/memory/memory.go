@@ -1,7 +1,6 @@
 package memory
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/hallgren/eventsourcing"
@@ -21,8 +20,8 @@ type iterator struct {
 }
 
 func (i *iterator) Next() (eventsourcing.Event, error) {
-	if len(i.events) <= i.position+1 {
-		return eventsourcing.Event{}, fmt.Errorf("no more events")
+	if len(i.events) <= i.position {
+		return eventsourcing.Event{}, eventsourcing.ErrNoMoreEvents
 	}
 	event := i.events[i.position]
 	i.position++
@@ -87,7 +86,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 }
 
 // Get aggregate events
-func (e *Memory) Get(id string, aggregateType string, afterVersion eventsourcing.Version) (*eventsourcing.EventIterator, error) {
+func (e *Memory) Get(id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.EventIterator, error) {
 	var events []eventsourcing.Event
 	// make sure its thread safe
 	e.lock.Lock()
@@ -101,7 +100,7 @@ func (e *Memory) Get(id string, aggregateType string, afterVersion eventsourcing
 	if len(events) == 0 {
 		return nil, eventsourcing.ErrNoEvents
 	}
-	return iterator{events: events}, nil
+	return &iterator{events: events}, nil
 }
 
 // GlobalEvents will return count events in order globaly from the start posistion
