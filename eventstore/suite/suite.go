@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"sync"
 	"testing"
 	"time"
 
@@ -26,17 +27,15 @@ func Test(t *testing.T, esFunc eventstoreFunc) {
 		run   func(es eventsourcing.EventStore) error
 	}{
 		{"should save and get events", saveAndGetEvents},
-		/*
-			{"should get events after version", getEventsAfterVersion},
-			{"should not save events from different aggregates", saveEventsFromMoreThanOneAggregate},
-			{"should not save events from different aggregate types", saveEventsFromMoreThanOneAggregateType},
-			{"should not save events in wrong order", saveEventsInWrongOrder},
-			{"should not save events in wrong version", saveEventsInWrongVersion},
-			{"should not save event with no reason", saveEventsWithEmptyReason},
-			{"should save and get event concurrently", saveAndGetEventsConcurrently},
-			{"should return error when no events", getErrWhenNoEvents},
-			{"should get global event order from save", saveReturnGlobalEventOrder},
-		*/
+		{"should get events after version", getEventsAfterVersion},
+		{"should not save events from different aggregates", saveEventsFromMoreThanOneAggregate},
+		{"should not save events from different aggregate types", saveEventsFromMoreThanOneAggregateType},
+		{"should not save events in wrong order", saveEventsInWrongOrder},
+		{"should not save events in wrong version", saveEventsInWrongVersion},
+		{"should not save event with no reason", saveEventsWithEmptyReason},
+		{"should save and get event concurrently", saveAndGetEventsConcurrently},
+		{"should return error when no events", getErrWhenNoEvents},
+		{"should get global event order from save", saveReturnGlobalEventOrder},
 	}
 	ser := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
 
@@ -197,11 +196,6 @@ func saveAndGetEvents(es eventsourcing.EventStore) error {
 	if fetchedEventsIncludingPartTwo[0].Metadata["test"] != "hello" {
 		return errors.New("wrong event meta data returned")
 	}
-	/*
-		if fetchedEventsIncludingPartTwo[0].Timestamp.Format(time.RFC3339) != timestamp.Format(time.RFC3339) {
-			return fmt.Errorf("wrong timestamp exp: %s got: %s", fetchedEventsIncludingPartTwo[0].Timestamp.Format(time.RFC3339), timestamp.Format(time.RFC3339))
-		}
-	*/
 
 	data, ok := fetchedEventsIncludingPartTwo[0].Data.(*FrequentFlierAccountCreated)
 	if !ok {
@@ -214,19 +208,27 @@ func saveAndGetEvents(es eventsourcing.EventStore) error {
 	return nil
 }
 
-/*
 func getEventsAfterVersion(es eventsourcing.EventStore) error {
+	var fetchedEvents []eventsourcing.Event
 	aggregateID := AggregateID()
 	err := es.Save(testEvents(aggregateID))
 	if err != nil {
 		return err
 	}
 
-	fetchedEvents, err := es.Get(aggregateID, aggregateType, 1)
+	iterator, err := es.Get(aggregateID, aggregateType, 1)
 	if err != nil {
 		return err
 	}
 
+	for {
+		event, err := iterator.Next()
+		if err != nil {
+			break
+		}
+		fetchedEvents = append(fetchedEvents, event)
+	}
+	iterator.Close()
 	// Should return one less event
 	if len(fetchedEvents) != len(testEvents(aggregateID))-1 {
 		return fmt.Errorf("wrong number of events returned exp: %d, got:%d", len(fetchedEvents), len(testEvents(aggregateID))-1)
@@ -318,11 +320,20 @@ func saveAndGetEventsConcurrently(es eventsourcing.EventStore) error {
 		eventID := fmt.Sprintf("%s-%d", aggregateID, i)
 		go func() {
 			defer wg.Done()
-			events, e := es.Get(eventID, aggregateType, 0)
+			iterator, e := es.Get(eventID, aggregateType, 0)
 			if e != nil {
 				err = e
 				return
 			}
+			events := make([]eventsourcing.Event, 0)
+			for {
+				event, err := iterator.Next()
+				if err != nil {
+					break
+				}
+				events = append(events, event)
+			}
+			iterator.Close()
 			if len(events) != 6 {
 				err = fmt.Errorf("wrong number of events fetched, expecting 6 got %d", len(events))
 				return
