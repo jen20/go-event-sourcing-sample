@@ -354,7 +354,10 @@ func getErrWhenNoEvents(es eventsourcing.EventStore) error {
 	aggregateID := AggregateID()
 	iterator, err := es.Get(aggregateID, aggregateType, 0)
 	if err != nil {
-		return err
+		if err != eventsourcing.ErrNoEvents {
+			return err
+		}
+		return nil
 	}
 	defer iterator.Close()
 	_, err = iterator.Next()

@@ -231,9 +231,7 @@ func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.
 	if err != nil {
 		return nil, err
 	}
-
 	firstEvent := afterVersion + 1
-
 	i := iterator{tx: tx, bucketName: bucketName, firstEventIndex: uint64(firstEvent), serializer: e.serializer}
 	return &i, nil
 
