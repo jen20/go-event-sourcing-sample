@@ -3,8 +3,6 @@ package esdb
 import (
 	"context"
 	"errors"
-	"io"
-	"strings"
 
 	"github.com/hallgren/eventsourcing/eventstore"
 
@@ -14,12 +12,14 @@ import (
 
 const streamSeparator = "_"
 
+// ESDB is the event store handler
 type ESDB struct {
 	client      *esdb.Client
 	serializer  eventsourcing.Serializer
 	contentType esdb.ContentType
 }
 
+// Open binds the event store db client
 func Open(client *esdb.Client, serializer eventsourcing.Serializer, jsonSerializer bool) *ESDB {
 	// defaults to binary
 	var contentType esdb.ContentType
@@ -106,55 +106,6 @@ func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.
 		return nil, err
 	}
 	return &iterator{stream: stream, serializer: es.serializer}, nil
-}
-
-type iterator struct {
-	stream     *esdb.ReadStream
-	serializer eventsourcing.Serializer
-}
-
-func (i *iterator) Close() {
-	i.stream.Close()
-}
-
-func (i *iterator) Next() (eventsourcing.Event, error) {
-	var eventMetadata map[string]interface{}
-	eventESDB, err := i.stream.Recv()
-	if errors.Is(err, io.EOF) {
-		return eventsourcing.Event{}, eventsourcing.ErrNoMoreEvents
-	}
-	if err != nil {
-		return eventsourcing.Event{}, err
-	}
-
-	stream := strings.Split(eventESDB.Event.StreamID, streamSeparator)
-	f, ok := i.serializer.Type(stream[0], eventESDB.Event.EventType)
-	if !ok {
-		// if the typ/reason is not register jump over the event
-		return i.Next()
-	}
-	eventData := f()
-	err = i.serializer.Unmarshal(eventESDB.Event.Data, &eventData)
-	if err != nil {
-		return eventsourcing.Event{}, err
-	}
-	if eventESDB.Event.UserMetadata != nil {
-		err = i.serializer.Unmarshal(eventESDB.Event.UserMetadata, &eventMetadata)
-		if err != nil {
-			return eventsourcing.Event{}, err
-		}
-	}
-	event := eventsourcing.Event{
-		AggregateID:   stream[1],
-		Version:       eventsourcing.Version(eventESDB.Event.EventNumber) + 1, // +1 as the eventsourcing Version starts on 1 but the esdb event version starts on 0
-		AggregateType: stream[0],
-		Timestamp:     eventESDB.Event.CreatedDate,
-		Data:          eventData,
-		Metadata:      eventMetadata,
-		// Can't get the global version when using the ReadStream method
-		//GlobalVersion: eventsourcing.Version(event.Event.Position.Commit),
-	}
-	return event, nil
 }
 
 func stream(aggregateType, aggregateID string) string {
