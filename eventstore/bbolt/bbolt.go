@@ -22,7 +22,7 @@ func itob(v uint64) []byte {
 	return b
 }
 
-// BBolt is a handler for event streaming
+// BBolt is the eventstore handler
 type BBolt struct {
 	db         *bbolt.DB                // The bbolt db where we store everything
 	serializer eventsourcing.Serializer // The serializer
@@ -164,63 +164,6 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 		events[i].GlobalVersion = eventsourcing.Version(globalSequence)
 	}
 	return tx.Commit()
-}
-
-type iterator struct {
-	tx              *bbolt.Tx
-	bucketName      string
-	firstEventIndex uint64
-	cursor          *bbolt.Cursor
-	serializer      eventsourcing.Serializer
-}
-
-func (i *iterator) Close() {
-	i.tx.Rollback()
-}
-
-func (i *iterator) Next() (eventsourcing.Event, error) {
-	var k, obj []byte
-	if i.cursor == nil {
-		bucket := i.tx.Bucket([]byte(i.bucketName))
-		if bucket == nil {
-			return eventsourcing.Event{}, eventsourcing.ErrNoMoreEvents
-		}
-		i.cursor = bucket.Cursor()
-		k, obj = i.cursor.Seek(itob(i.firstEventIndex))
-		if k == nil {
-			return eventsourcing.Event{}, eventsourcing.ErrNoMoreEvents
-		}
-	} else {
-		k, obj = i.cursor.Next()
-	}
-	if k == nil {
-		return eventsourcing.Event{}, eventsourcing.ErrNoMoreEvents
-	}
-	bEvent := boltEvent{}
-	err := i.serializer.Unmarshal(obj, &bEvent)
-	if err != nil {
-		return eventsourcing.Event{}, errors.New(fmt.Sprintf("could not deserialize event, %v", err))
-	}
-	f, ok := i.serializer.Type(bEvent.AggregateType, bEvent.Reason)
-	if !ok {
-		// if the typ/reason is not register jump over the event
-		return i.Next()
-	}
-	eventData := f()
-	err = i.serializer.Unmarshal(bEvent.Data, &eventData)
-	if err != nil {
-		return eventsourcing.Event{}, errors.New(fmt.Sprintf("could not deserialize event data, %v", err))
-	}
-	event := eventsourcing.Event{
-		AggregateID:   bEvent.AggregateID,
-		AggregateType: bEvent.AggregateType,
-		Version:       eventsourcing.Version(bEvent.Version),
-		GlobalVersion: eventsourcing.Version(bEvent.GlobalVersion),
-		Timestamp:     bEvent.Timestamp,
-		Metadata:      bEvent.Metadata,
-		Data:          eventData,
-	}
-	return event, nil
 }
 
 // Get aggregate events
