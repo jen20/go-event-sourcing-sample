@@ -142,9 +142,6 @@ Save(aggregate Aggregate) error
 
 // retrieves and build an aggregate from events based on its identifier
 Get(id string, aggregate Aggregate) error
-
-// return count number of events in global order starting at the start position
-GlobalEvents(start, count uint64) ([]Event, error) {
 ```
 
 It is possible to save a snapshot of an aggregate reducing the amount of event needed to be fetched and applied.
@@ -179,10 +176,7 @@ The only thing an event store handles are events, and it must implement the foll
 Save(events []eventsourcing.Event) error
 
 // fetches events based on identifier and type but also after a specific version. The version is used to load event that happened after a snapshot was taken.
-Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)
-
-// return count number of events in global order starting at the start position
-GlobalEvents(start, count uint64) ([]Event, error) {
+Get(id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.EventIterator, error)
 ```
 
 Currently, there are three implementations.
@@ -356,8 +350,7 @@ A custom-made event store has to implement the following functions to fulfill th
 ```go
 type EventStore interface {
     Save(events []Event) error
-    Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
-    GlobalEvents(start, count uint64) ([]Event, error) {
+    Get(id string, aggregateType string, afterVersion Version) (EventIterator, error)
 }
 ```
 
