@@ -93,8 +93,15 @@ func (r *Repository) Get(id string, aggregate Aggregate) error {
 		// no events and no snapshot
 		return ErrAggregateNotFound
 	}
+	defer eventIterator.Close()
 	for {
 		event, err := eventIterator.Next()
+		if err != nil && !errors.Is(err, ErrNoMoreEvents) {
+			return err
+		} else if errors.Is(err, ErrNoMoreEvents) && root.Version() == 0 {
+			// no events and no snapshot (some eventstore will not return the error ErrNoEvent on Get())
+			return ErrAggregateNotFound
+		}
 		if err != nil {
 			break
 		}
