@@ -1,6 +1,7 @@
 package eventsourcing
 
 import (
+	"context"
 	"errors"
 	"reflect"
 )
@@ -75,10 +76,11 @@ func (r *Repository) SaveSnapshot(aggregate Aggregate) error {
 	return r.snapshot.Save(aggregate)
 }
 
-// Get fetches the aggregates event and build up the aggregate
+// GetWithContext fetches the aggregates event and build up the aggregate
 // If there is a snapshot store try fetch a snapshot of the aggregate and fetch event after the
 // version of the aggregate if any
-func (r *Repository) Get(id string, aggregate Aggregate) error {
+// The event fetching can be cancled from the outside.
+func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Aggregate) error {
 	if reflect.ValueOf(aggregate).Kind() != reflect.Ptr {
 		return errors.New("aggregate needs to be a pointer")
 	}
@@ -100,19 +102,31 @@ func (r *Repository) Get(id string, aggregate Aggregate) error {
 		return ErrAggregateNotFound
 	}
 	defer eventIterator.Close()
+DONE:
 	for {
-		event, err := eventIterator.Next()
-		if err != nil && !errors.Is(err, ErrNoMoreEvents) {
-			return err
-		} else if errors.Is(err, ErrNoMoreEvents) && root.Version() == 0 {
-			// no events and no snapshot (some eventstore will not return the error ErrNoEvent on Get())
-			return ErrAggregateNotFound
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+			event, err := eventIterator.Next()
+			if err != nil && !errors.Is(err, ErrNoMoreEvents) {
+				return err
+			} else if errors.Is(err, ErrNoMoreEvents) && root.Version() == 0 {
+				// no events and no snapshot (some eventstore will not return the error ErrNoEvent on Get())
+				return ErrAggregateNotFound
+			} else if errors.Is(err, ErrNoMoreEvents) {
+				break DONE
+			}
+			// apply the event on the aggregate
+			root.BuildFromHistory(aggregate, []Event{event})
 		}
-		if err != nil {
-			break
-		}
-		// apply the event on the aggregate
-		root.BuildFromHistory(aggregate, []Event{event})
 	}
 	return nil
+}
+
+// Get fetches the aggregates event and build up the aggregate
+// If there is a snapshot store try fetch a snapshot of the aggregate and fetch event after the
+// version of the aggregate if any
+func (r *Repository) Get(id string, aggregate Aggregate) error {
+	return r.GetWithContext(context.Background(), id, aggregate)
 }
