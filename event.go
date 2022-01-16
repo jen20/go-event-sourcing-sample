@@ -30,8 +30,3 @@ func (e Event) Reason() string {
 	}
 	return reflect.TypeOf(e.Data).Elem().Name()
 }
-
-type EventIterator interface {
-	Next() (Event, error)
-	Close()
-}

@@ -5,6 +5,12 @@ import (
 	"reflect"
 )
 
+// EventIterator is the interface an event store Get needs to return
+type EventIterator interface {
+	Next() (Event, error)
+	Close()
+}
+
 // EventStore interface expose the methods an event store must uphold
 type EventStore interface {
 	Save(events []Event) error
