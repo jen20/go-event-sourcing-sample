@@ -79,7 +79,7 @@ func (r *Repository) SaveSnapshot(aggregate Aggregate) error {
 // GetWithContext fetches the aggregates event and build up the aggregate
 // If there is a snapshot store try fetch a snapshot of the aggregate and fetch event after the
 // version of the aggregate if any
-// The event fetching can be cancled from the outside.
+// The event fetching can be canceled from the outside.
 func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Aggregate) error {
 	if reflect.ValueOf(aggregate).Kind() != reflect.Ptr {
 		return errors.New("aggregate needs to be a pointer")

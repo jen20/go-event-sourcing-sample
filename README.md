@@ -141,6 +141,10 @@ The repository is used to save and retrieve aggregates. The main functions are:
 Save(aggregate Aggregate) error
 
 // retrieves and build an aggregate from events based on its identifier
+// possible to cancel from the outside
+GetWithContext(ctx context.Context, id string, aggregate Aggregate) error
+
+// retrieves and build an aggregate from events based on its identifier
 Get(id string, aggregate Aggregate) error
 ```
 
