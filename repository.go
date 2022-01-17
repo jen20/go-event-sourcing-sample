@@ -89,6 +89,8 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Ag
 		err := r.snapshot.Get(ctx, id, aggregate)
 		if err != nil && !errors.Is(err, ErrSnapshotNotFound) {
 			return err
+		} else if ctx.Err() != nil {
+			return ctx.Err()
 		}
 	}
 	root := aggregate.Root()
