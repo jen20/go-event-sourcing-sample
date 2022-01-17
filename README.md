@@ -254,14 +254,14 @@ The Snapshot Handler is the top layer that integrates with the repository.
 Save(a interface{}) error {
 
 // Get fetch a snapshot and reconstruct an aggregate
-Get(id string, a interface{}) error {
+Get(ctx context.Context, id string, a interface{}) error {
 ```
 
 A Snapshot store is the actual layer that stores the snapshot.
 
 ```go
 // get snapshot by identifier
-Get(id, typ string) (eventsource.Snapshot, error)
+Get(ctx context.Context, id, typ string) (eventsource.Snapshot, error)
 
 // saves snapshot
 Save(s eventsourcing.Snapshot) error
@@ -364,7 +364,7 @@ If the snapshot store is the thing you need to change here is the interface you 
 
 ```go
 type SnapshotStore interface {
-    Get(id string, a interface{}) error
+    Get(ctx context.Context, id string, a interface{}) error
     Save(id string, a interface{}) error
 }
 ```

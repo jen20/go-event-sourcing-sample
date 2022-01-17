@@ -27,10 +27,12 @@ func (s *SQL) Close() {
 }
 
 // Get retrieves the persisted snapshot
-func (s *SQL) Get(id, typ string) (eventsourcing.Snapshot, error) {
-	tx, err := s.db.BeginTx(context.Background(), nil)
+func (s *SQL) Get(ctx context.Context, id, typ string) (eventsourcing.Snapshot, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return eventsourcing.Snapshot{}, err
+	} else if ctx.Err() != nil {
+		return eventsourcing.Snapshot{}, ctx.Err()
 	}
 	defer tx.Rollback()
 
@@ -38,11 +40,13 @@ func (s *SQL) Get(id, typ string) (eventsourcing.Snapshot, error) {
 	var state []byte
 	var version uint64
 	var globalVersion uint64
-	err = tx.QueryRow(statement, id, typ).Scan(&state, &version, &globalVersion)
+	err = tx.QueryRowContext(ctx, statement, id, typ).Scan(&state, &version, &globalVersion)
 	if err != nil && err != sql.ErrNoRows {
 		return eventsourcing.Snapshot{}, err
 	} else if err == sql.ErrNoRows {
 		return eventsourcing.Snapshot{}, eventsourcing.ErrSnapshotNotFound
+	} else if ctx.Err() != nil {
+		return eventsourcing.Snapshot{}, ctx.Err()
 	}
 	snap := eventsourcing.Snapshot{
 		ID:            id,

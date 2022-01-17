@@ -1,6 +1,7 @@
 package eventsourcing_test
 
 import (
+	"context"
 	"encoding/xml"
 	"testing"
 
@@ -110,7 +111,7 @@ func TestSnapshot(t *testing.T) {
 	}
 
 	p := Person{}
-	err = s.Get("123", &p)
+	err = s.Get(context.Background(), "123", &p)
 	if err != nil {
 		t.Fatalf("could not get person from snapshot %v", err)
 	}
@@ -134,7 +135,7 @@ func TestSnapshot(t *testing.T) {
 	person.Age = 99
 	s.Save(person)
 
-	err = s.Get(person.ID(), &p)
+	err = s.Get(context.Background(), person.ID(), &p)
 	if err != nil {
 		t.Fatalf("could not get snapshot %v", err)
 	}
@@ -146,7 +147,7 @@ func TestGetNoneExistingSnapshot(t *testing.T) {
 	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
 	s := eventsourcing.SnapshotNew(memsnap.New(), *ser)
 	p := Person{}
-	err := s.Get("noneExistingID", &p)
+	err := s.Get(context.Background(), "noneExistingID", &p)
 	if err == nil {
 		t.Fatalf("could get none existing snapshot %v", err)
 	}

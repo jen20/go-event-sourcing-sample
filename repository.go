@@ -20,8 +20,8 @@ type EventStore interface {
 
 // SnapshotStore interface expose the methods an snapshot store must uphold
 type SnapshotStore interface {
-	Get(id, typ string) (Snapshot, error)
 	Save(s Snapshot) error
+	Get(ctx context.Context, id, typ string) (Snapshot, error)
 }
 
 // Aggregate interface to use the aggregate root specific methods
@@ -86,7 +86,7 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Ag
 	}
 	// if there is a snapshot store try fetch aggregate snapshot
 	if r.snapshot != nil {
-		err := r.snapshot.Get(id, aggregate)
+		err := r.snapshot.Get(ctx, id, aggregate)
 		if err != nil && !errors.Is(err, ErrSnapshotNotFound) {
 			return err
 		}

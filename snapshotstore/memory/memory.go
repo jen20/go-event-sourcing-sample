@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/hallgren/eventsourcing"
@@ -19,7 +20,7 @@ func New() *Handler {
 }
 
 // Get returns the deserialize snapshot
-func (h *Handler) Get(id, typ string) (eventsourcing.Snapshot, error) {
+func (h *Handler) Get(ctx context.Context, id, typ string) (eventsourcing.Snapshot, error) {
 	v, ok := h.store[fmt.Sprintf("%s_%s", id, typ)]
 	if !ok {
 		return eventsourcing.Snapshot{}, eventsourcing.ErrSnapshotNotFound
