@@ -15,7 +15,7 @@ type EventIterator interface {
 // EventStore interface expose the methods an event store must uphold
 type EventStore interface {
 	Save(events []Event) error
-	Get(id string, aggregateType string, afterVersion Version) (EventIterator, error)
+	Get(ctx context.Context, id string, aggregateType string, afterVersion Version) (EventIterator, error)
 }
 
 // SnapshotStore interface expose the methods an snapshot store must uphold
@@ -94,12 +94,14 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Ag
 	root := aggregate.Root()
 	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
 	// fetch events after the current version of the aggregate that could be fetched from the snapshot store
-	eventIterator, err := r.eventStore.Get(id, aggregateType, root.Version())
+	eventIterator, err := r.eventStore.Get(ctx, id, aggregateType, root.Version())
 	if err != nil && !errors.Is(err, ErrNoEvents) {
 		return err
 	} else if errors.Is(err, ErrNoEvents) && root.Version() == 0 {
 		// no events and no snapshot
 		return ErrAggregateNotFound
+	} else if ctx.Err() != nil {
+		return ctx.Err()
 	}
 	defer eventIterator.Close()
 DONE:

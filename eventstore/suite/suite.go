@@ -1,6 +1,7 @@
 package suite
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -134,7 +135,7 @@ func saveAndGetEvents(es eventsourcing.EventStore) error {
 	if err != nil {
 		return err
 	}
-	iterator, err := es.Get(aggregateID, aggregateType, 0)
+	iterator, err := es.Get(context.Background(), aggregateID, aggregateType, 0)
 	if err != nil {
 		return err
 	}
@@ -163,7 +164,7 @@ func saveAndGetEvents(es eventsourcing.EventStore) error {
 		return err
 	}
 	fetchedEventsIncludingPartTwo := []eventsourcing.Event{}
-	iterator, err = es.Get(aggregateID, aggregateType, 0)
+	iterator, err = es.Get(context.Background(), aggregateID, aggregateType, 0)
 	if err != nil {
 		return err
 	}
@@ -219,7 +220,7 @@ func getEventsAfterVersion(es eventsourcing.EventStore) error {
 		return err
 	}
 
-	iterator, err := es.Get(aggregateID, aggregateType, 1)
+	iterator, err := es.Get(context.Background(), aggregateID, aggregateType, 1)
 	if err != nil {
 		return err
 	}
@@ -323,7 +324,7 @@ func saveAndGetEventsConcurrently(es eventsourcing.EventStore) error {
 		eventID := fmt.Sprintf("%s-%d", aggregateID, i)
 		go func() {
 			defer wg.Done()
-			iterator, e := es.Get(eventID, aggregateType, 0)
+			iterator, e := es.Get(context.Background(), eventID, aggregateType, 0)
 			if e != nil {
 				err = e
 				return
@@ -352,7 +353,7 @@ func saveAndGetEventsConcurrently(es eventsourcing.EventStore) error {
 
 func getErrWhenNoEvents(es eventsourcing.EventStore) error {
 	aggregateID := AggregateID()
-	iterator, err := es.Get(aggregateID, aggregateType, 0)
+	iterator, err := es.Get(context.Background(), aggregateID, aggregateType, 0)
 	if err != nil {
 		if err != eventsourcing.ErrNoEvents {
 			return err

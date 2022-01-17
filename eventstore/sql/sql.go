@@ -95,11 +95,13 @@ func (s *SQL) Save(events []eventsourcing.Event) error {
 }
 
 // Get the events from database
-func (s *SQL) Get(id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.EventIterator, error) {
+func (s *SQL) Get(ctx context.Context, id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.EventIterator, error) {
 	selectStm := `Select seq, id, version, reason, type, timestamp, data, metadata from events where id=? and type=? and version>? order by version asc`
-	rows, err := s.db.Query(selectStm, id, aggregateType, afterVersion)
+	rows, err := s.db.QueryContext(ctx, selectStm, id, aggregateType, afterVersion)
 	if err != nil {
 		return nil, err
+	} else if ctx.Err() != nil {
+		return nil, ctx.Err()
 	}
 	i := iterator{rows: rows, serializer: s.serializer}
 	return &i, nil

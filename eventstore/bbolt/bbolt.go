@@ -1,6 +1,7 @@
 package bbolt
 
 import (
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -167,7 +168,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 }
 
 // Get aggregate events
-func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.EventIterator, error) {
+func (e *BBolt) Get(ctx context.Context, id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.EventIterator, error) {
 	bucketName := aggregateKey(aggregateType, id)
 
 	tx, err := e.db.Begin(false)

@@ -94,16 +94,18 @@ func (es *ESDB) Save(events []eventsourcing.Event) error {
 	return nil
 }
 
-func (es *ESDB) Get(id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.EventIterator, error) {
+func (es *ESDB) Get(ctx context.Context, id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.EventIterator, error) {
 	streamID := stream(aggregateType, id)
 
 	from := esdb.StreamRevision{Value: uint64(afterVersion)}
-	stream, err := es.client.ReadStream(context.Background(), streamID, esdb.ReadStreamOptions{From: from}, ^uint64(0))
+	stream, err := es.client.ReadStream(ctx, streamID, esdb.ReadStreamOptions{From: from}, ^uint64(0))
 	if err != nil {
 		if errors.Is(err, esdb.ErrStreamNotFound) {
 			return nil, eventsourcing.ErrNoEvents
 		}
 		return nil, err
+	} else if ctx.Err() != nil {
+		return nil, ctx.Err()
 	}
 	return &iterator{stream: stream, serializer: es.serializer}, nil
 }
