@@ -3,9 +3,9 @@ module github.com/hallgren/eventsourcing/eventstore/bbolt
 go 1.13
 
 require (
-	github.com/hallgren/eventsourcing v0.0.19-0.20220112204537-4a6a6ec8166d
+	github.com/hallgren/eventsourcing v0.0.19-0.20220118202610-aedede509961
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e // indirect
 )
 
-replace github.com/hallgren/eventsourcing => ../..
+//replace github.com/hallgren/eventsourcing => ../..

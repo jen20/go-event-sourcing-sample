@@ -3,8 +3,8 @@ module github.com/hallgren/eventsourcing/snapshotstore/sql
 go 1.13
 
 require (
-	github.com/hallgren/eventsourcing v0.0.19-0.20220112204537-4a6a6ec8166d
+	github.com/hallgren/eventsourcing v0.0.19-0.20220118202610-aedede509961
 	github.com/proullon/ramsql v0.0.0-20211120092837-c8d0a408b939
 )
 
-replace github.com/hallgren/eventsourcing => ../..
+//replace github.com/hallgren/eventsourcing => ../..
