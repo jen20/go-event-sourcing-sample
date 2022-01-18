@@ -141,10 +141,11 @@ The repository is used to save and retrieve aggregates. The main functions are:
 Save(aggregate Aggregate) error
 
 // retrieves and build an aggregate from events based on its identifier
-Get(id string, aggregate Aggregate) error
+// possible to cancel from the outside
+GetWithContext(ctx context.Context, id string, aggregate Aggregate) error
 
-// return count number of events in global order starting at the start position
-GlobalEvents(start, count uint64) ([]Event, error) {
+// retrieves and build an aggregate from events based on its identifier
+Get(id string, aggregate Aggregate) error
 ```
 
 It is possible to save a snapshot of an aggregate reducing the amount of event needed to be fetched and applied.
@@ -179,10 +180,7 @@ The only thing an event store handles are events, and it must implement the foll
 Save(events []eventsourcing.Event) error
 
 // fetches events based on identifier and type but also after a specific version. The version is used to load event that happened after a snapshot was taken.
-Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error)
-
-// return count number of events in global order starting at the start position
-GlobalEvents(start, count uint64) ([]Event, error) {
+Get(id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.EventIterator, error)
 ```
 
 Currently, there are three implementations.
@@ -256,14 +254,14 @@ The Snapshot Handler is the top layer that integrates with the repository.
 Save(a interface{}) error {
 
 // Get fetch a snapshot and reconstruct an aggregate
-Get(id string, a interface{}) error {
+Get(ctx context.Context, id string, a interface{}) error {
 ```
 
 A Snapshot store is the actual layer that stores the snapshot.
 
 ```go
 // get snapshot by identifier
-Get(id, typ string) (eventsource.Snapshot, error)
+Get(ctx context.Context, id, typ string) (eventsource.Snapshot, error)
 
 // saves snapshot
 Save(s eventsourcing.Snapshot) error
@@ -356,8 +354,7 @@ A custom-made event store has to implement the following functions to fulfill th
 ```go
 type EventStore interface {
     Save(events []Event) error
-    Get(id string, aggregateType string, afterVersion Version) ([]Event, error)
-    GlobalEvents(start, count uint64) ([]Event, error) {
+    Get(id string, aggregateType string, afterVersion Version) (EventIterator, error)
 }
 ```
 
@@ -367,7 +364,7 @@ If the snapshot store is the thing you need to change here is the interface you 
 
 ```go
 type SnapshotStore interface {
-    Get(id string, a interface{}) error
+    Get(ctx context.Context, id string, a interface{}) error
     Save(id string, a interface{}) error
 }
 ```

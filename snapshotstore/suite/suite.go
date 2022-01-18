@@ -1,6 +1,7 @@
 package suite
 
 import (
+	"context"
 	"testing"
 
 	"github.com/hallgren/eventsourcing"
@@ -49,7 +50,7 @@ func TestSnapshot(t *testing.T, snapshot eventsourcing.SnapshotStore) {
 		t.Fatal(err)
 	}
 
-	snap2, err := snapshot.Get("123", "Person")
+	snap2, err := snapshot.Get(context.Background(), "123", "Person")
 	if err != nil {
 		t.Fatalf("could not get snapshot %v", err)
 	}

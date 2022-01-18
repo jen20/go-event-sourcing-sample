@@ -1,8 +1,10 @@
 package eventsourcing_test
 
 import (
+	"context"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"testing"
 
 	"github.com/hallgren/eventsourcing"
@@ -41,6 +43,58 @@ func TestSaveAndGetAggregate(t *testing.T) {
 	// Check person Name
 	if person.Name != twin.Name {
 		t.Fatalf("Wrong Name org %q copy %q", person.Name, twin.Name)
+	}
+}
+
+func TestGetWithContext(t *testing.T) {
+	repo := eventsourcing.NewRepository(memory.Create(), nil)
+
+	person, err := CreatePerson("kalle")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = repo.Save(person)
+	if err != nil {
+		t.Fatal("could not save aggregate")
+	}
+
+	twin := Person{}
+	err = repo.GetWithContext(context.Background(), person.ID(), &twin)
+	if err != nil {
+		t.Fatal("could not get aggregate")
+	}
+
+	// Check internal aggregate version
+	if person.Version() != twin.Version() {
+		t.Fatalf("Wrong version org %q copy %q", person.Version(), twin.Version())
+	}
+
+	// Check person Name
+	if person.Name != twin.Name {
+		t.Fatalf("Wrong Name org %q copy %q", person.Name, twin.Name)
+	}
+}
+
+func TestGetWithContextCancel(t *testing.T) {
+	repo := eventsourcing.NewRepository(memory.Create(), nil)
+
+	person, err := CreatePerson("kalle")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = repo.Save(person)
+	if err != nil {
+		t.Fatal("could not save aggregate")
+	}
+
+	twin := Person{}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// cancel the context
+	cancel()
+	err = repo.GetWithContext(ctx, person.ID(), &twin)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("expected error context.Canceled but was %v", err)
 	}
 }
 
@@ -88,6 +142,51 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 	// Check person Name
 	if person.Name != twin.Name {
 		t.Fatalf("Wrong Name org %q copy %q", person.Name, twin.Name)
+	}
+}
+
+func TestSaveAndGetAggregateSnapshotAndEventsWithContext(t *testing.T) {
+	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
+	repo := eventsourcing.NewRepository(memory.Create(), eventsourcing.SnapshotNew(memsnap.New(), *ser))
+
+	person, err := CreatePerson("kalle")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = repo.Save(person)
+	if err != nil {
+		t.Fatal("could not save aggregate")
+	}
+
+	// save person to snapshot store
+	err = repo.SaveSnapshot(person)
+	if err != nil {
+		t.Fatal(err)
+	}
+	person.GrowOlder()
+	repo.Save(person)
+	twin := Person{}
+	ctx, cancel := context.WithCancel(context.Background())
+	err = repo.GetWithContext(ctx, person.ID(), &twin)
+	if err != nil {
+		t.Fatal("could not get aggregate")
+	}
+
+	// Check internal aggregate version
+	if person.Version() != twin.Version() {
+		t.Fatalf("Wrong version org %q copy %q", person.Version(), twin.Version())
+	}
+
+	// Check person Name
+	if person.Name != twin.Name {
+		t.Fatalf("Wrong Name org %q copy %q", person.Name, twin.Name)
+	}
+
+	// cancel the context
+	cancel()
+	err = repo.GetWithContext(ctx, person.ID(), &twin)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatal("should be error context canceled")
 	}
 }
 

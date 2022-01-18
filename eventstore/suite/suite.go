@@ -1,6 +1,7 @@
 package suite
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -129,18 +130,28 @@ func testEventOtherAggregate(aggregateID string) eventsourcing.Event {
 func saveAndGetEvents(es eventsourcing.EventStore) error {
 	aggregateID := AggregateID()
 	events := testEvents(aggregateID)
+	fetchedEvents := []eventsourcing.Event{}
 	err := es.Save(events)
 	if err != nil {
 		return err
 	}
-	fetchedEvents, err := es.Get(aggregateID, aggregateType, 0)
+	iterator, err := es.Get(context.Background(), aggregateID, aggregateType, 0)
 	if err != nil {
 		return err
 	}
-
+	for {
+		event, err := iterator.Next()
+		if errors.Is(err, eventsourcing.ErrNoMoreEvents) {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		fetchedEvents = append(fetchedEvents, event)
+	}
+	iterator.Close()
 	if len(fetchedEvents) != len(testEvents(aggregateID)) {
 		return errors.New("wrong number of events returned")
-
 	}
 
 	if fetchedEvents[0].Version != testEvents(aggregateID)[0].Version {
@@ -152,11 +163,19 @@ func saveAndGetEvents(es eventsourcing.EventStore) error {
 	if err != nil {
 		return err
 	}
-
-	fetchedEventsIncludingPartTwo, err := es.Get(aggregateID, aggregateType, 0)
+	fetchedEventsIncludingPartTwo := []eventsourcing.Event{}
+	iterator, err = es.Get(context.Background(), aggregateID, aggregateType, 0)
 	if err != nil {
 		return err
 	}
+	for {
+		event, err := iterator.Next()
+		if err != nil {
+			break
+		}
+		fetchedEventsIncludingPartTwo = append(fetchedEventsIncludingPartTwo, event)
+	}
+	iterator.Close()
 
 	if len(fetchedEventsIncludingPartTwo) != len(append(testEvents(aggregateID), testEventsPartTwo(aggregateID)...)) {
 		return errors.New("wrong number of events returned")
@@ -181,11 +200,6 @@ func saveAndGetEvents(es eventsourcing.EventStore) error {
 	if fetchedEventsIncludingPartTwo[0].Metadata["test"] != "hello" {
 		return errors.New("wrong event meta data returned")
 	}
-	/*
-		if fetchedEventsIncludingPartTwo[0].Timestamp.Format(time.RFC3339) != timestamp.Format(time.RFC3339) {
-			return fmt.Errorf("wrong timestamp exp: %s got: %s", fetchedEventsIncludingPartTwo[0].Timestamp.Format(time.RFC3339), timestamp.Format(time.RFC3339))
-		}
-	*/
 
 	data, ok := fetchedEventsIncludingPartTwo[0].Data.(*FrequentFlierAccountCreated)
 	if !ok {
@@ -199,17 +213,26 @@ func saveAndGetEvents(es eventsourcing.EventStore) error {
 }
 
 func getEventsAfterVersion(es eventsourcing.EventStore) error {
+	var fetchedEvents []eventsourcing.Event
 	aggregateID := AggregateID()
 	err := es.Save(testEvents(aggregateID))
 	if err != nil {
 		return err
 	}
 
-	fetchedEvents, err := es.Get(aggregateID, aggregateType, 1)
+	iterator, err := es.Get(context.Background(), aggregateID, aggregateType, 1)
 	if err != nil {
 		return err
 	}
 
+	for {
+		event, err := iterator.Next()
+		if err != nil {
+			break
+		}
+		fetchedEvents = append(fetchedEvents, event)
+	}
+	iterator.Close()
 	// Should return one less event
 	if len(fetchedEvents) != len(testEvents(aggregateID))-1 {
 		return fmt.Errorf("wrong number of events returned exp: %d, got:%d", len(fetchedEvents), len(testEvents(aggregateID))-1)
@@ -301,11 +324,20 @@ func saveAndGetEventsConcurrently(es eventsourcing.EventStore) error {
 		eventID := fmt.Sprintf("%s-%d", aggregateID, i)
 		go func() {
 			defer wg.Done()
-			events, e := es.Get(eventID, aggregateType, 0)
+			iterator, e := es.Get(context.Background(), eventID, aggregateType, 0)
 			if e != nil {
 				err = e
 				return
 			}
+			events := make([]eventsourcing.Event, 0)
+			for {
+				event, err := iterator.Next()
+				if err != nil {
+					break
+				}
+				events = append(events, event)
+			}
+			iterator.Close()
 			if len(events) != 6 {
 				err = fmt.Errorf("wrong number of events fetched, expecting 6 got %d", len(events))
 				return
@@ -321,8 +353,16 @@ func saveAndGetEventsConcurrently(es eventsourcing.EventStore) error {
 
 func getErrWhenNoEvents(es eventsourcing.EventStore) error {
 	aggregateID := AggregateID()
-	_, err := es.Get(aggregateID, aggregateType, 0)
-	if !errors.Is(err, eventsourcing.ErrNoEvents) {
+	iterator, err := es.Get(context.Background(), aggregateID, aggregateType, 0)
+	if err != nil {
+		if err != eventsourcing.ErrNoEvents {
+			return err
+		}
+		return nil
+	}
+	defer iterator.Close()
+	_, err = iterator.Next()
+	if !errors.Is(err, eventsourcing.ErrNoMoreEvents) {
 		return fmt.Errorf("expect error when no events are saved for aggregate")
 	}
 	return nil

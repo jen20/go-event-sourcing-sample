@@ -1,6 +1,7 @@
 package bbolt
 
 import (
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -22,7 +23,7 @@ func itob(v uint64) []byte {
 	return b
 }
 
-// BBolt is a handler for event streaming
+// BBolt is the eventstore handler
 type BBolt struct {
 	db         *bbolt.DB                // The bbolt db where we store everything
 	serializer eventsourcing.Serializer // The serializer
@@ -167,55 +168,17 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 }
 
 // Get aggregate events
-func (e *BBolt) Get(id string, aggregateType string, afterVersion eventsourcing.Version) ([]eventsourcing.Event, error) {
+func (e *BBolt) Get(ctx context.Context, id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.EventIterator, error) {
 	bucketName := aggregateKey(aggregateType, id)
 
 	tx, err := e.db.Begin(false)
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
-
-	evBucket := tx.Bucket([]byte(bucketName))
-	if evBucket == nil {
-		return nil, eventsourcing.ErrNoEvents
-	}
-
-	cursor := evBucket.Cursor()
-	events := make([]eventsourcing.Event, 0)
 	firstEvent := afterVersion + 1
+	i := iterator{tx: tx, bucketName: bucketName, firstEventIndex: uint64(firstEvent), serializer: e.serializer}
+	return &i, nil
 
-	for k, obj := cursor.Seek(itob(uint64(firstEvent))); k != nil; k, obj = cursor.Next() {
-		bEvent := boltEvent{}
-		err := e.serializer.Unmarshal(obj, &bEvent)
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("could not deserialize event, %v", err))
-		}
-		f, ok := e.serializer.Type(bEvent.AggregateType, bEvent.Reason)
-		if !ok {
-			// if the typ/reason is not register jump over the event
-			continue
-		}
-		eventData := f()
-		err = e.serializer.Unmarshal(bEvent.Data, &eventData)
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("could not deserialize event data, %v", err))
-		}
-		event := eventsourcing.Event{
-			AggregateID:   bEvent.AggregateID,
-			AggregateType: bEvent.AggregateType,
-			Version:       eventsourcing.Version(bEvent.Version),
-			GlobalVersion: eventsourcing.Version(bEvent.GlobalVersion),
-			Timestamp:     bEvent.Timestamp,
-			Metadata:      bEvent.Metadata,
-			Data:          eventData,
-		}
-		events = append(events, event)
-	}
-	if len(events) == 0 {
-		return nil, eventsourcing.ErrNoEvents
-	}
-	return events, nil
 }
 
 // GlobalEvents return count events in order globaly from the start posistion

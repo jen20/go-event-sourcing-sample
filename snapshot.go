@@ -1,6 +1,7 @@
 package eventsourcing
 
 import (
+	"context"
 	"errors"
 	"reflect"
 )
@@ -97,9 +98,9 @@ func (s *SnapshotHandler) saveAggregate(sa Aggregate) error {
 }
 
 // Get fetch a snapshot and reconstruct an aggregate
-func (s *SnapshotHandler) Get(id string, i interface{}) error {
+func (s *SnapshotHandler) Get(ctx context.Context, id string, i interface{}) error {
 	typ := reflect.TypeOf(i).Elem().Name()
-	snap, err := s.snapshotStore.Get(id, typ)
+	snap, err := s.snapshotStore.Get(ctx, id, typ)
 	if err != nil {
 		return err
 	}
