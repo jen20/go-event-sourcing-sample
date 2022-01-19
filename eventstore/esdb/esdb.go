@@ -10,7 +10,7 @@ import (
 	"github.com/hallgren/eventsourcing"
 )
 
-const streamSeparator = "_"
+const streamSeparator = "-"
 
 // ESDB is the event store handler
 type ESDB struct {
