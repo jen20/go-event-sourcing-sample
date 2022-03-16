@@ -47,7 +47,7 @@ func ValidateEvents(aggregateID string, currentVersion eventsourcing.Version, ev
 // ValidateEventsNoVersionCheck make sure the incoming events are valid
 func ValidateEventsNoVersionCheck(aggregateID string, events []eventsourcing.Event) error {
 	aggregateType := events[0].AggregateType
-	currentVersion := events[0].Version-1
+	currentVersion := events[0].Version - 1
 
 	for _, event := range events {
 		if event.AggregateID != aggregateID {
