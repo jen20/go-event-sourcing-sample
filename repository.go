@@ -55,13 +55,13 @@ func NewRepository(eventStore EventStore, snapshot *SnapshotHandler) *Repository
 // Save an aggregates events
 func (r *Repository) Save(aggregate Aggregate) error {
 	root := aggregate.Root()
-	// use underlaying event slice to set GlobalVersion
+	// use under laying event slice to set GlobalVersion
 	err := r.eventStore.Save(root.aggregateEvents)
 	if err != nil {
 		return err
 	}
 	// publish the saved events to subscribers
-	r.Update(*root, root.Events())
+	r.Publish(*root, root.Events())
 
 	// update the internal aggregate state
 	root.update()

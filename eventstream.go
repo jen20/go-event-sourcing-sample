@@ -9,88 +9,103 @@ import (
 // EventStream struct what handles event subscription
 type EventStream struct {
 	// holds subscribers of aggregate types events
-	aggregateTypes map[string][]*Subscription
+	aggregateTypes map[string][]*subscription
 	// holds subscribers of specific aggregates (type and identifier)
-	specificAggregates map[string][]*Subscription
+	specificAggregates map[string][]*subscription
 	// holds subscribers of specific events
-	specificEvents map[reflect.Type][]*Subscription
+	specificEvents map[reflect.Type][]*subscription
 	// holds subscribers of all events
-	allEvents []*Subscription
+	allEvents []*subscription
 	// makes sure events are delivered in order and subscriptions are persistent
 	lock sync.Mutex
 }
 
-// Subscription holding the subscribe / unsubscribe / and func to be called when
+// subscription holding the subscribe / unsubscribe / and func to be called when
 // event matches the subscription
-type Subscription struct {
-	f      func(e Event)
-	unsubF func()
-	subF   func()
+type subscription struct {
+	funcEvent        func(e Event)
+	funcMapInterface func(e map[string]interface{})
+	unsubF           func()
+	subF             func()
 }
 
 // Unsubscribe stops the subscription
-func (s *Subscription) Unsubscribe() {
+func (s *subscription) Unsubscribe() {
 	s.unsubF()
 }
 
 // Subscribe starts the subscription
-func (s *Subscription) Subscribe() {
+func (s *subscription) Subscribe() {
 	s.subF()
 }
 
 // NewEventStream factory function
 func NewEventStream() *EventStream {
 	return &EventStream{
-		aggregateTypes:     make(map[string][]*Subscription),
-		specificAggregates: make(map[string][]*Subscription),
-		specificEvents:     make(map[reflect.Type][]*Subscription),
-		allEvents:          []*Subscription{},
+		aggregateTypes:     make(map[string][]*subscription),
+		specificAggregates: make(map[string][]*subscription),
+		specificEvents:     make(map[reflect.Type][]*subscription),
+		allEvents:          []*subscription{},
 	}
 }
 
-// Update calls the functions that are subscribing to event
-func (e *EventStream) Update(agg AggregateRoot, events []Event) {
+// Publish calls the functions that are subscribing to the event stream
+func (e *EventStream) Publish(agg AggregateRoot, events []Event) {
 	// the lock prevent other event updates get mixed with this update
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
 	for _, event := range events {
-		// call all functions that has registered for all events
-		for _, s := range e.allEvents {
-			s.f(event)
-		}
+		e.allEventPublisher(event)
+		e.specificEventPublisher(event)
+		e.aggregateTypePublisher(agg, event)
+		e.specificAggregatesPublisher(agg, event)
+	}
+}
 
-		// call all functions that has registered for the specific event
-		t := reflect.TypeOf(event.Data)
-		if subs, ok := e.specificEvents[t]; ok {
-			for _, s := range subs {
-				s.f(event)
-			}
-		}
+// call all functions that has registered for all events
+func (e *EventStream) allEventPublisher(event Event) {
+	for _, s := range e.allEvents {
+		s.funcEvent(event)
+	}
+}
 
-		ref := fmt.Sprintf("%s_%s", agg.path(), event.AggregateType)
-		// call all functions that has registered for the aggregate type events
-		if subs, ok := e.aggregateTypes[ref]; ok {
-			for _, s := range subs {
-				s.f(event)
-			}
-		}
-
-		// call all functions that has registered for the aggregate type and ID events
-		// ref also include the package name ensuring that Aggregate Types can have the same name.
-		ref = fmt.Sprintf("%s_%s", ref, agg.ID())
-		if subs, ok := e.specificAggregates[ref]; ok {
-			for _, s := range subs {
-				s.f(event)
-			}
+// call all functions that has registered for the specific event
+func (e *EventStream) specificEventPublisher(event Event) {
+	t := reflect.TypeOf(event.Data)
+	if subs, ok := e.specificEvents[t]; ok {
+		for _, s := range subs {
+			s.funcEvent(event)
 		}
 	}
 }
 
-// SubscriberAll bind the f function to be called on all events independent on aggregate or event type
-func (e *EventStream) SubscriberAll(f func(e Event)) *Subscription {
-	s := Subscription{
-		f: f,
+// call all functions that has registered for the aggregate type events
+func (e *EventStream) aggregateTypePublisher(agg AggregateRoot, event Event) {
+	ref := fmt.Sprintf("%s_%s", agg.path(), event.AggregateType)
+	if subs, ok := e.aggregateTypes[ref]; ok {
+		for _, s := range subs {
+			s.funcEvent(event)
+		}
+	}
+}
+
+// call all functions that has registered for the aggregate type and ID events
+func (e *EventStream) specificAggregatesPublisher(agg AggregateRoot, event Event) {
+	// ref also include the package name ensuring that Aggregate Types can have the same name.
+	ref := fmt.Sprintf("%s_%s", agg.path(), event.AggregateType)
+	ref = fmt.Sprintf("%s_%s", ref, agg.ID())
+	if subs, ok := e.specificAggregates[ref]; ok {
+		for _, s := range subs {
+			s.funcEvent(event)
+		}
+	}
+}
+
+// SubscriberAll bind the funcEvent function to be called on all events independent on aggregate or event type
+func (e *EventStream) SubscriberAll(f func(e Event)) *subscription {
+	s := subscription{
+		funcEvent: f,
 	}
 	s.unsubF = func() {
 		e.lock.Lock()
@@ -112,10 +127,10 @@ func (e *EventStream) SubscriberAll(f func(e Event)) *Subscription {
 	return &s
 }
 
-// SubscriberSpecificAggregate bind the f function to be called on events that belongs to aggregate based on type and ID
-func (e *EventStream) SubscriberSpecificAggregate(f func(e Event), aggregates ...Aggregate) *Subscription {
-	s := Subscription{
-		f: f,
+// SubscriberSpecificAggregate bind the funcEvent function to be called on events that belongs to aggregate based on type and ID
+func (e *EventStream) SubscriberSpecificAggregate(f func(e Event), aggregates ...Aggregate) *subscription {
+	s := subscription{
+		funcEvent: f,
 	}
 	s.unsubF = func() {
 		e.lock.Lock()
@@ -149,10 +164,10 @@ func (e *EventStream) SubscriberSpecificAggregate(f func(e Event), aggregates ..
 	return &s
 }
 
-// SubscriberAggregateType bind the f function to be called on events on the aggregate type
-func (e *EventStream) SubscriberAggregateType(f func(e Event), aggregates ...Aggregate) *Subscription {
-	s := Subscription{
-		f: f,
+// SubscriberAggregateType bind the funcEvent function to be called on events on the aggregate type
+func (e *EventStream) SubscriberAggregateType(f func(e Event), aggregates ...Aggregate) *subscription {
+	s := subscription{
+		funcEvent: f,
 	}
 	s.unsubF = func() {
 		e.lock.Lock()
@@ -186,10 +201,10 @@ func (e *EventStream) SubscriberAggregateType(f func(e Event), aggregates ...Agg
 	return &s
 }
 
-// SubscriberSpecificEvent bind the f function to be called on specific events
-func (e *EventStream) SubscriberSpecificEvent(f func(e Event), events ...interface{}) *Subscription {
-	s := Subscription{
-		f: f,
+// SubscriberSpecificEvent bind the funcEvent function to be called on specific events
+func (e *EventStream) SubscriberSpecificEvent(f func(e Event), events ...interface{}) *subscription {
+	s := subscription{
+		funcEvent: f,
 	}
 	s.unsubF = func() {
 		e.lock.Lock()
