@@ -332,7 +332,7 @@ func TestAllAsUntyped(t *testing.T) {
 	f := func(e eventsourcing.EventUntyped) {
 		streamEvent = e
 	}
-	s := e.SubscriberAllAsMap(f)
+	s := e.SubscriberAllUntyped(f)
 	s.Subscribe()
 	defer s.Unsubscribe()
 	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
