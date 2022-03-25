@@ -24,7 +24,8 @@ type EventStream struct {
 
 	// subscribers that get events.Data as map[string]interface{}
 	// holds subscribers of all untyped events
-	allEventsUntyped []*subscriptionEventUntyped
+	allEventsUntyped      []*subscriptionEventUntyped
+	aggregateTypesUntyped map[string][]*subscriptionEventUntyped
 }
 
 // subscriptionEvent holding the subscribe / unsubscribe / and func to be called when
@@ -66,10 +67,12 @@ func (s *subscriptionEventUntyped) Subscribe() {
 // NewEventStream factory function
 func NewEventStream() *EventStream {
 	return &EventStream{
-		aggregateTypes:     make(map[string][]*subscriptionEvent),
-		specificAggregates: make(map[string][]*subscriptionEvent),
-		specificEvents:     make(map[reflect.Type][]*subscriptionEvent),
-		allEvents:          []*subscriptionEvent{},
+		aggregateTypes:        make(map[string][]*subscriptionEvent),
+		specificAggregates:    make(map[string][]*subscriptionEvent),
+		specificEvents:        make(map[reflect.Type][]*subscriptionEvent),
+		allEvents:             []*subscriptionEvent{},
+		allEventsUntyped:      []*subscriptionEventUntyped{},
+		aggregateTypesUntyped: make(map[string][]*subscriptionEventUntyped),
 	}
 }
 
@@ -88,6 +91,7 @@ func (e *EventStream) Publish(agg AggregateRoot, events []Event) {
 
 		// map[string]interface{} events
 		e.allEventPublisherUntyped(event)
+		e.aggregateTypePublisherUntyped(event)
 	}
 }
 
@@ -145,6 +149,26 @@ func (e *EventStream) specificAggregatesPublisher(agg AggregateRoot, event Event
 	if subs, ok := e.specificAggregates[ref]; ok {
 		for _, s := range subs {
 			s.eventF(event)
+		}
+	}
+}
+
+// call all functions that has registered for the aggregate type events
+func (e *EventStream) aggregateTypePublisherUntyped(event Event) {
+	var m EventUntyped
+
+	b, err := json.Marshal(event)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(b, &m)
+	if err != nil {
+		return
+	}
+
+	if subs, ok := e.aggregateTypesUntyped[event.AggregateType]; ok {
+		for _, s := range subs {
+			s.eventF(m)
 		}
 	}
 }
@@ -302,6 +326,36 @@ func (e *EventStream) SubscriberAllUntyped(f func(e EventUntyped)) *subscription
 		defer e.lock.Unlock()
 
 		e.allEventsUntyped = append(e.allEventsUntyped, &s)
+	}
+	return &s
+}
+
+// SubscriberAggregateTypeUntyped bind the eventF function to be called on events on the aggregate type
+func (e *EventStream) SubscriberAggregateTypeUntyped(f func(e EventUntyped), aggregateTypes ...string) *subscriptionEventUntyped {
+	s := subscriptionEventUntyped{
+		eventF: f,
+	}
+	s.unsubF = func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
+
+		for _, ref := range aggregateTypes {
+			for i, sub := range e.aggregateTypesUntyped[ref] {
+				if &s == sub {
+					e.aggregateTypesUntyped[ref] = append(e.aggregateTypesUntyped[ref][:i], e.aggregateTypesUntyped[ref][i+1:]...)
+					break
+				}
+			}
+		}
+	}
+	s.subF = func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
+
+		for _, ref := range aggregateTypes {
+			// adds one more function to the aggregate
+			e.aggregateTypesUntyped[ref] = append(e.aggregateTypesUntyped[ref], &s)
+		}
 	}
 	return &s
 }
