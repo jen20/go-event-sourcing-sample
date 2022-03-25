@@ -247,7 +247,7 @@ func TestParallelUpdates(t *testing.T) {
 	streamEvent := make([]eventsourcing.Event, 0)
 	e := eventsourcing.NewEventStream()
 
-	// functions to bind to event subscription
+	// functions to bind to event subscriptionEvent
 	f1 := func(e eventsourcing.Event) {
 		streamEvent = append(streamEvent, e)
 	}
@@ -323,5 +323,27 @@ func TestClose(t *testing.T) {
 	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
 	if count != 4 {
 		t.Fatalf("should not have received event after subscriptions are closed")
+	}
+}
+
+func TestAllAsUntyped(t *testing.T) {
+	var streamEvent eventsourcing.EventUntyped
+	e := eventsourcing.NewEventStream()
+	f := func(e eventsourcing.EventUntyped) {
+		streamEvent = e
+	}
+	s := e.SubscriberAllAsMap(f)
+	s.Subscribe()
+	defer s.Unsubscribe()
+	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
+
+	if streamEvent.Version != event.Version {
+		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, event.Version)
+	}
+	if streamEvent.Data == nil {
+		t.Fatalf("should have received event data")
+	}
+	if streamEvent.Data["Name"] != "123" {
+		t.Fatalf("wrong name")
 	}
 }

@@ -1,51 +1,75 @@
 package eventsourcing
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"sync"
 )
 
-// EventStream struct what handles event subscription
+// EventStream struct what handles event subscriptionEvent
 type EventStream struct {
-	// holds subscribers of aggregate types events
-	aggregateTypes map[string][]*subscription
-	// holds subscribers of specific aggregates (type and identifier)
-	specificAggregates map[string][]*subscription
-	// holds subscribers of specific events
-	specificEvents map[reflect.Type][]*subscription
-	// holds subscribers of all events
-	allEvents []*subscription
 	// makes sure events are delivered in order and subscriptions are persistent
 	lock sync.Mutex
+
+	// subscribers that get types Events
+	// holds subscribers of aggregate types events
+	aggregateTypes map[string][]*subscriptionEvent
+	// holds subscribers of specific aggregates (type and identifier)
+	specificAggregates map[string][]*subscriptionEvent
+	// holds subscribers of specific events
+	specificEvents map[reflect.Type][]*subscriptionEvent
+	// holds subscribers of all events
+	allEvents []*subscriptionEvent
+
+	// subscribers that get map[string]interface{} events
+	// holds subscribers of all events as maps
+	allEventsAsMaps []*subscriptionEventAsMaps
 }
 
-// subscription holding the subscribe / unsubscribe / and func to be called when
-// event matches the subscription
-type subscription struct {
-	funcEvent        func(e Event)
-	funcMapInterface func(e map[string]interface{})
-	unsubF           func()
-	subF             func()
+// subscriptionEvent holding the subscribe / unsubscribe / and func to be called when
+// event matches the subscriptionEvent
+type subscriptionEvent struct {
+	eventF func(e Event)
+	unsubF func()
+	subF   func()
 }
 
-// Unsubscribe stops the subscription
-func (s *subscription) Unsubscribe() {
+// Unsubscribe stops the subscriptionEvent
+func (s *subscriptionEvent) Unsubscribe() {
 	s.unsubF()
 }
 
-// Subscribe starts the subscription
-func (s *subscription) Subscribe() {
+// Subscribe starts the subscriptionEvent
+func (s *subscriptionEvent) Subscribe() {
+	s.subF()
+}
+
+// subscriptionEventAsMaps holding the subscribe / unsubscribe / and func to be called when
+// event matches the subscriptionEvent
+type subscriptionEventAsMaps struct {
+	eventF func(e EventUntyped)
+	unsubF func()
+	subF   func()
+}
+
+// Unsubscribe stops the subscriptionEvent
+func (s *subscriptionEventAsMaps) Unsubscribe() {
+	s.unsubF()
+}
+
+// Subscribe starts the subscriptionEvent
+func (s *subscriptionEventAsMaps) Subscribe() {
 	s.subF()
 }
 
 // NewEventStream factory function
 func NewEventStream() *EventStream {
 	return &EventStream{
-		aggregateTypes:     make(map[string][]*subscription),
-		specificAggregates: make(map[string][]*subscription),
-		specificEvents:     make(map[reflect.Type][]*subscription),
-		allEvents:          []*subscription{},
+		aggregateTypes:     make(map[string][]*subscriptionEvent),
+		specificAggregates: make(map[string][]*subscriptionEvent),
+		specificEvents:     make(map[reflect.Type][]*subscriptionEvent),
+		allEvents:          []*subscriptionEvent{},
 	}
 }
 
@@ -56,17 +80,40 @@ func (e *EventStream) Publish(agg AggregateRoot, events []Event) {
 	defer e.lock.Unlock()
 
 	for _, event := range events {
+		// types events
 		e.allEventPublisher(event)
 		e.specificEventPublisher(event)
 		e.aggregateTypePublisher(agg, event)
 		e.specificAggregatesPublisher(agg, event)
+
+		// map[string]interface{} events
+		e.allEventPublisherAsMap(event)
 	}
 }
 
 // call all functions that has registered for all events
 func (e *EventStream) allEventPublisher(event Event) {
 	for _, s := range e.allEvents {
-		s.funcEvent(event)
+		s.eventF(event)
+	}
+}
+
+// call all functions that has registered for all events
+func (e *EventStream) allEventPublisherAsMap(event Event) {
+	var m EventUntyped
+
+	// convert the typed event to map[string]interface{}
+	b, err := json.Marshal(event)
+	if err != nil {
+		return
+	}
+	err = json.Unmarshal(b, &m)
+	if err != nil {
+		return
+	}
+
+	for _, s := range e.allEventsAsMaps {
+		s.eventF(m)
 	}
 }
 
@@ -75,7 +122,7 @@ func (e *EventStream) specificEventPublisher(event Event) {
 	t := reflect.TypeOf(event.Data)
 	if subs, ok := e.specificEvents[t]; ok {
 		for _, s := range subs {
-			s.funcEvent(event)
+			s.eventF(event)
 		}
 	}
 }
@@ -85,7 +132,7 @@ func (e *EventStream) aggregateTypePublisher(agg AggregateRoot, event Event) {
 	ref := fmt.Sprintf("%s_%s", agg.path(), event.AggregateType)
 	if subs, ok := e.aggregateTypes[ref]; ok {
 		for _, s := range subs {
-			s.funcEvent(event)
+			s.eventF(event)
 		}
 	}
 }
@@ -97,15 +144,15 @@ func (e *EventStream) specificAggregatesPublisher(agg AggregateRoot, event Event
 	ref = fmt.Sprintf("%s_%s", ref, agg.ID())
 	if subs, ok := e.specificAggregates[ref]; ok {
 		for _, s := range subs {
-			s.funcEvent(event)
+			s.eventF(event)
 		}
 	}
 }
 
-// SubscriberAll bind the funcEvent function to be called on all events independent on aggregate or event type
-func (e *EventStream) SubscriberAll(f func(e Event)) *subscription {
-	s := subscription{
-		funcEvent: f,
+// SubscriberAll bind the eventF function to be called on all events independent on aggregate or event type
+func (e *EventStream) SubscriberAll(f func(e Event)) *subscriptionEvent {
+	s := subscriptionEvent{
+		eventF: f,
 	}
 	s.unsubF = func() {
 		e.lock.Lock()
@@ -127,10 +174,10 @@ func (e *EventStream) SubscriberAll(f func(e Event)) *subscription {
 	return &s
 }
 
-// SubscriberSpecificAggregate bind the funcEvent function to be called on events that belongs to aggregate based on type and ID
-func (e *EventStream) SubscriberSpecificAggregate(f func(e Event), aggregates ...Aggregate) *subscription {
-	s := subscription{
-		funcEvent: f,
+// SubscriberSpecificAggregate bind the eventF function to be called on events that belongs to aggregate based on type and ID
+func (e *EventStream) SubscriberSpecificAggregate(f func(e Event), aggregates ...Aggregate) *subscriptionEvent {
+	s := subscriptionEvent{
+		eventF: f,
 	}
 	s.unsubF = func() {
 		e.lock.Lock()
@@ -164,10 +211,10 @@ func (e *EventStream) SubscriberSpecificAggregate(f func(e Event), aggregates ..
 	return &s
 }
 
-// SubscriberAggregateType bind the funcEvent function to be called on events on the aggregate type
-func (e *EventStream) SubscriberAggregateType(f func(e Event), aggregates ...Aggregate) *subscription {
-	s := subscription{
-		funcEvent: f,
+// SubscriberAggregateType bind the eventF function to be called on events on the aggregate type
+func (e *EventStream) SubscriberAggregateType(f func(e Event), aggregates ...Aggregate) *subscriptionEvent {
+	s := subscriptionEvent{
+		eventF: f,
 	}
 	s.unsubF = func() {
 		e.lock.Lock()
@@ -201,10 +248,10 @@ func (e *EventStream) SubscriberAggregateType(f func(e Event), aggregates ...Agg
 	return &s
 }
 
-// SubscriberSpecificEvent bind the funcEvent function to be called on specific events
-func (e *EventStream) SubscriberSpecificEvent(f func(e Event), events ...interface{}) *subscription {
-	s := subscription{
-		funcEvent: f,
+// SubscriberSpecificEvent bind the eventF function to be called on specific events
+func (e *EventStream) SubscriberSpecificEvent(f func(e Event), events ...interface{}) *subscriptionEvent {
+	s := subscriptionEvent{
+		eventF: f,
 	}
 	s.unsubF = func() {
 		e.lock.Lock()
@@ -230,6 +277,31 @@ func (e *EventStream) SubscriberSpecificEvent(f func(e Event), events ...interfa
 			// adds one more property to the event type
 			e.specificEvents[t] = append(e.specificEvents[t], &s)
 		}
+	}
+	return &s
+}
+
+// SubscriberAllAsMap bind the eventF function to be called on all events independent on aggregate or event type
+func (e *EventStream) SubscriberAllAsMap(f func(e EventUntyped)) *subscriptionEventAsMaps {
+	s := subscriptionEventAsMaps{
+		eventF: f,
+	}
+	s.unsubF = func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
+
+		for i, sub := range e.allEventsAsMaps {
+			if &s == sub {
+				e.allEventsAsMaps = append(e.allEventsAsMaps[:i], e.allEventsAsMaps[i+1:]...)
+				break
+			}
+		}
+	}
+	s.subF = func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
+
+		e.allEventsAsMaps = append(e.allEventsAsMaps, &s)
 	}
 	return &s
 }

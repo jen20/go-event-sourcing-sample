@@ -354,7 +354,7 @@ func TestEventChainDoesNotHang(t *testing.T) {
 		close(doneChan)
 	}()
 
-	// create the initial person and setup event subscription on the specific person events
+	// create the initial person and setup event subscriptionEvent on the specific person events
 	person, err := CreatePerson("kalle")
 	if err != nil {
 		t.Fatal(err)

@@ -23,6 +23,17 @@ type Event struct {
 	Metadata      map[string]interface{}
 }
 
+// EventUntyped holding meta data and the application specific event in the Data property
+type EventUntyped struct {
+	AggregateID   string
+	Version       Version
+	GlobalVersion Version
+	AggregateType string
+	Timestamp     time.Time
+	Data          map[string]interface{}
+	Metadata      map[string]interface{}
+}
+
 // Reason returns the name of the data struct
 func (e Event) Reason() string {
 	if e.Data == nil {
