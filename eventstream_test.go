@@ -379,3 +379,35 @@ func TestAggregateTypeUntyped(t *testing.T) {
 		t.Fatalf("expected the event function to be hit once")
 	}
 }
+
+func TestEventReasonUntyped(t *testing.T) {
+	var streamEvent eventsourcing.EventUntyped
+	var count int
+	e := eventsourcing.NewEventStream()
+	f := func(e eventsourcing.EventUntyped) {
+		count++
+		streamEvent = e
+	}
+	s := e.SubscriberEventReasonUntyped(f, "AnEvent")
+	s.Subscribe()
+	defer s.Unsubscribe()
+	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
+
+	if streamEvent.Version != event.Version {
+		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, event.Version)
+	}
+	if streamEvent.Data == nil {
+		t.Fatalf("should have received event data")
+	}
+	if streamEvent.Data["Name"] != "123" {
+		t.Fatalf("wrong name")
+	}
+	streamEvent = eventsourcing.EventUntyped{}
+	e.Publish(AnotherAggregate{}.AggregateRoot, []eventsourcing.Event{otherEvent})
+	if streamEvent.Version != 0 {
+		t.Fatalf("expected zero value")
+	}
+	if count != 1 {
+		t.Fatalf("expected the event function to be hit once")
+	}
+}

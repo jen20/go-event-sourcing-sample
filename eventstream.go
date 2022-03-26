@@ -27,6 +27,8 @@ type EventStream struct {
 	allEventsUntyped []*subscriptionEventUntyped
 	// holds subscribers of aggregate types
 	aggregateTypesUntyped map[string][]*subscriptionEventUntyped
+	// subscribe to event reason
+	eventReasonUntyped map[string][]*subscriptionEventUntyped
 }
 
 // subscriptionEvent holding the subscribe / unsubscribe / and func to be called when
@@ -74,6 +76,7 @@ func NewEventStream() *EventStream {
 		allEvents:             make([]*subscriptionEvent, 0),
 		allEventsUntyped:      make([]*subscriptionEventUntyped, 0),
 		aggregateTypesUntyped: make(map[string][]*subscriptionEventUntyped),
+		eventReasonUntyped:    make(map[string][]*subscriptionEventUntyped),
 	}
 }
 
@@ -93,6 +96,7 @@ func (e *EventStream) Publish(agg AggregateRoot, events []Event) {
 		// untyped events
 		e.allEventPublisherUntyped(event)
 		e.aggregateTypePublisherUntyped(event)
+		e.eventReasonSubscriberUntyped(event)
 	}
 }
 
@@ -174,7 +178,25 @@ func (e *EventStream) aggregateTypePublisherUntyped(event Event) {
 			s.eventF(m)
 		}
 	}
+}
 
+func (e *EventStream) eventReasonSubscriberUntyped(event Event) {
+	var m EventUntyped
+
+	if subs, ok := e.eventReasonUntyped[event.Reason()]; ok {
+		b, err := json.Marshal(event)
+		if err != nil {
+			return
+		}
+		err = json.Unmarshal(b, &m)
+		if err != nil {
+			return
+		}
+
+		for _, s := range subs {
+			s.eventF(m)
+		}
+	}
 }
 
 // SubscriberAll bind the eventF function to be called on all events independent on aggregate or event type
@@ -357,8 +379,36 @@ func (e *EventStream) SubscriberAggregateTypeUntyped(f func(e EventUntyped), agg
 		defer e.lock.Unlock()
 
 		for _, ref := range aggregateTypes {
-			// adds one more function to the aggregate
 			e.aggregateTypesUntyped[ref] = append(e.aggregateTypesUntyped[ref], &s)
+		}
+	}
+	return &s
+}
+
+// SubscriberEventReasonUntyped bind the eventF function to be called on event reason
+func (e *EventStream) SubscriberEventReasonUntyped(f func(e EventUntyped), eventReasons ...string) *subscriptionEventUntyped {
+	s := subscriptionEventUntyped{
+		eventF: f,
+	}
+	s.unsubF = func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
+
+		for _, ref := range eventReasons {
+			for i, sub := range e.eventReasonUntyped[ref] {
+				if &s == sub {
+					e.eventReasonUntyped[ref] = append(e.eventReasonUntyped[ref][:i], e.eventReasonUntyped[ref][i+1:]...)
+					break
+				}
+			}
+		}
+	}
+	s.subF = func() {
+		e.lock.Lock()
+		defer e.lock.Unlock()
+
+		for _, ref := range eventReasons {
+			e.eventReasonUntyped[ref] = append(e.eventReasonUntyped[ref], &s)
 		}
 	}
 	return &s
