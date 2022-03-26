@@ -22,9 +22,10 @@ type EventStream struct {
 	// holds subscribers of all events
 	allEvents []*subscriptionEvent
 
-	// subscribers that get events.Data as map[string]interface{}
+	// subscribers that get untyped events -> events.Data as map[string]interface{}
 	// holds subscribers of all untyped events
-	allEventsUntyped      []*subscriptionEventUntyped
+	allEventsUntyped []*subscriptionEventUntyped
+	// holds subscribers of aggregate types
 	aggregateTypesUntyped map[string][]*subscriptionEventUntyped
 }
 
@@ -70,8 +71,8 @@ func NewEventStream() *EventStream {
 		aggregateTypes:        make(map[string][]*subscriptionEvent),
 		specificAggregates:    make(map[string][]*subscriptionEvent),
 		specificEvents:        make(map[reflect.Type][]*subscriptionEvent),
-		allEvents:             []*subscriptionEvent{},
-		allEventsUntyped:      []*subscriptionEventUntyped{},
+		allEvents:             make([]*subscriptionEvent, 0),
+		allEventsUntyped:      make([]*subscriptionEventUntyped, 0),
 		aggregateTypesUntyped: make(map[string][]*subscriptionEventUntyped),
 	}
 }
@@ -89,7 +90,7 @@ func (e *EventStream) Publish(agg AggregateRoot, events []Event) {
 		e.aggregateTypePublisher(agg, event)
 		e.specificAggregatesPublisher(agg, event)
 
-		// map[string]interface{} events
+		// untyped events
 		e.allEventPublisherUntyped(event)
 		e.aggregateTypePublisherUntyped(event)
 	}
@@ -99,25 +100,6 @@ func (e *EventStream) Publish(agg AggregateRoot, events []Event) {
 func (e *EventStream) allEventPublisher(event Event) {
 	for _, s := range e.allEvents {
 		s.eventF(event)
-	}
-}
-
-// call all functions that has registered for all events
-func (e *EventStream) allEventPublisherUntyped(event Event) {
-	var m EventUntyped
-
-	// convert the typed event to map[string]interface{}
-	b, err := json.Marshal(event)
-	if err != nil {
-		return
-	}
-	err = json.Unmarshal(b, &m)
-	if err != nil {
-		return
-	}
-
-	for _, s := range e.allEventsUntyped {
-		s.eventF(m)
 	}
 }
 
@@ -153,24 +135,46 @@ func (e *EventStream) specificAggregatesPublisher(agg AggregateRoot, event Event
 	}
 }
 
+// call all functions that has registered for all events
+func (e *EventStream) allEventPublisherUntyped(event Event) {
+	var m EventUntyped
+
+	if len(e.allEventsUntyped) > 0 {
+		// convert the typed event.Data to map[string]interface{}
+		b, err := json.Marshal(event)
+		if err != nil {
+			return
+		}
+		err = json.Unmarshal(b, &m)
+		if err != nil {
+			return
+		}
+
+		for _, s := range e.allEventsUntyped {
+			s.eventF(m)
+		}
+	}
+}
+
 // call all functions that has registered for the aggregate type events
 func (e *EventStream) aggregateTypePublisherUntyped(event Event) {
 	var m EventUntyped
 
-	b, err := json.Marshal(event)
-	if err != nil {
-		return
-	}
-	err = json.Unmarshal(b, &m)
-	if err != nil {
-		return
-	}
-
 	if subs, ok := e.aggregateTypesUntyped[event.AggregateType]; ok {
+		b, err := json.Marshal(event)
+		if err != nil {
+			return
+		}
+		err = json.Unmarshal(b, &m)
+		if err != nil {
+			return
+		}
+
 		for _, s := range subs {
 			s.eventF(m)
 		}
 	}
+
 }
 
 // SubscriberAll bind the eventF function to be called on all events independent on aggregate or event type
