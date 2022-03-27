@@ -7,7 +7,7 @@ import (
 	"sync"
 )
 
-// EventStream struct what handles event subscriptionEvent
+// EventStream struct that handles event subscriptionEvent
 type EventStream struct {
 	// makes sure events are delivered in order and subscriptions are persistent
 	lock sync.Mutex
