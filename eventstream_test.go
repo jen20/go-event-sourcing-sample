@@ -326,33 +326,11 @@ func TestClose(t *testing.T) {
 	}
 }
 
-func TestAllUntyped(t *testing.T) {
-	var streamEvent eventsourcing.EventUntyped
-	e := eventsourcing.NewEventStream()
-	f := func(e eventsourcing.EventUntyped) {
-		streamEvent = e
-	}
-	s := e.SubscriberAllUntyped(f)
-	s.Subscribe()
-	defer s.Unsubscribe()
-	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
-
-	if streamEvent.Version != event.Version {
-		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, event.Version)
-	}
-	if streamEvent.Data == nil {
-		t.Fatalf("should have received event data")
-	}
-	if streamEvent.Data["Name"] != "123" {
-		t.Fatalf("wrong name")
-	}
-}
-
-func TestAggregateTypeUntyped(t *testing.T) {
-	var streamEvent eventsourcing.EventUntyped
+func TestAggregateType(t *testing.T) {
+	var streamEvent eventsourcing.Event
 	var count int
 	e := eventsourcing.NewEventStream()
-	f := func(e eventsourcing.EventUntyped) {
+	f := func(e eventsourcing.Event) {
 		count++
 		streamEvent = e
 	}
@@ -367,10 +345,8 @@ func TestAggregateTypeUntyped(t *testing.T) {
 	if streamEvent.Data == nil {
 		t.Fatalf("should have received event data")
 	}
-	if streamEvent.Data["Name"] != "123" {
-		t.Fatalf("wrong name")
-	}
-	streamEvent = eventsourcing.EventUntyped{}
+
+	streamEvent = eventsourcing.Event{}
 	e.Publish(AnotherAggregate{}.AggregateRoot, []eventsourcing.Event{otherEvent})
 	if streamEvent.Version != 0 {
 		t.Fatalf("expected zero value")
@@ -380,11 +356,11 @@ func TestAggregateTypeUntyped(t *testing.T) {
 	}
 }
 
-func TestEventReasonUntyped(t *testing.T) {
-	var streamEvent eventsourcing.EventUntyped
+func TestEventReason(t *testing.T) {
+	var streamEvent eventsourcing.Event
 	var count int
 	e := eventsourcing.NewEventStream()
-	f := func(e eventsourcing.EventUntyped) {
+	f := func(e eventsourcing.Event) {
 		count++
 		streamEvent = e
 	}
@@ -399,10 +375,8 @@ func TestEventReasonUntyped(t *testing.T) {
 	if streamEvent.Data == nil {
 		t.Fatalf("should have received event data")
 	}
-	if streamEvent.Data["Name"] != "123" {
-		t.Fatalf("wrong name")
-	}
-	streamEvent = eventsourcing.EventUntyped{}
+
+	streamEvent = eventsourcing.Event{}
 	e.Publish(AnotherAggregate{}.AggregateRoot, []eventsourcing.Event{otherEvent})
 	if streamEvent.Version != 0 {
 		t.Fatalf("expected zero value")
