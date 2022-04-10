@@ -32,7 +32,7 @@ func (e Event) Reason() string {
 	return reflect.TypeOf(e.Data).Elem().Name()
 }
 
-// DataAs convert the event.Data to the supplied type
+// DataAs convert the event.Data to the supplied type.
 func (e Event) DataAs(i interface{}) error {
 	b, err := json.Marshal(e.Data)
 	if err != nil {

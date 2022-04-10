@@ -247,7 +247,7 @@ func TestParallelUpdates(t *testing.T) {
 	streamEvent := make([]eventsourcing.Event, 0)
 	e := eventsourcing.NewEventStream()
 
-	// functions to bind to event subscriptionEvent
+	// functions to bind to event subscription
 	f1 := func(e eventsourcing.Event) {
 		streamEvent = append(streamEvent, e)
 	}
