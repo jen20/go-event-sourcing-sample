@@ -28,13 +28,13 @@ type AnotherEvent struct{}
 var event = eventsourcing.Event{Version: 123, Data: &AnEvent{Name: "123"}, AggregateType: "AnAggregate"}
 var otherEvent = eventsourcing.Event{Version: 456, Data: &AnotherEvent{}, AggregateType: "AnotherAggregate"}
 
-func TestAll(t *testing.T) {
+func TestSubAll(t *testing.T) {
 	var streamEvent *eventsourcing.Event
 	e := eventsourcing.NewEventStream()
 	f := func(e eventsourcing.Event) {
 		streamEvent = &e
 	}
-	s := e.SubscriberAll(f)
+	s := e.All(f)
 	s.Subscribe()
 	defer s.Unsubscribe()
 	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
@@ -47,13 +47,13 @@ func TestAll(t *testing.T) {
 	}
 }
 
-func TestSubscribeOneEvent(t *testing.T) {
+func TestSubSpecificEvent(t *testing.T) {
 	var streamEvent *eventsourcing.Event
 	e := eventsourcing.NewEventStream()
 	f := func(e eventsourcing.Event) {
 		streamEvent = &e
 	}
-	s := e.SubscriberSpecificEvent(f, &AnEvent{})
+	s := e.SpecificEvent(f, &AnEvent{})
 	s.Subscribe()
 	defer s.Unsubscribe()
 	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
@@ -67,7 +67,7 @@ func TestSubscribeOneEvent(t *testing.T) {
 	}
 }
 
-func TestSubscriberSpecificAggregate(t *testing.T) {
+func TestSubAggregate(t *testing.T) {
 	// setup aggregates with identifiers
 
 	anAggregate := AnAggregate{}
@@ -80,7 +80,7 @@ func TestSubscriberSpecificAggregate(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		streamEvent = &e
 	}
-	s := e.SubscriberSpecificAggregate(f, &anAggregate, &anOtherAggregate)
+	s := e.Aggregate(f, &anAggregate, &anOtherAggregate)
 	s.Subscribe()
 	defer s.Unsubscribe()
 	// update with event from the AnAggregate aggregate
@@ -99,13 +99,13 @@ func TestSubscriberSpecificAggregate(t *testing.T) {
 	}
 }
 
-func TestSubscribeAggregateType(t *testing.T) {
+func TestSubAggregateType(t *testing.T) {
 	var streamEvent *eventsourcing.Event
 	e := eventsourcing.NewEventStream()
 	f := func(e eventsourcing.Event) {
 		streamEvent = &e
 	}
-	s := e.SubscriberAggregateType(f, &AnAggregate{}, &AnotherAggregate{})
+	s := e.AggregateType(f, &AnAggregate{}, &AnotherAggregate{})
 	s.Subscribe()
 	defer s.Unsubscribe()
 
@@ -125,13 +125,13 @@ func TestSubscribeAggregateType(t *testing.T) {
 	}
 }
 
-func TestSubscribeToManyEvents(t *testing.T) {
+func TestSubSpecificEventMultiplePublish(t *testing.T) {
 	var streamEvents []*eventsourcing.Event
 	e := eventsourcing.NewEventStream()
 	f := func(e eventsourcing.Event) {
 		streamEvents = append(streamEvents, &e)
 	}
-	s := e.SubscriberSpecificEvent(f, &AnEvent{}, &AnotherEvent{})
+	s := e.SpecificEvent(f, &AnEvent{}, &AnotherEvent{})
 	s.Subscribe()
 	defer s.Unsubscribe()
 	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
@@ -171,7 +171,7 @@ func TestUpdateNoneSubscribedEvent(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		streamEvent = &e
 	}
-	s := e.SubscriberSpecificEvent(f, &AnotherEvent{})
+	s := e.SpecificEvent(f, &AnotherEvent{})
 	s.Subscribe()
 	defer s.Unsubscribe()
 	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
@@ -204,19 +204,19 @@ func TestManySubscribers(t *testing.T) {
 	f5 := func(e eventsourcing.Event) {
 		streamEvent5 = append(streamEvent5, e)
 	}
-	s := e.SubscriberSpecificEvent(f1, &AnotherEvent{})
+	s := e.SpecificEvent(f1, &AnotherEvent{})
 	s.Subscribe()
 	defer s.Unsubscribe()
-	s = e.SubscriberSpecificEvent(f2, &AnotherEvent{}, &AnEvent{})
+	s = e.SpecificEvent(f2, &AnotherEvent{}, &AnEvent{})
 	s.Subscribe()
 	defer s.Unsubscribe()
-	s = e.SubscriberSpecificEvent(f3, &AnEvent{})
+	s = e.SpecificEvent(f3, &AnEvent{})
 	s.Subscribe()
 	defer s.Unsubscribe()
-	s = e.SubscriberAll(f4)
+	s = e.All(f4)
 	s.Subscribe()
 	defer s.Unsubscribe()
-	s = e.SubscriberAggregateType(f5, &AnAggregate{})
+	s = e.AggregateType(f5, &AnAggregate{})
 	s.Subscribe()
 	defer s.Unsubscribe()
 
@@ -243,7 +243,7 @@ func TestManySubscribers(t *testing.T) {
 	}
 }
 
-func TestParallelUpdates(t *testing.T) {
+func TestParallelPublish(t *testing.T) {
 	streamEvent := make([]eventsourcing.Event, 0)
 	e := eventsourcing.NewEventStream()
 
@@ -257,11 +257,11 @@ func TestParallelUpdates(t *testing.T) {
 	f3 := func(e eventsourcing.Event) {
 		streamEvent = append(streamEvent, e)
 	}
-	s := e.SubscriberSpecificEvent(f1, &AnEvent{})
+	s := e.SpecificEvent(f1, &AnEvent{})
 	defer s.Unsubscribe()
-	s = e.SubscriberSpecificEvent(f2, &AnotherEvent{})
+	s = e.SpecificEvent(f2, &AnotherEvent{})
 	defer s.Unsubscribe()
-	s = e.SubscriberAll(f3)
+	s = e.All(f3)
 	defer s.Unsubscribe()
 
 	wg := sync.WaitGroup{}
@@ -299,16 +299,16 @@ func TestClose(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		count++
 	}
-	s1 := e.SubscriberAll(f)
+	s1 := e.All(f)
 	s1.Subscribe()
-	s2 := e.SubscriberSpecificEvent(f, &AnEvent{})
+	s2 := e.SpecificEvent(f, &AnEvent{})
 	s2.Subscribe()
-	s3 := e.SubscriberAggregateType(f, &AnAggregate{})
+	s3 := e.AggregateType(f, &AnAggregate{})
 	s3.Subscribe()
-	s4 := e.SubscriberSpecificAggregate(f, &AnAggregate{})
+	s4 := e.Aggregate(f, &AnAggregate{})
 	s4.Subscribe()
 
-	// trigger all 4 subscriptions
+	// trigger 4 subscriptions
 	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
 	if count != 4 {
 		t.Fatalf("should have received four event")
@@ -326,7 +326,7 @@ func TestClose(t *testing.T) {
 	}
 }
 
-func TestAggregateType(t *testing.T) {
+func TestName(t *testing.T) {
 	var streamEvent eventsourcing.Event
 	var count int
 	e := eventsourcing.NewEventStream()
@@ -334,37 +334,7 @@ func TestAggregateType(t *testing.T) {
 		count++
 		streamEvent = e
 	}
-	s := e.SubscriberAggregateTypeUntyped(f, "AnAggregate")
-	s.Subscribe()
-	defer s.Unsubscribe()
-	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
-
-	if streamEvent.Version != event.Version {
-		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, event.Version)
-	}
-	if streamEvent.Data == nil {
-		t.Fatalf("should have received event data")
-	}
-
-	streamEvent = eventsourcing.Event{}
-	e.Publish(AnotherAggregate{}.AggregateRoot, []eventsourcing.Event{otherEvent})
-	if streamEvent.Version != 0 {
-		t.Fatalf("expected zero value")
-	}
-	if count != 1 {
-		t.Fatalf("expected the event function to be hit once")
-	}
-}
-
-func TestEventReason(t *testing.T) {
-	var streamEvent eventsourcing.Event
-	var count int
-	e := eventsourcing.NewEventStream()
-	f := func(e eventsourcing.Event) {
-		count++
-		streamEvent = e
-	}
-	s := e.SubscriberEventReasonUntyped(f, "AnEvent")
+	s := e.Name(f, "AnAggregate", "AnEvent")
 	s.Subscribe()
 	defer s.Unsubscribe()
 	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})

@@ -38,7 +38,7 @@ var ErrAggregateNotFound = errors.New("aggregate not found")
 
 // Repository is the returned instance from the factory function
 type Repository struct {
-	*EventStream
+	EventStream *EventStream
 	eventStore EventStore
 	snapshot   *SnapshotHandler
 }
@@ -61,7 +61,7 @@ func (r *Repository) Save(aggregate Aggregate) error {
 		return err
 	}
 	// publish the saved events to subscribers
-	r.Publish(*root, root.Events())
+	r.EventStream.Publish(*root, root.Events())
 
 	// update the internal aggregate state
 	root.update()
