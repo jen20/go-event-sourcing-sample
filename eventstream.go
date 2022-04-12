@@ -11,7 +11,6 @@ type EventStream struct {
 	// makes sure events are delivered in order and subscriptions are persistent
 	lock sync.Mutex
 
-	// subscribers that get types Events
 	// holds subscribers of aggregate types events
 	aggregateTypes map[string][]*subscription
 	// holds subscribers of specific aggregates (type and identifier)
@@ -19,8 +18,8 @@ type EventStream struct {
 	// holds subscribers of specific events
 	specificEvents map[reflect.Type][]*subscription
 	// holds subscribers of all events
-	allEvents []*subscription
-	// holds subscribers of aggregate types by name
+	all []*subscription
+	// holds subscribers of aggregate and events by name
 	names map[string][]*subscription
 }
 
@@ -48,7 +47,7 @@ func NewEventStream() *EventStream {
 		aggregateTypes:     make(map[string][]*subscription),
 		specificAggregates: make(map[string][]*subscription),
 		specificEvents:     make(map[reflect.Type][]*subscription),
-		allEvents:          make([]*subscription, 0),
+		all:                make([]*subscription, 0),
 		names:              make(map[string][]*subscription),
 	}
 }
@@ -60,22 +59,22 @@ func (e *EventStream) Publish(agg AggregateRoot, events []Event) {
 	defer e.lock.Unlock()
 
 	for _, event := range events {
-		e.allEventPublisher(event)
+		e.allPublisher(event)
 		e.specificEventPublisher(event)
 		e.aggregateTypePublisher(agg, event)
 		e.specificAggregatesPublisher(agg, event)
-		e.aggregateTypePublisherUntyped(event)
+		e.aggregateEventNamePublisher(event)
 	}
 }
 
-// call all functions that has registered for all events
-func (e *EventStream) allEventPublisher(event Event) {
-	for _, s := range e.allEvents {
+// call functions that has registered for all events
+func (e *EventStream) allPublisher(event Event) {
+	for _, s := range e.all {
 		s.eventF(event)
 	}
 }
 
-// call all functions that has registered for the specific event
+// call functions that has registered for the specific event
 func (e *EventStream) specificEventPublisher(event Event) {
 	t := reflect.TypeOf(event.Data)
 	if subs, ok := e.specificEvents[t]; ok {
@@ -85,7 +84,7 @@ func (e *EventStream) specificEventPublisher(event Event) {
 	}
 }
 
-// call all functions that has registered for the aggregate type events
+// call functions that has registered for the aggregate type events
 func (e *EventStream) aggregateTypePublisher(agg AggregateRoot, event Event) {
 	ref := fmt.Sprintf("%s_%s", agg.path(), event.AggregateType)
 	if subs, ok := e.aggregateTypes[ref]; ok {
@@ -95,7 +94,7 @@ func (e *EventStream) aggregateTypePublisher(agg AggregateRoot, event Event) {
 	}
 }
 
-// call all functions that has registered for the aggregate type and ID events
+// call functions that has registered for the aggregate type and ID events
 func (e *EventStream) specificAggregatesPublisher(agg AggregateRoot, event Event) {
 	// ref also include the package name ensuring that Aggregate Types can have the same name.
 	ref := fmt.Sprintf("%s_%s", agg.path(), event.AggregateType)
@@ -107,8 +106,8 @@ func (e *EventStream) specificAggregatesPublisher(agg AggregateRoot, event Event
 	}
 }
 
-// call all functions that has registered for the aggregate type events
-func (e *EventStream) aggregateTypePublisherUntyped(event Event) {
+// call functions that has registered for the aggregate type events
+func (e *EventStream) aggregateEventNamePublisher(event Event) {
 	ref := event.AggregateType+"_"+event.Reason()
 	if subs, ok := e.names[ref]; ok {
 		for _, s := range subs {
@@ -126,9 +125,9 @@ func (e *EventStream) All(f func(e Event)) *subscription {
 		e.lock.Lock()
 		defer e.lock.Unlock()
 
-		for i, sub := range e.allEvents {
+		for i, sub := range e.all {
 			if &s == sub {
-				e.allEvents = append(e.allEvents[:i], e.allEvents[i+1:]...)
+				e.all = append(e.all[:i], e.all[i+1:]...)
 				break
 			}
 		}
@@ -137,7 +136,7 @@ func (e *EventStream) All(f func(e Event)) *subscription {
 		e.lock.Lock()
 		defer e.lock.Unlock()
 
-		e.allEvents = append(e.allEvents, &s)
+		e.all = append(e.all, &s)
 	}
 	return &s
 }
