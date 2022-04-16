@@ -226,8 +226,7 @@ func TestSubscriptionAllEvent(t *testing.T) {
 	}
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
 	s := repo.EventStream.All(f)
-	s.Subscribe()
-	defer s.Unsubscribe()
+	defer s.Close()
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -253,8 +252,7 @@ func TestSubscriptionSpecificEvent(t *testing.T) {
 	}
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
 	s := repo.EventStream.SpecificEvent(f, &Born{}, &AgedOneYear{})
-	s.Subscribe()
-	defer s.Unsubscribe()
+	defer s.Close()
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -280,8 +278,7 @@ func TestSubscriptionAggregateType(t *testing.T) {
 	}
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
 	s := repo.EventStream.AggregateType(f, &Person{})
-	s.Subscribe()
-	defer s.Unsubscribe()
+	defer s.Close()
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -312,8 +309,7 @@ func TestSubscriptionSpecificAggregate(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := repo.EventStream.Aggregate(f, person)
-	s.Subscribe()
-	defer s.Unsubscribe()
+	defer s.Close()
 
 	person.GrowOlder()
 	person.GrowOlder()
@@ -360,8 +356,7 @@ func TestEventChainDoesNotHang(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := repo.EventStream.Aggregate(f, person)
-	s.Subscribe()
-	defer s.Unsubscribe()
+	defer s.Close()
 
 	// subscribe to all events and filter out AgedOneYear
 	ageCounter := 0
@@ -372,8 +367,7 @@ func TestEventChainDoesNotHang(t *testing.T) {
 			ageCounter++
 		}
 	})
-	s2.Subscribe()
-	defer s2.Unsubscribe()
+	defer s2.Close()
 
 	person.GrowOlder()
 	person.GrowOlder()

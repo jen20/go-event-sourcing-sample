@@ -23,22 +23,17 @@ type EventStream struct {
 	names map[string][]*subscription
 }
 
-// subscription holding the subscribe / unsubscribe / and func to be called when
+// subscription holds the event function to be triggered when an event is triggering the subscription,
+// it also hols a close function to end the subscription.
 // event matches the subscription
 type subscription struct {
 	eventF func(e Event)
-	unsubF func()
-	subF   func()
+	close  func()
 }
 
-// Unsubscribe stops the subscription
-func (s *subscription) Unsubscribe() {
-	s.unsubF()
-}
-
-// Subscribe starts the subscription
-func (s *subscription) Subscribe() {
-	s.subF()
+// Close stops the subscription
+func (s *subscription) Close() {
+	s.close()
 }
 
 // NewEventStream factory function
@@ -121,7 +116,7 @@ func (e *EventStream) All(f func(e Event)) *subscription {
 	s := subscription{
 		eventF: f,
 	}
-	s.unsubF = func() {
+	s.close = func() {
 		e.lock.Lock()
 		defer e.lock.Unlock()
 
@@ -132,12 +127,10 @@ func (e *EventStream) All(f func(e Event)) *subscription {
 			}
 		}
 	}
-	s.subF = func() {
-		e.lock.Lock()
-		defer e.lock.Unlock()
+	e.lock.Lock()
+	defer e.lock.Unlock()
+	e.all = append(e.all, &s)
 
-		e.all = append(e.all, &s)
-	}
 	return &s
 }
 
@@ -146,7 +139,7 @@ func (e *EventStream) Aggregate(f func(e Event), aggregates ...Aggregate) *subsc
 	s := subscription{
 		eventF: f,
 	}
-	s.unsubF = func() {
+	s.close = func() {
 		e.lock.Lock()
 		defer e.lock.Unlock()
 
@@ -162,19 +155,18 @@ func (e *EventStream) Aggregate(f func(e Event), aggregates ...Aggregate) *subsc
 			}
 		}
 	}
-	s.subF = func() {
-		e.lock.Lock()
-		defer e.lock.Unlock()
+	e.lock.Lock()
+	defer e.lock.Unlock()
 
-		for _, a := range aggregates {
-			name := reflect.TypeOf(a).Elem().Name()
-			root := a.Root()
-			ref := fmt.Sprintf("%s_%s_%s", root.path(), name, root.ID())
+	for _, a := range aggregates {
+		name := reflect.TypeOf(a).Elem().Name()
+		root := a.Root()
+		ref := fmt.Sprintf("%s_%s_%s", root.path(), name, root.ID())
 
-			// adds one more function to the aggregate
-			e.specificAggregates[ref] = append(e.specificAggregates[ref], &s)
-		}
+		// adds one more function to the aggregate
+		e.specificAggregates[ref] = append(e.specificAggregates[ref], &s)
 	}
+
 	return &s
 }
 
@@ -183,7 +175,7 @@ func (e *EventStream) AggregateType(f func(e Event), aggregates ...Aggregate) *s
 	s := subscription{
 		eventF: f,
 	}
-	s.unsubF = func() {
+	s.close = func() {
 		e.lock.Lock()
 		defer e.lock.Unlock()
 
@@ -199,19 +191,18 @@ func (e *EventStream) AggregateType(f func(e Event), aggregates ...Aggregate) *s
 			}
 		}
 	}
-	s.subF = func() {
-		e.lock.Lock()
-		defer e.lock.Unlock()
+	e.lock.Lock()
+	defer e.lock.Unlock()
 
-		for _, a := range aggregates {
-			name := reflect.TypeOf(a).Elem().Name()
-			root := a.Root()
-			ref := fmt.Sprintf("%s_%s", root.path(), name)
+	for _, a := range aggregates {
+		name := reflect.TypeOf(a).Elem().Name()
+		root := a.Root()
+		ref := fmt.Sprintf("%s_%s", root.path(), name)
 
-			// adds one more function to the aggregate
-			e.aggregateTypes[ref] = append(e.aggregateTypes[ref], &s)
-		}
+		// adds one more function to the aggregate
+		e.aggregateTypes[ref] = append(e.aggregateTypes[ref], &s)
 	}
+
 	return &s
 }
 
@@ -220,7 +211,7 @@ func (e *EventStream) SpecificEvent(f func(e Event), events ...interface{}) *sub
 	s := subscription{
 		eventF: f,
 	}
-	s.unsubF = func() {
+	s.close = func() {
 		e.lock.Lock()
 		defer e.lock.Unlock()
 
@@ -234,17 +225,15 @@ func (e *EventStream) SpecificEvent(f func(e Event), events ...interface{}) *sub
 			}
 		}
 	}
-	s.subF = func() {
-		e.lock.Lock()
-		defer e.lock.Unlock()
+	e.lock.Lock()
+	defer e.lock.Unlock()
 
-		// subscribe to specified events
-		for _, event := range events {
-			t := reflect.TypeOf(event)
-			// adds one more property to the event type
-			e.specificEvents[t] = append(e.specificEvents[t], &s)
-		}
+	for _, event := range events {
+		t := reflect.TypeOf(event)
+		// adds one more property to the event type
+		e.specificEvents[t] = append(e.specificEvents[t], &s)
 	}
+
 	return &s
 }
 
@@ -253,7 +242,7 @@ func (e *EventStream) Name(f func(e Event), aggregate string, events ...string) 
 	s := subscription{
 		eventF: f,
 	}
-	s.unsubF = func() {
+	s.close = func() {
 		e.lock.Lock()
 		defer e.lock.Unlock()
 
@@ -267,14 +256,13 @@ func (e *EventStream) Name(f func(e Event), aggregate string, events ...string) 
 			}
 		}
 	}
-	s.subF = func() {
-		e.lock.Lock()
-		defer e.lock.Unlock()
+	e.lock.Lock()
+	defer e.lock.Unlock()
 
-		for _, event := range events {
-			ref := aggregate+"_"+event
-			e.names[ref] = append(e.names[ref], &s)
-		}
+	for _, event := range events {
+		ref := aggregate+"_"+event
+		e.names[ref] = append(e.names[ref], &s)
 	}
+
 	return &s
 }
