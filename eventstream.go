@@ -103,7 +103,7 @@ func (e *EventStream) specificAggregatesPublisher(agg AggregateRoot, event Event
 
 // call functions that has registered for the aggregate type events
 func (e *EventStream) aggregateEventNamePublisher(event Event) {
-	ref := event.AggregateType+"_"+event.Reason()
+	ref := event.AggregateType + "_" + event.Reason()
 	if subs, ok := e.names[ref]; ok {
 		for _, s := range subs {
 			s.eventF(event)
@@ -206,8 +206,8 @@ func (e *EventStream) AggregateType(f func(e Event), aggregates ...Aggregate) *s
 	return &s
 }
 
-// SpecificEvent subscribe on specific events where the interface is a pointer to the event struct
-func (e *EventStream) SpecificEvent(f func(e Event), events ...interface{}) *subscription {
+// Event subscribe on specific events where the interface is a pointer to the event struct
+func (e *EventStream) Event(f func(e Event), events ...interface{}) *subscription {
 	s := subscription{
 		eventF: f,
 	}
@@ -247,7 +247,7 @@ func (e *EventStream) Name(f func(e Event), aggregate string, events ...string) 
 		defer e.lock.Unlock()
 
 		for _, event := range events {
-			ref := aggregate+"_"+event
+			ref := aggregate + "_" + event
 			for i, sub := range e.names[ref] {
 				if &s == sub {
 					e.names[ref] = append(e.names[ref][:i], e.names[ref][i+1:]...)

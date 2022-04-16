@@ -52,7 +52,9 @@ func TestSubSpecificEvent(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		streamEvent = &e
 	}
-	s := e.SpecificEvent(f, &AnEvent{})
+
+
+	s := e.Event(f, &AnEvent{})
 	defer s.Close()
 	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
 
@@ -127,7 +129,8 @@ func TestSubSpecificEventMultiplePublish(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		streamEvents = append(streamEvents, &e)
 	}
-	s := e.SpecificEvent(f, &AnEvent{}, &AnotherEvent{})
+
+	s := e.Event(f, &AnEvent{}, &AnotherEvent{})
 	defer s.Close()
 	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
 	e.Publish(AnotherAggregate{}.AggregateRoot, []eventsourcing.Event{otherEvent})
@@ -166,7 +169,7 @@ func TestUpdateNoneSubscribedEvent(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		streamEvent = &e
 	}
-	s := e.SpecificEvent(f, &AnotherEvent{})
+	s := e.Event(f, &AnotherEvent{})
 	defer s.Close()
 	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
 
@@ -198,11 +201,12 @@ func TestManySubscribers(t *testing.T) {
 	f5 := func(e eventsourcing.Event) {
 		streamEvent5 = append(streamEvent5, e)
 	}
-	s := e.SpecificEvent(f1, &AnotherEvent{})
+
+	s := e.Event(f1, &AnotherEvent{})
 	defer s.Close()
-	s = e.SpecificEvent(f2, &AnotherEvent{}, &AnEvent{})
+	s = e.Event(f2, &AnotherEvent{}, &AnEvent{})
 	defer s.Close()
-	s = e.SpecificEvent(f3, &AnEvent{})
+	s = e.Event(f3, &AnEvent{})
 	defer s.Close()
 	s = e.All(f4)
 	defer s.Close()
@@ -246,9 +250,10 @@ func TestParallelPublish(t *testing.T) {
 	f3 := func(e eventsourcing.Event) {
 		streamEvent = append(streamEvent, e)
 	}
-	s := e.SpecificEvent(f1, &AnEvent{})
+
+	s := e.Event(f1, &AnEvent{})
 	defer s.Close()
-	s = e.SpecificEvent(f2, &AnotherEvent{})
+	s = e.Event(f2, &AnotherEvent{})
 	defer s.Close()
 	s = e.All(f3)
 	defer s.Close()
@@ -289,7 +294,7 @@ func TestClose(t *testing.T) {
 		count++
 	}
 	s1 := e.All(f)
-	s2 := e.SpecificEvent(f, &AnEvent{})
+	s2 := e.Event(f, &AnEvent{})
 	s3 := e.AggregateType(f, &AnAggregate{})
 	s4 := e.Aggregate(f, &AnAggregate{})
 

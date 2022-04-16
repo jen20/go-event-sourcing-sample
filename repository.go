@@ -30,6 +30,14 @@ type Aggregate interface {
 	Transition(event Event)
 }
 
+type EventSubscribers interface {
+	All(f func(e Event)) *subscription
+	Aggregate(f func(e Event), aggregates ...Aggregate) *subscription
+	AggregateType(f func(e Event), aggregates ...Aggregate) *subscription
+	Event(f func(e Event), events ...interface{}) *subscription
+	Name(f func(e Event), aggregate string, events ...string) *subscription
+}
+
 // ErrSnapshotNotFound returns if snapshot not found
 var ErrSnapshotNotFound = errors.New("snapshot not found")
 
@@ -38,9 +46,9 @@ var ErrAggregateNotFound = errors.New("aggregate not found")
 
 // Repository is the returned instance from the factory function
 type Repository struct {
-	EventStream *EventStream
-	eventStore EventStore
-	snapshot   *SnapshotHandler
+	eventStream *EventStream
+	eventStore  EventStore
+	snapshot    *SnapshotHandler
 }
 
 // NewRepository factory function
@@ -48,8 +56,13 @@ func NewRepository(eventStore EventStore, snapshot *SnapshotHandler) *Repository
 	return &Repository{
 		eventStore:  eventStore,
 		snapshot:    snapshot,
-		EventStream: NewEventStream(),
+		eventStream: NewEventStream(),
 	}
+}
+
+// Subscribers returns an interface with all event subscribers
+func (r *Repository) Subscribers() EventSubscribers {
+	return r.eventStream
 }
 
 // Save an aggregates events
@@ -61,7 +74,7 @@ func (r *Repository) Save(aggregate Aggregate) error {
 		return err
 	}
 	// publish the saved events to subscribers
-	r.EventStream.Publish(*root, root.Events())
+	r.eventStream.Publish(*root, root.Events())
 
 	// update the internal aggregate state
 	root.update()
