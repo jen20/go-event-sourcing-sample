@@ -310,7 +310,6 @@ The repository expose four possibilities to subscribe to events in realtime as t
 `Aggregate(func (e Event), events ...Aggregate) *subscription` events bound to specific aggregate based on type and identity.
 This makes it possible to get events pinpointed to one specific aggregate instance.
 
-
 `AggregateType(func (e Event), aggregates ...Aggregate) *subscription` subscribes to events bound to specific aggregate type. 
  
 `SpecificEvent(func (e Event), events ...interface{}) *subscription` subscribes to specific events. There are no restrictions that the events need
@@ -331,7 +330,7 @@ Example on how to set up the event subscription and consume the event `FrequentF
 repo := eventsourcing.NewRepository(memory.Create(), nil)
 
 // subscriber that will trigger on every saved events
-s := repo.EventStream.All(func(e eventsourcing.Event) {
+s := repo.Subscribers().All(func(e eventsourcing.Event) {
     switch e := event.Data.(type) {
         case *FrequentFlierAccountCreated:
             // e now have type info
@@ -340,11 +339,8 @@ s := repo.EventStream.All(func(e eventsourcing.Event) {
     }
 )
 
-// start subscription
-s.Subscribe()
-
 // stop subscription
-s.Unsubscribe() 
+s.Close()
 ```
 
 ## Custom made components
