@@ -58,14 +58,18 @@ func (e *EventStream) Publish(agg AggregateRoot, events []Event) {
 		e.specificEventPublisher(event)
 		e.aggregateTypePublisher(agg, event)
 		e.specificAggregatesPublisher(agg, event)
-		e.aggregateEventNamePublisher(event)
+		e.namePublisher(event)
 	}
 }
 
 // call functions that has registered for all events
 func (e *EventStream) allPublisher(event Event) {
-	for _, s := range e.all {
-		s.eventF(event)
+	for i, s := range e.all {
+		if s.eventF != nil {
+			s.eventF(event)
+		} else {
+			e.all = append(e.all[:i], e.all[i+1:]...)
+		}
 	}
 }
 
@@ -73,8 +77,12 @@ func (e *EventStream) allPublisher(event Event) {
 func (e *EventStream) specificEventPublisher(event Event) {
 	t := reflect.TypeOf(event.Data)
 	if subs, ok := e.specificEvents[t]; ok {
-		for _, s := range subs {
-			s.eventF(event)
+		for i, s := range subs {
+			if s.eventF != nil {
+				s.eventF(event)
+			} else {
+				e.specificEvents[t] = append(e.specificEvents[t][:i], e.specificEvents[t][i+1:]...)
+			}
 		}
 	}
 }
@@ -83,8 +91,12 @@ func (e *EventStream) specificEventPublisher(event Event) {
 func (e *EventStream) aggregateTypePublisher(agg AggregateRoot, event Event) {
 	ref := fmt.Sprintf("%s_%s", agg.path(), event.AggregateType)
 	if subs, ok := e.aggregateTypes[ref]; ok {
-		for _, s := range subs {
-			s.eventF(event)
+		for i, s := range subs {
+			if s.eventF != nil {
+				s.eventF(event)
+			} else {
+				e.aggregateTypes[ref] = append(e.aggregateTypes[ref][:i], e.aggregateTypes[ref][i+1:]...)
+			}
 		}
 	}
 }
@@ -92,21 +104,28 @@ func (e *EventStream) aggregateTypePublisher(agg AggregateRoot, event Event) {
 // call functions that has registered for the aggregate type and ID events
 func (e *EventStream) specificAggregatesPublisher(agg AggregateRoot, event Event) {
 	// ref also include the package name ensuring that Aggregate Types can have the same name.
-	ref := fmt.Sprintf("%s_%s", agg.path(), event.AggregateType)
-	ref = fmt.Sprintf("%s_%s", ref, agg.ID())
+	ref := fmt.Sprintf("%s_%s_%s", agg.path(), event.AggregateType, agg.ID())
 	if subs, ok := e.specificAggregates[ref]; ok {
-		for _, s := range subs {
-			s.eventF(event)
+		for i, s := range subs {
+			if s.eventF != nil {
+				s.eventF(event)
+			} else {
+				e.specificAggregates[ref] = append(e.specificAggregates[ref][:i], e.specificAggregates[ref][i+1:]...)
+			}
 		}
 	}
 }
 
 // call functions that has registered for the aggregate type events
-func (e *EventStream) aggregateEventNamePublisher(event Event) {
+func (e *EventStream) namePublisher(event Event) {
 	ref := event.AggregateType + "_" + event.Reason()
 	if subs, ok := e.names[ref]; ok {
-		for _, s := range subs {
-			s.eventF(event)
+		for i, s := range subs {
+			if s.eventF != nil {
+				s.eventF(event)
+			} else {
+				e.names[ref] = append(e.names[ref][:i], e.names[ref][i+1:]...)
+			}
 		}
 	}
 }
@@ -119,13 +138,7 @@ func (e *EventStream) All(f func(e Event)) *subscription {
 	s.close = func() {
 		e.lock.Lock()
 		defer e.lock.Unlock()
-
-		for i, sub := range e.all {
-			if &s == sub {
-				e.all = append(e.all[:i], e.all[i+1:]...)
-				break
-			}
-		}
+		s.eventF = nil
 	}
 	e.lock.Lock()
 	defer e.lock.Unlock()
@@ -142,18 +155,7 @@ func (e *EventStream) Aggregate(f func(e Event), aggregates ...Aggregate) *subsc
 	s.close = func() {
 		e.lock.Lock()
 		defer e.lock.Unlock()
-
-		for _, a := range aggregates {
-			name := reflect.TypeOf(a).Elem().Name()
-			root := a.Root()
-			ref := fmt.Sprintf("%s_%s_%s", root.path(), name, root.ID())
-			for i, sub := range e.specificAggregates[ref] {
-				if &s == sub {
-					e.specificAggregates[ref] = append(e.specificAggregates[ref][:i], e.specificAggregates[ref][i+1:]...)
-					break
-				}
-			}
-		}
+		s.eventF = nil
 	}
 	e.lock.Lock()
 	defer e.lock.Unlock()
@@ -167,6 +169,7 @@ func (e *EventStream) Aggregate(f func(e Event), aggregates ...Aggregate) *subsc
 		e.specificAggregates[ref] = append(e.specificAggregates[ref], &s)
 	}
 
+
 	return &s
 }
 
@@ -178,18 +181,7 @@ func (e *EventStream) AggregateType(f func(e Event), aggregates ...Aggregate) *s
 	s.close = func() {
 		e.lock.Lock()
 		defer e.lock.Unlock()
-
-		for _, a := range aggregates {
-			name := reflect.TypeOf(a).Elem().Name()
-			root := a.Root()
-			ref := fmt.Sprintf("%s_%s", root.path(), name)
-			for i, sub := range e.aggregateTypes[ref] {
-				if &s == sub {
-					e.aggregateTypes[ref] = append(e.aggregateTypes[ref][:i], e.aggregateTypes[ref][i+1:]...)
-					break
-				}
-			}
-		}
+		s.eventF = nil
 	}
 	e.lock.Lock()
 	defer e.lock.Unlock()
@@ -203,6 +195,7 @@ func (e *EventStream) AggregateType(f func(e Event), aggregates ...Aggregate) *s
 		e.aggregateTypes[ref] = append(e.aggregateTypes[ref], &s)
 	}
 
+
 	return &s
 }
 
@@ -214,16 +207,7 @@ func (e *EventStream) Event(f func(e Event), events ...interface{}) *subscriptio
 	s.close = func() {
 		e.lock.Lock()
 		defer e.lock.Unlock()
-
-		for _, event := range events {
-			t := reflect.TypeOf(event)
-			for i, sub := range e.specificEvents[t] {
-				if &s == sub {
-					e.specificEvents[t] = append(e.specificEvents[t][:i], e.specificEvents[t][i+1:]...)
-					break
-				}
-			}
-		}
+		s.eventF = nil
 	}
 	e.lock.Lock()
 	defer e.lock.Unlock()
@@ -245,22 +229,13 @@ func (e *EventStream) Name(f func(e Event), aggregate string, events ...string) 
 	s.close = func() {
 		e.lock.Lock()
 		defer e.lock.Unlock()
-
-		for _, event := range events {
-			ref := aggregate + "_" + event
-			for i, sub := range e.names[ref] {
-				if &s == sub {
-					e.names[ref] = append(e.names[ref][:i], e.names[ref][i+1:]...)
-					break
-				}
-			}
-		}
+		s.eventF = func(e Event) {}
 	}
 	e.lock.Lock()
 	defer e.lock.Unlock()
 
 	for _, event := range events {
-		ref := aggregate+"_"+event
+		ref := aggregate + "_" + event
 		e.names[ref] = append(e.names[ref], &s)
 	}
 
