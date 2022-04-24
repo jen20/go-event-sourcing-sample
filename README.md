@@ -307,12 +307,12 @@ The repository expose four possibilities to subscribe to events in realtime as t
 
 `All(func (e Event)) *subscription` subscribes to all event.
 
-`Aggregate(func (e Event), events ...Aggregate) *subscription` events bound to specific aggregate based on type and identity.
+`AggregateID(func (e Event), events ...Aggregate) *subscription` events bound to specific aggregate based on type and identity.
 This makes it possible to get events pinpointed to one specific aggregate instance.
 
-`AggregateType(func (e Event), aggregates ...Aggregate) *subscription` subscribes to events bound to specific aggregate type. 
+`Aggregate(func (e Event), aggregates ...Aggregate) *subscription` subscribes to events bound to specific aggregate type. 
  
-`SpecificEvent(func (e Event), events ...interface{}) *subscription` subscribes to specific events. There are no restrictions that the events need
+`Event(func (e Event), events ...interface{}) *subscription` subscribes to specific events. There are no restrictions that the events need
 to come from the same aggregate, you can mix and match as you please.
 
 `Name(f func(e Event), aggregate string, events ...string) *subscription` subscribes to events based on aggregate type and event name.
