@@ -117,8 +117,8 @@ func (e *EventStream) All(f func(e Event)) *subscription {
 	return &s
 }
 
-// Aggregate subscribe to events that belongs to aggregate's based on its type and ID
-func (e *EventStream) Aggregate(f func(e Event), aggregates ...Aggregate) *subscription {
+// AggregateID subscribe to events that belongs to aggregate's based on its type and ID
+func (e *EventStream) AggregateID(f func(e Event), aggregates ...Aggregate) *subscription {
 	s := subscription{
 		eventF: f,
 	}
@@ -145,8 +145,8 @@ func (e *EventStream) Aggregate(f func(e Event), aggregates ...Aggregate) *subsc
 	return &s
 }
 
-// AggregateType subscribe to events based on the aggregate type
-func (e *EventStream) AggregateType(f func(e Event), aggregates ...Aggregate) *subscription {
+// Aggregate subscribe to events based on the aggregate type
+func (e *EventStream) Aggregate(f func(e Event), aggregates ...Aggregate) *subscription {
 	s := subscription{
 		eventF: f,
 	}
@@ -173,7 +173,7 @@ func (e *EventStream) AggregateType(f func(e Event), aggregates ...Aggregate) *s
 	return &s
 }
 
-// Event subscribe on specific events where the interface is a pointer to the event struct
+// Event subscribe on specific application defined events based on type referencing.
 func (e *EventStream) Event(f func(e Event), events ...interface{}) *subscription {
 	s := subscription{
 		eventF: f,
@@ -198,7 +198,8 @@ func (e *EventStream) Event(f func(e Event), events ...interface{}) *subscriptio
 	return &s
 }
 
-// Name subscribe to aggregate and events names
+// Name subscribe to aggregate name combined with event names. The Name subscriber makes it possible to subscribe to
+// events event if the aggregate and event types are within the current application context.
 func (e *EventStream) Name(f func(e Event), aggregate string, events ...string) *subscription {
 	s := subscription{
 		eventF: f,

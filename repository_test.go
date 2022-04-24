@@ -271,13 +271,13 @@ func TestSubscriptionSpecificEvent(t *testing.T) {
 	}
 }
 
-func TestSubscriptionAggregateType(t *testing.T) {
+func TestSubscriptionAggregate(t *testing.T) {
 	counter := 0
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
-	s := repo.Subscribers().AggregateType(f, &Person{})
+	s := repo.Subscribers().Aggregate(f, &Person{})
 	defer s.Close()
 
 	person, err := CreatePerson("kalle")
@@ -308,7 +308,7 @@ func TestSubscriptionSpecificAggregate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := repo.Subscribers().Aggregate(f, person)
+	s := repo.Subscribers().AggregateID(f, person)
 	defer s.Close()
 
 	person.GrowOlder()
@@ -355,7 +355,7 @@ func TestEventChainDoesNotHang(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := repo.Subscribers().Aggregate(f, person)
+	s := repo.Subscribers().AggregateID(f, person)
 	defer s.Close()
 
 	// subscribe to all events and filter out AgedOneYear
