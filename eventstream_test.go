@@ -297,21 +297,23 @@ func TestClose(t *testing.T) {
 	s2 := e.Event(f, &AnEvent{})
 	s3 := e.AggregateType(f, &AnAggregate{})
 	s4 := e.Aggregate(f, &AnAggregate{})
+	s5 := e.All(f)
 
 	// trigger 4 subscriptions
 	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
-	if count != 4 {
-		t.Fatalf("should have received four event")
+	if count != 5 {
+		t.Fatalf("should have received 5 event")
 	}
 	// close all subscriptions
 	s1.Close()
 	s2.Close()
 	s3.Close()
 	s4.Close()
+	s5.Close()
 
 	// new event should not trigger closed subscriptions
 	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
-	if count != 4 {
+	if count != 5 {
 		t.Fatalf("should not have received event after subscriptions are closed")
 	}
 }
