@@ -2,3 +2,4 @@ example/example
 .idea
 coverage.txt
 *.swp
+go.work

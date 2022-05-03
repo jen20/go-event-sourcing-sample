@@ -225,9 +225,8 @@ func TestSubscriptionAllEvent(t *testing.T) {
 		counter++
 	}
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
-	s := repo.SubscriberAll(f)
-	s.Subscribe()
-	defer s.Unsubscribe()
+	s := repo.Subscribers().All(f)
+	defer s.Close()
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -252,9 +251,8 @@ func TestSubscriptionSpecificEvent(t *testing.T) {
 		counter++
 	}
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
-	s := repo.SubscriberSpecificEvent(f, &Born{}, &AgedOneYear{})
-	s.Subscribe()
-	defer s.Unsubscribe()
+	s := repo.Subscribers().Event(f, &Born{}, &AgedOneYear{})
+	defer s.Close()
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -273,15 +271,14 @@ func TestSubscriptionSpecificEvent(t *testing.T) {
 	}
 }
 
-func TestSubscriptionAggregateType(t *testing.T) {
+func TestSubscriptionAggregate(t *testing.T) {
 	counter := 0
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
-	s := repo.SubscriberAggregateType(f, &Person{})
-	s.Subscribe()
-	defer s.Unsubscribe()
+	s := repo.Subscribers().Aggregate(f, &Person{})
+	defer s.Close()
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -311,9 +308,8 @@ func TestSubscriptionSpecificAggregate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := repo.SubscriberSpecificAggregate(f, person)
-	s.Subscribe()
-	defer s.Unsubscribe()
+	s := repo.Subscribers().AggregateID(f, person)
+	defer s.Close()
 
 	person.GrowOlder()
 	person.GrowOlder()
@@ -359,21 +355,19 @@ func TestEventChainDoesNotHang(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := repo.SubscriberSpecificAggregate(f, person)
-	s.Subscribe()
-	defer s.Unsubscribe()
+	s := repo.Subscribers().AggregateID(f, person)
+	defer s.Close()
 
 	// subscribe to all events and filter out AgedOneYear
 	ageCounter := 0
-	s2 := repo.SubscriberAll(func(e eventsourcing.Event) {
+	s2 := repo.Subscribers().All(func(e eventsourcing.Event) {
 		switch e.Data.(type) {
 		case *AgedOneYear:
 			// will match three times on the initial person and one each on the resulting AgedOneYear event
 			ageCounter++
 		}
 	})
-	s2.Subscribe()
-	defer s2.Unsubscribe()
+	defer s2.Close()
 
 	person.GrowOlder()
 	person.GrowOlder()
