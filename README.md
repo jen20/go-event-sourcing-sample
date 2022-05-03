@@ -305,7 +305,7 @@ serializer.Register(&Person{}, serializer.Events(&Born{}, &AgedOneYear{}))
 
 The repository expose four possibilities to subscribe to events in realtime as they are saved to the repository.
 
-`All(func (e Event)) *subscription` subscribes to all event.
+`All(func (e Event)) *subscription` subscribes to all events.
 
 `AggregateID(func (e Event), events ...Aggregate) *subscription` events bound to specific aggregate based on type and identity.
 This makes it possible to get events pinpointed to one specific aggregate instance.
