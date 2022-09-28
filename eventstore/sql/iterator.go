@@ -20,6 +20,9 @@ func (i *iterator) Next() (eventsourcing.Event, error) {
 	var id, reason, typ, timestamp string
 	var data, metadata string
 	if !i.rows.Next() {
+		if err := i.rows.Err(); err != nil {
+			return eventsourcing.Event{}, err
+		}
 		return eventsourcing.Event{}, eventsourcing.ErrNoMoreEvents
 	}
 	if err := i.rows.Scan(&globalVersion, &id, &version, &reason, &typ, &timestamp, &data, &metadata); err != nil {

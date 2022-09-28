@@ -163,5 +163,8 @@ func (s *SQL) eventsFromRows(rows *sql.Rows) ([]eventsourcing.Event, error) {
 			Metadata:      eventMetadata,
 		})
 	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
 	return events, nil
 }
