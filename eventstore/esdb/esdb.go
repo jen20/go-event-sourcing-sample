@@ -2,7 +2,6 @@ package esdb
 
 import (
 	"context"
-	"errors"
 
 	"github.com/hallgren/eventsourcing/eventstore"
 
@@ -24,7 +23,7 @@ func Open(client *esdb.Client, serializer eventsourcing.Serializer, jsonSerializ
 	// defaults to binary
 	var contentType esdb.ContentType
 	if jsonSerializer {
-		contentType = esdb.JsonContentType
+		contentType = esdb.ContentTypeJson
 	}
 	return &ESDB{
 		client:      client,
@@ -100,8 +99,10 @@ func (es *ESDB) Get(ctx context.Context, id string, aggregateType string, afterV
 	from := esdb.StreamRevision{Value: uint64(afterVersion)}
 	stream, err := es.client.ReadStream(ctx, streamID, esdb.ReadStreamOptions{From: from}, ^uint64(0))
 	if err != nil {
-		if errors.Is(err, esdb.ErrStreamNotFound) {
-			return nil, eventsourcing.ErrNoEvents
+		if err, ok := esdb.FromError(err); !ok {
+			if err.Code() == esdb.ErrorCodeResourceNotFound {
+				return nil, eventsourcing.ErrNoEvents
+			}
 		}
 		return nil, err
 	} else if ctx.Err() != nil {
