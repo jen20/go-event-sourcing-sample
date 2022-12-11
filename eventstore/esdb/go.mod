@@ -3,7 +3,8 @@ module github.com/hallgren/eventsourcing/eventstore/esdb
 go 1.16
 
 require (
-	github.com/EventStore/EventStore-Client-Go v1.0.2
+	github.com/EventStore/EventStore-Client-Go v1.0.2 // indirect
+	github.com/EventStore/EventStore-Client-Go/v3 v3.0.0
 	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/hallgren/eventsourcing v0.0.20
 	golang.org/x/net v0.0.0-20220425223048-2871e0cb64e4 // indirect
