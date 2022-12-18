@@ -22,9 +22,15 @@ func (i *iterator) Close() {
 // Next returns next event from the stream
 func (i *iterator) Next() (eventsourcing.Event, error) {
 	var eventMetadata map[string]interface{}
+
 	eventESDB, err := i.stream.Recv()
 	if errors.Is(err, io.EOF) {
 		return eventsourcing.Event{}, eventsourcing.ErrNoMoreEvents
+	}
+	if err, ok := esdb.FromError(err); !ok {
+		if err.Code() == esdb.ErrorCodeResourceNotFound {
+			return eventsourcing.Event{}, eventsourcing.ErrNoMoreEvents
+		}
 	}
 	if err != nil {
 		return eventsourcing.Event{}, err
