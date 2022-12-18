@@ -1,4 +1,6 @@
+//go:build manual
 // +build manual
+
 // make these tests manual as they are dependent on a running event store db.
 
 package esdb_test
@@ -6,7 +8,7 @@ package esdb_test
 import (
 	"testing"
 
-	"github.com/EventStore/EventStore-Client-Go/esdb"
+	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 	"github.com/hallgren/eventsourcing"
 	es "github.com/hallgren/eventsourcing/eventstore/esdb"
 	"github.com/hallgren/eventsourcing/eventstore/suite"
