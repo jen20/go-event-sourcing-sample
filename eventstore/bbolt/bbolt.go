@@ -134,6 +134,9 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 
 		// marshal the event.Data separately to be able to handle the type info
 		eventData, err := e.serializer.Marshal(event.Data)
+		if err != nil {
+			return errors.New(fmt.Sprintf("could not serialize event data, %v", err))
+		}
 
 		// build the internal bolt event
 		bEvent := boltEvent{
