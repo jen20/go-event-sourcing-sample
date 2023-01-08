@@ -134,6 +134,9 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 
 		// marshal the event.Data separately to be able to handle the type info
 		eventData, err := e.serializer.Marshal(event.Data)
+		if err != nil {
+			return errors.New(fmt.Sprintf("could not serialize event data, %v", err))
+		}
 
 		// build the internal bolt event
 		bEvent := boltEvent{
@@ -181,7 +184,7 @@ func (e *BBolt) Get(ctx context.Context, id string, aggregateType string, afterV
 
 }
 
-// GlobalEvents return count events in order globaly from the start posistion
+// GlobalEvents return count events in order globally from the start posistion
 func (e *BBolt) GlobalEvents(start, count uint64) ([]eventsourcing.Event, error) {
 	var events []eventsourcing.Event
 	tx, err := e.db.Begin(false)
