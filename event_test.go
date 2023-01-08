@@ -18,9 +18,9 @@ func TestEvent(t *testing.T) {
 func TestDataAs(t *testing.T) {
 	type Created struct {
 		Name string
-		Age int
+		Age  int
 	}
-	b := Born {Name: "Jonathan"}
+	b := Born{Name: "Jonathan"}
 	c := Created{}
 
 	e := eventsourcing.Event{
