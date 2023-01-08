@@ -181,7 +181,7 @@ func (e *BBolt) Get(ctx context.Context, id string, aggregateType string, afterV
 
 }
 
-// GlobalEvents return count events in order globaly from the start posistion
+// GlobalEvents return count events in order globally from the start posistion
 func (e *BBolt) GlobalEvents(start, count uint64) ([]eventsourcing.Event, error) {
 	var events []eventsourcing.Event
 	tx, err := e.db.Begin(false)
