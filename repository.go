@@ -119,7 +119,6 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Ag
 		return ctx.Err()
 	}
 	defer eventIterator.Close()
-DONE:
 	for {
 		select {
 		case <-ctx.Done():
@@ -132,13 +131,12 @@ DONE:
 				// no events and no snapshot (some eventstore will not return the error ErrNoEvent on Get())
 				return ErrAggregateNotFound
 			} else if errors.Is(err, ErrNoMoreEvents) {
-				break DONE
+				return nil
 			}
 			// apply the event on the aggregate
 			root.BuildFromHistory(aggregate, []Event{event})
 		}
 	}
-	return nil
 }
 
 // Get fetches the aggregates event and build up the aggregate
