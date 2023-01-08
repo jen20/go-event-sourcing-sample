@@ -85,6 +85,9 @@ func TestSnapshotNoneExported(t *testing.T) {
 
 	snap2 := snapshot{}
 	err = repo.Get(snap.ID(), &snap2)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if snap.unexported != snap2.unexported {
 		t.Fatalf("none exported value differed %s %s", snap.unexported, snap2.unexported)
@@ -103,6 +106,9 @@ func TestSnapshot(t *testing.T) {
 	repo := eventsourcing.NewRepository(memory2.Create(), s)
 
 	person, err := CreatePersonWithID("123", "kalle")
+	if err != nil {
+		t.Fatal(err)
+	}
 	repo.Save(person)
 
 	err = s.Save(person)
