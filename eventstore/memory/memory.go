@@ -104,7 +104,7 @@ func (e *Memory) Get(ctx context.Context, id string, aggregateType string, after
 	return &iterator{events: events}, nil
 }
 
-// GlobalEvents will return count events in order globaly from the start posistion
+// GlobalEvents will return count events in order globally from the start posistion
 func (e *Memory) GlobalEvents(start, count uint64) ([]eventsourcing.Event, error) {
 	var events []eventsourcing.Event
 	// make sure its thread safe
