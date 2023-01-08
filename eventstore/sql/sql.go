@@ -107,7 +107,7 @@ func (s *SQL) Get(ctx context.Context, id string, aggregateType string, afterVer
 	return &i, nil
 }
 
-// GlobalEvents return count events in order globaly from the start posistion
+// GlobalEvents return count events in order globally from the start posistion
 func (s *SQL) GlobalEvents(start, count uint64) ([]eventsourcing.Event, error) {
 	selectStm := `Select seq, id, version, reason, type, timestamp, data, metadata from events where seq >= ? order by seq asc LIMIT ?`
 	rows, err := s.db.Query(selectStm, start, count)
