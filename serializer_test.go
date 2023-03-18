@@ -70,11 +70,10 @@ func TestSerializeDeserialize(t *testing.T) {
 				t.Fatalf("Could not Unmarshal data, %v", err)
 			}
 
-			/*
-				if data2.A != data.A {
-					t.Fatalf("wrong value in A expected: %d, actual: %d", data.A, data2.A)
-				}
-			*/
+			if data2.(*SomeData).A != data.A {
+				t.Fatalf("wrong value in A expected: %d, actual: %d", data.A, data2.(*SomeData).A)
+			}
+
 			m, err := s.Marshal(metaData)
 			if err != nil {
 				t.Fatalf("could not Marshal metadata, %v", err)
