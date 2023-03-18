@@ -12,7 +12,7 @@ import (
 func initSerializers(t *testing.T) []*eventsourcing.Serializer {
 	var result []*eventsourcing.Serializer
 	s := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
-	err := s.Register(&SomeAggregate{}, s.Events(&SomeData{}, &SomeData2{}))
+	err := s.RegisterAggregate(&SomeAggregate{})
 	if err != nil {
 		t.Fatalf("could not register aggregate events %v", err)
 	}
@@ -25,6 +25,13 @@ type SomeAggregate struct {
 }
 
 func (s *SomeAggregate) Transition(event eventsourcing.Event) {}
+
+func (s *SomeAggregate) RegisterEvents(f eventsourcing.EventsFunc) error {
+	return f(
+		&SomeData{},
+		&SomeData2{},
+	)
+}
 
 type SomeData struct {
 	A int

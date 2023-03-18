@@ -6,8 +6,13 @@ import (
 )
 
 type eventFunc = func() interface{}
+type EventsFunc = func(events ...interface{}) error
 type MarshalSnapshotFunc func(v interface{}) ([]byte, error)
 type UnmarshalSnapshotFunc func(data []byte, v interface{}) error
+
+type aggregate interface {
+	RegisterEvents(EventsFunc) error
+}
 
 // Serializer for json serializes
 type Serializer struct {
@@ -36,7 +41,7 @@ var (
 	ErrEventNameMissing = errors.New("missing event name")
 )
 
-func event(event interface{}) eventFunc {
+func eventToFunc(event interface{}) eventFunc {
 	return func() interface{} { return event }
 }
 
@@ -44,9 +49,31 @@ func event(event interface{}) eventFunc {
 func (h *Serializer) Events(events ...interface{}) []eventFunc {
 	res := []eventFunc{}
 	for _, e := range events {
-		res = append(res, event(e))
+		res = append(res, eventToFunc(e))
 	}
 	return res
+}
+
+func (h *Serializer) RegisterAggregate(a aggregate) error {
+	typ := reflect.TypeOf(a).Elem().Name()
+	if typ == "" {
+		return ErrAggregateNameMissing
+	}
+
+	fu := func(events ...interface{}) error {
+		eventsF := h.Events(events...)
+		for _, f := range eventsF {
+			event := f()
+			reason := reflect.TypeOf(event).Elem().Name()
+			if reason == "" {
+				return ErrEventNameMissing
+			}
+			h.eventRegister[typ+"_"+reason] = f
+		}
+		return nil
+	}
+
+	return a.RegisterEvents(fu)
 }
 
 // Register will hold a map of aggregate_event to be able to set the currect type when
