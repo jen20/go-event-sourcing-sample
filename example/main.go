@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
-	"time"
 )
 
 func main() {
@@ -18,8 +19,8 @@ func main() {
 		// Here we use a channel to store the events to be consumed async
 		c <- e
 	}
-	sub := repo.SubscriberAll(f)
-	sub.Subscribe()
+	sub := repo.Subscribers().All(f)
+	defer sub.Close()
 
 	// Read the event stream async
 	go func() {
