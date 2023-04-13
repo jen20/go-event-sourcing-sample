@@ -301,6 +301,20 @@ Register the aggregate Person and the events Born and AgedOneYear (Makes use of 
 serializer.Register(&Person{}, serializer.Events(&Born{}, &AgedOneYear{}))
 ```
 
+A problem with the above way of register the aggregate and its events is when new events are introduced. As the registration to the serializer is apart from the definition of the events it's easy to miss register them to the serializer. A solution to this is the optional callback function `RegisterEvents` that can be defined on the aggregate. This function is called by the serializer when an aggregate is registered via the `RegisterAggregate` method.
+
+```go
+func (s *Person) RegisterEvents(f eventsourcing.EventsFunc) error {
+	return f(
+		&Born{},
+        &AgedOneYear{},
+	)
+}
+
+s := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
+s.RegisterAggregate(&Person{}) // will call the RegisterEvents function on the Person aggregate.
+```
+
 ### Event Subscription
 
 The repository expose four possibilities to subscribe to events in realtime as they are saved to the repository.
