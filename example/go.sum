@@ -12,3 +12,5 @@ github.com/hallgren/eventsourcing v0.0.19-0.20220118202610-aedede509961 h1:HZDx+
 github.com/hallgren/eventsourcing v0.0.19-0.20220118202610-aedede509961/go.mod h1:rODloJ0HuAQ4fGafaKciOMA/6vyTuCA01Ht1hyK2EWA=
 github.com/hallgren/eventsourcing v0.0.19 h1:qTLeJrqCqB4AJ4FaSLUQzLR5+pw/4Gy8GnWPWeRzwAM=
 github.com/hallgren/eventsourcing v0.0.19/go.mod h1:rODloJ0HuAQ4fGafaKciOMA/6vyTuCA01Ht1hyK2EWA=
+github.com/hallgren/eventsourcing v0.0.21 h1:17TrhBFEwYIEf1MWs9f9X7zH/sK8HkrdTxx+wfvOf/Q=
+github.com/hallgren/eventsourcing v0.0.21/go.mod h1:rODloJ0HuAQ4fGafaKciOMA/6vyTuCA01Ht1hyK2EWA=
