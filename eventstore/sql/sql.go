@@ -8,16 +8,17 @@ import (
 	"time"
 
 	"github.com/hallgren/eventsourcing/base"
+	eventstore "github.com/hallgren/eventsourcing/eventstore"
 )
 
 // SQL event store handler
 type SQL struct {
 	db         *sql.DB
-	serializer base.Serializer
+	serializer eventstore.Serializer
 }
 
 // Open connection to database
-func Open(db *sql.DB, serializer base.Serializer) *SQL {
+func Open(db *sql.DB, serializer eventstore.Serializer) *SQL {
 	return &SQL{
 		db:         db,
 		serializer: serializer,

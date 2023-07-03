@@ -5,11 +5,12 @@ import (
 	"time"
 
 	"github.com/hallgren/eventsourcing/base"
+	eventstore "github.com/hallgren/eventsourcing/eventstore"
 )
 
 type iterator struct {
 	rows       *sql.Rows
-	serializer base.Serializer
+	serializer eventstore.Serializer
 }
 
 // Next return the next event

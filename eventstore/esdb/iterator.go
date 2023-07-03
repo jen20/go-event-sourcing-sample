@@ -7,11 +7,12 @@ import (
 
 	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 	"github.com/hallgren/eventsourcing/base"
+	eventstore "github.com/hallgren/eventsourcing/eventstore"
 )
 
 type iterator struct {
 	stream     *esdb.ReadStream
-	serializer base.Serializer
+	serializer eventstore.Serializer
 }
 
 // Close closes the stream

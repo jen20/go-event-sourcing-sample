@@ -1,7 +1,6 @@
 package base
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"reflect"
@@ -21,12 +20,6 @@ var ErrNoMoreEvents = errors.New("no more events")
 type EventIterator interface {
 	Next() (Event, error)
 	Close()
-}
-
-// EventStore interface expose the methods an event store must uphold
-type EventStore interface {
-	Save(events []Event) error
-	Get(ctx context.Context, id string, aggregateType string, afterVersion Version) (EventIterator, error)
 }
 
 // Event holding meta data and the application specific event in the Data property

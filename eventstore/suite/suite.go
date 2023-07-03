@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/hallgren/eventsourcing/base"
+	eventstore "github.com/hallgren/eventsourcing/eventstore"
 )
 
 var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -20,12 +21,12 @@ func AggregateID() string {
 	return fmt.Sprintf("%d", r)
 }
 
-type eventstoreFunc = func(ser base.Serializer) (base.EventStore, func(), error)
+type eventstoreFunc = func(ser eventstore.Serializer) (eventstore.EventStore, func(), error)
 
 func Test(t *testing.T, esFunc eventstoreFunc) {
 	tests := []struct {
 		title string
-		run   func(es base.EventStore) error
+		run   func(es eventstore.EventStore) error
 	}{
 		{"should save and get events", saveAndGetEvents},
 		{"should get events after version", getEventsAfterVersion},
@@ -38,7 +39,7 @@ func Test(t *testing.T, esFunc eventstoreFunc) {
 		{"should return error when no events", getErrWhenNoEvents},
 		{"should get global event order from save", saveReturnGlobalEventOrder},
 	}
-	ser := base.NewSerializer(json.Marshal, json.Unmarshal)
+	ser := eventstore.NewSerializer(json.Marshal, json.Unmarshal)
 
 	ser.Register(&FrequentFlierAccount{},
 		ser.Events(
@@ -127,7 +128,7 @@ func testEventOtherAggregate(aggregateID string) base.Event {
 	return base.Event{AggregateID: aggregateID, Version: 1, AggregateType: aggregateType, Timestamp: timestamp, Data: &FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}}
 }
 
-func saveAndGetEvents(es base.EventStore) error {
+func saveAndGetEvents(es eventstore.EventStore) error {
 	aggregateID := AggregateID()
 	events := testEvents(aggregateID)
 	fetchedEvents := []base.Event{}
@@ -212,7 +213,7 @@ func saveAndGetEvents(es base.EventStore) error {
 	return nil
 }
 
-func getEventsAfterVersion(es base.EventStore) error {
+func getEventsAfterVersion(es eventstore.EventStore) error {
 	var fetchedEvents []base.Event
 	aggregateID := AggregateID()
 	err := es.Save(testEvents(aggregateID))
@@ -244,7 +245,7 @@ func getEventsAfterVersion(es base.EventStore) error {
 	return nil
 }
 
-func saveEventsFromMoreThanOneAggregate(es base.EventStore) error {
+func saveEventsFromMoreThanOneAggregate(es eventstore.EventStore) error {
 	aggregateID := AggregateID()
 	aggregateIDOther := AggregateID()
 	invalidEvent := append(testEvents(aggregateID), testEventOtherAggregate(aggregateIDOther))
@@ -255,7 +256,7 @@ func saveEventsFromMoreThanOneAggregate(es base.EventStore) error {
 	return nil
 }
 
-func saveEventsFromMoreThanOneAggregateType(es base.EventStore) error {
+func saveEventsFromMoreThanOneAggregateType(es eventstore.EventStore) error {
 	aggregateID := AggregateID()
 	events := testEvents(aggregateID)
 	events[1].AggregateType = "OtherAggregateType"
@@ -267,7 +268,7 @@ func saveEventsFromMoreThanOneAggregateType(es base.EventStore) error {
 	return nil
 }
 
-func saveEventsInWrongOrder(es base.EventStore) error {
+func saveEventsInWrongOrder(es eventstore.EventStore) error {
 	aggregateID := AggregateID()
 	events := append(testEvents(aggregateID), testEvents(aggregateID)[0])
 	err := es.Save(events)
@@ -277,7 +278,7 @@ func saveEventsInWrongOrder(es base.EventStore) error {
 	return nil
 }
 
-func saveEventsInWrongVersion(es base.EventStore) error {
+func saveEventsInWrongVersion(es eventstore.EventStore) error {
 	aggregateID := AggregateID()
 	events := testEventsPartTwo(aggregateID)
 	err := es.Save(events)
@@ -287,7 +288,7 @@ func saveEventsInWrongVersion(es base.EventStore) error {
 	return nil
 }
 
-func saveEventsWithEmptyReason(es base.EventStore) error {
+func saveEventsWithEmptyReason(es eventstore.EventStore) error {
 	aggregateID := AggregateID()
 	events := testEvents(aggregateID)
 	events[2].Data = nil
@@ -298,7 +299,7 @@ func saveEventsWithEmptyReason(es base.EventStore) error {
 	return nil
 }
 
-func saveAndGetEventsConcurrently(es base.EventStore) error {
+func saveAndGetEventsConcurrently(es eventstore.EventStore) error {
 	wg := sync.WaitGroup{}
 	var err error
 	aggregateID := AggregateID()
@@ -351,7 +352,7 @@ func saveAndGetEventsConcurrently(es base.EventStore) error {
 	return nil
 }
 
-func getErrWhenNoEvents(es base.EventStore) error {
+func getErrWhenNoEvents(es eventstore.EventStore) error {
 	aggregateID := AggregateID()
 	iterator, err := es.Get(context.Background(), aggregateID, aggregateType, 0)
 	if err != nil {
@@ -368,7 +369,7 @@ func getErrWhenNoEvents(es base.EventStore) error {
 	return nil
 }
 
-func saveReturnGlobalEventOrder(es base.EventStore) error {
+func saveReturnGlobalEventOrder(es eventstore.EventStore) error {
 	aggregateID := AggregateID()
 	aggregateID2 := AggregateID()
 	events := testEvents(aggregateID)

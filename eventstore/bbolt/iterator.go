@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hallgren/eventsourcing/base"
+	eventstore "github.com/hallgren/eventsourcing/eventstore"
 	"go.etcd.io/bbolt"
 )
 
@@ -13,7 +14,7 @@ type iterator struct {
 	bucketName      string
 	firstEventIndex uint64
 	cursor          *bbolt.Cursor
-	serializer      base.Serializer
+	serializer      eventstore.Serializer
 }
 
 // Close closes the iterator

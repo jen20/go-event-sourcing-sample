@@ -9,13 +9,14 @@ import (
 	"testing"
 
 	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
-	"github.com/hallgren/eventsourcing/base"
+
+	eventstore "github.com/hallgren/eventsourcing/eventstore"
 	es "github.com/hallgren/eventsourcing/eventstore/esdb"
-	"github.com/hallgren/eventsourcing/base/suite"
+	"github.com/hallgren/eventsourcing/eventstore/suite"
 )
 
 func TestSuite(t *testing.T) {
-	f := func(ser base.Serializer) (base.EventStore, func(), error) {
+	f := func(ser eventstore.Serializer) (eventstore.EventStore, func(), error) {
 		// region createClient
 		settings, err := esdb.ParseConnectionString("esdb://localhost:2113?tls=false")
 		if err != nil {

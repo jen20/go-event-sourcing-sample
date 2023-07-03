@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/hallgren/eventsourcing/base"
+	eventstore "github.com/hallgren/eventsourcing/eventstore"
 
 	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 )
@@ -13,12 +14,12 @@ const streamSeparator = "-"
 // ESDB is the event store handler
 type ESDB struct {
 	client      *esdb.Client
-	serializer  base.Serializer
+	serializer  eventstore.Serializer
 	contentType esdb.ContentType
 }
 
 // Open binds the event store db client
-func Open(client *esdb.Client, serializer base.Serializer, jsonSerializer bool) *ESDB {
+func Open(client *esdb.Client, serializer eventstore.Serializer, jsonSerializer bool) *ESDB {
 	// defaults to binary
 	var contentType esdb.ContentType
 	if jsonSerializer {

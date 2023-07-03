@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/hallgren/eventsourcing/base"
+	eventstore "github.com/hallgren/eventsourcing/eventstore"
 	"go.etcd.io/bbolt"
 )
 
@@ -24,8 +25,8 @@ func itob(v uint64) []byte {
 
 // BBolt is the eventstore handler
 type BBolt struct {
-	db         *bbolt.DB       // The bbolt db where we store everything
-	serializer base.Serializer // The serializer
+	db         *bbolt.DB             // The bbolt db where we store everything
+	serializer eventstore.Serializer // The serializer
 }
 
 type boltEvent struct {
@@ -41,7 +42,7 @@ type boltEvent struct {
 
 // MustOpenBBolt opens the event stream found in the given file. If the file is not found it will be created and
 // initialized. Will panic if it has problems persisting the changes to the filesystem.
-func MustOpenBBolt(dbFile string, s base.Serializer) *BBolt {
+func MustOpenBBolt(dbFile string, s eventstore.Serializer) *BBolt {
 	db, err := bbolt.Open(dbFile, 0600, &bbolt.Options{
 		Timeout: 1 * time.Second,
 	})
