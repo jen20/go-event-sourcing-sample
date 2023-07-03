@@ -1,4 +1,4 @@
-package eventsourcing
+package base
 
 import (
 	"errors"
@@ -78,7 +78,7 @@ func (h *Serializer) RegisterAggregate(a aggregate) error {
 
 // Register will hold a map of aggregate_event to be able to set the currect type when
 // the data is unmarhaled.
-func (h *Serializer) Register(aggregate Aggregate, events []eventFunc) error {
+func (h *Serializer) Register(aggregate interface{}, events []eventFunc) error {
 	typ := reflect.TypeOf(aggregate).Elem().Name()
 	if typ == "" {
 		return ErrAggregateNameMissing
@@ -99,7 +99,7 @@ func (h *Serializer) Register(aggregate Aggregate, events []eventFunc) error {
 }
 
 // RegisterTypes events aggregate
-func (h *Serializer) RegisterTypes(aggregate Aggregate, events ...eventFunc) error {
+func (h *Serializer) RegisterTypes(aggregate interface{}, events ...eventFunc) error {
 	return h.Register(aggregate, events)
 }
 

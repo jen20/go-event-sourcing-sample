@@ -1,13 +1,18 @@
-package eventsourcing_test
+package base_test
 
 import (
 	"testing"
 
-	"github.com/hallgren/eventsourcing"
+	"github.com/hallgren/eventsourcing/base"
 )
 
+// Born event
+type Born struct {
+	Name string
+}
+
 func TestEvent(t *testing.T) {
-	e := eventsourcing.Event{
+	e := base.Event{
 		Data: &Born{},
 	}
 	if e.Reason() != "Born" {
@@ -23,7 +28,7 @@ func TestDataAs(t *testing.T) {
 	b := Born{Name: "Jonathan"}
 	c := Created{}
 
-	e := eventsourcing.Event{
+	e := base.Event{
 		Data: &b,
 	}
 	err := e.DataAs(&c)

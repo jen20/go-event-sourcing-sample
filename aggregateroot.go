@@ -4,6 +4,8 @@ import (
 	"errors"
 	"reflect"
 	"time"
+
+	"github.com/hallgren/eventsourcing/base"
 )
 
 // Version is the event version used in event.Version, event.GlobalVersion and aggregateRoot
@@ -12,9 +14,9 @@ type Version uint64
 // AggregateRoot to be included into aggregates
 type AggregateRoot struct {
 	aggregateID            string
-	aggregateVersion       Version
-	aggregateGlobalVersion Version
-	aggregateEvents        []Event
+	aggregateVersion       base.Version
+	aggregateGlobalVersion base.Version
+	aggregateEvents        []base.Event
 }
 
 const (
@@ -40,7 +42,7 @@ func (ar *AggregateRoot) TrackChangeWithMetadata(a Aggregate, data interface{}, 
 	}
 
 	name := reflect.TypeOf(a).Elem().Name()
-	event := Event{
+	event := base.Event{
 		AggregateID:   ar.aggregateID,
 		Version:       ar.nextVersion(),
 		AggregateType: name,
@@ -53,7 +55,7 @@ func (ar *AggregateRoot) TrackChangeWithMetadata(a Aggregate, data interface{}, 
 }
 
 // BuildFromHistory builds the aggregate state from events
-func (ar *AggregateRoot) BuildFromHistory(a Aggregate, events []Event) {
+func (ar *AggregateRoot) BuildFromHistory(a Aggregate, events []base.Event) {
 	for _, event := range events {
 		a.Transition(event)
 		//Set the aggregate ID
@@ -64,14 +66,14 @@ func (ar *AggregateRoot) BuildFromHistory(a Aggregate, events []Event) {
 	}
 }
 
-func (ar *AggregateRoot) setInternals(id string, version, globalVersion Version) {
+func (ar *AggregateRoot) setInternals(id string, version, globalVersion base.Version) {
 	ar.aggregateID = id
 	ar.aggregateVersion = version
 	ar.aggregateGlobalVersion = globalVersion
-	ar.aggregateEvents = []Event{}
+	ar.aggregateEvents = []base.Event{}
 }
 
-func (ar *AggregateRoot) nextVersion() Version {
+func (ar *AggregateRoot) nextVersion() base.Version {
 	return ar.Version() + 1
 }
 
@@ -82,7 +84,7 @@ func (ar *AggregateRoot) update() {
 		lastEvent := ar.aggregateEvents[len(ar.aggregateEvents)-1]
 		ar.aggregateVersion = lastEvent.Version
 		ar.aggregateGlobalVersion = lastEvent.GlobalVersion
-		ar.aggregateEvents = []Event{}
+		ar.aggregateEvents = []base.Event{}
 	}
 }
 
@@ -112,7 +114,7 @@ func (ar *AggregateRoot) Root() *AggregateRoot {
 }
 
 // Version return the version based on events that are not stored
-func (ar *AggregateRoot) Version() Version {
+func (ar *AggregateRoot) Version() base.Version {
 	if len(ar.aggregateEvents) > 0 {
 		return ar.aggregateEvents[len(ar.aggregateEvents)-1].Version
 	}
@@ -120,14 +122,14 @@ func (ar *AggregateRoot) Version() Version {
 }
 
 // GlobalVersion returns the global version based on the last stored event
-func (ar *AggregateRoot) GlobalVersion() Version {
+func (ar *AggregateRoot) GlobalVersion() base.Version {
 	return ar.aggregateGlobalVersion
 }
 
 // Events return the aggregate events from the aggregate
 // make a copy of the slice preventing outsiders modifying events.
-func (ar *AggregateRoot) Events() []Event {
-	e := make([]Event, len(ar.aggregateEvents))
+func (ar *AggregateRoot) Events() []base.Event {
+	e := make([]base.Event, len(ar.aggregateEvents))
 	copy(e, ar.aggregateEvents)
 	return e
 }

@@ -4,25 +4,24 @@ import (
 	"context"
 	"sync"
 
-	"github.com/hallgren/eventsourcing"
-	"github.com/hallgren/eventsourcing/eventstore"
+	"github.com/hallgren/eventsourcing/base"
 )
 
 // Memory is a handler for event streaming
 type Memory struct {
-	aggregateEvents map[string][]eventsourcing.Event // The memory structure where we store aggregate events
-	eventsInOrder   []eventsourcing.Event            // The global event order
+	aggregateEvents map[string][]base.Event // The memory structure where we store aggregate events
+	eventsInOrder   []base.Event            // The global event order
 	lock            sync.Mutex
 }
 
 type iterator struct {
-	events   []eventsourcing.Event
+	events   []base.Event
 	position int
 }
 
-func (i *iterator) Next() (eventsourcing.Event, error) {
+func (i *iterator) Next() (base.Event, error) {
 	if len(i.events) <= i.position {
-		return eventsourcing.Event{}, eventsourcing.ErrNoMoreEvents
+		return base.Event{}, base.ErrNoMoreEvents
 	}
 	event := i.events[i.position]
 	i.position++
@@ -37,13 +36,13 @@ func (i *iterator) Close() {
 // Create in memory event store
 func Create() *Memory {
 	return &Memory{
-		aggregateEvents: make(map[string][]eventsourcing.Event),
-		eventsInOrder:   make([]eventsourcing.Event, 0),
+		aggregateEvents: make(map[string][]base.Event),
+		eventsInOrder:   make([]base.Event, 0),
 	}
 }
 
 // Save an aggregate (its events)
-func (e *Memory) Save(events []eventsourcing.Event) error {
+func (e *Memory) Save(events []base.Event) error {
 	// Return if there is no events to save
 	if len(events) == 0 {
 		return nil
@@ -59,7 +58,7 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	bucketName := aggregateKey(aggregateType, aggregateID)
 
 	evBucket := e.aggregateEvents[bucketName]
-	currentVersion := eventsourcing.Version(0)
+	currentVersion := base.Version(0)
 
 	if len(evBucket) > 0 {
 		// Last version in the list
@@ -68,14 +67,14 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 	}
 
 	//Validate events
-	err := eventstore.ValidateEvents(aggregateID, currentVersion, events)
+	err := base.ValidateEvents(aggregateID, currentVersion, events)
 	if err != nil {
 		return err
 	}
 
 	for i, event := range events {
 		// set the global version on the event +1 as if the event was already on the eventsInOrder slice
-		event.GlobalVersion = eventsourcing.Version(len(e.eventsInOrder) + 1)
+		event.GlobalVersion = base.Version(len(e.eventsInOrder) + 1)
 		evBucket = append(evBucket, event)
 		e.eventsInOrder = append(e.eventsInOrder, event)
 		// override the event in the slice exposing the GlobalVersion to the caller
@@ -87,8 +86,8 @@ func (e *Memory) Save(events []eventsourcing.Event) error {
 }
 
 // Get aggregate events
-func (e *Memory) Get(ctx context.Context, id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.EventIterator, error) {
-	var events []eventsourcing.Event
+func (e *Memory) Get(ctx context.Context, id string, aggregateType string, afterVersion base.Version) (base.EventIterator, error) {
+	var events []base.Event
 	// make sure its thread safe
 	e.lock.Lock()
 	defer e.lock.Unlock()
@@ -99,14 +98,14 @@ func (e *Memory) Get(ctx context.Context, id string, aggregateType string, after
 		}
 	}
 	if len(events) == 0 {
-		return nil, eventsourcing.ErrNoEvents
+		return nil, base.ErrNoEvents
 	}
 	return &iterator{events: events}, nil
 }
 
 // GlobalEvents will return count events in order globally from the start posistion
-func (e *Memory) GlobalEvents(start, count uint64) ([]eventsourcing.Event, error) {
-	var events []eventsourcing.Event
+func (e *Memory) GlobalEvents(start, count uint64) ([]base.Event, error) {
+	var events []base.Event
 	// make sure its thread safe
 	e.lock.Lock()
 	defer e.lock.Unlock()

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/hallgren/eventsourcing"
+	"github.com/hallgren/eventsourcing/base"
 )
 
 // Person aggregate
@@ -61,7 +62,7 @@ func (person *Person) GrowOlder() {
 }
 
 // Transition the person state dependent on the events
-func (person *Person) Transition(event eventsourcing.Event) {
+func (person *Person) Transition(event base.Event) {
 	switch e := event.Data.(type) {
 	case *Born:
 		person.Age = 0

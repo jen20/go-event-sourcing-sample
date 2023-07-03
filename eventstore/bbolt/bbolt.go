@@ -7,8 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hallgren/eventsourcing"
-	"github.com/hallgren/eventsourcing/eventstore"
+	"github.com/hallgren/eventsourcing/base"
 	"go.etcd.io/bbolt"
 )
 
@@ -25,8 +24,8 @@ func itob(v uint64) []byte {
 
 // BBolt is the eventstore handler
 type BBolt struct {
-	db         *bbolt.DB                // The bbolt db where we store everything
-	serializer eventsourcing.Serializer // The serializer
+	db         *bbolt.DB       // The bbolt db where we store everything
+	serializer base.Serializer // The serializer
 }
 
 type boltEvent struct {
@@ -42,7 +41,7 @@ type boltEvent struct {
 
 // MustOpenBBolt opens the event stream found in the given file. If the file is not found it will be created and
 // initialized. Will panic if it has problems persisting the changes to the filesystem.
-func MustOpenBBolt(dbFile string, s eventsourcing.Serializer) *BBolt {
+func MustOpenBBolt(dbFile string, s base.Serializer) *BBolt {
 	db, err := bbolt.Open(dbFile, 0600, &bbolt.Options{
 		Timeout: 1 * time.Second,
 	})
@@ -67,7 +66,7 @@ func MustOpenBBolt(dbFile string, s eventsourcing.Serializer) *BBolt {
 }
 
 // Save an aggregate (its events)
-func (e *BBolt) Save(events []eventsourcing.Event) error {
+func (e *BBolt) Save(events []base.Event) error {
 	// Return if there is no events to save
 	if len(events) == 0 {
 		return nil
@@ -94,11 +93,11 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 		evBucket = tx.Bucket([]byte(bucketName))
 	}
 
-	currentVersion := eventsourcing.Version(0)
+	currentVersion := base.Version(0)
 	cursor := evBucket.Cursor()
 	k, obj := cursor.Last()
 	if k != nil {
-		lastEvent := eventsourcing.Event{}
+		lastEvent := base.Event{}
 		err := e.serializer.Unmarshal(obj, &lastEvent)
 		if err != nil {
 			return errors.New(fmt.Sprintf("could not serialize event, %v", err))
@@ -107,7 +106,7 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 	}
 
 	//Validate events
-	err = eventstore.ValidateEvents(aggregateID, currentVersion, events)
+	err = base.ValidateEvents(aggregateID, currentVersion, events)
 	if err != nil {
 		return err
 	}
@@ -165,13 +164,13 @@ func (e *BBolt) Save(events []eventsourcing.Event) error {
 		}
 
 		// override the event in the slice exposing the GlobalVersion to the caller
-		events[i].GlobalVersion = eventsourcing.Version(globalSequence)
+		events[i].GlobalVersion = base.Version(globalSequence)
 	}
 	return tx.Commit()
 }
 
 // Get aggregate events
-func (e *BBolt) Get(ctx context.Context, id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.EventIterator, error) {
+func (e *BBolt) Get(ctx context.Context, id string, aggregateType string, afterVersion base.Version) (base.EventIterator, error) {
 	bucketName := aggregateKey(aggregateType, id)
 
 	tx, err := e.db.Begin(false)
@@ -185,8 +184,8 @@ func (e *BBolt) Get(ctx context.Context, id string, aggregateType string, afterV
 }
 
 // GlobalEvents return count events in order globally from the start posistion
-func (e *BBolt) GlobalEvents(start, count uint64) ([]eventsourcing.Event, error) {
-	var events []eventsourcing.Event
+func (e *BBolt) GlobalEvents(start, count uint64) ([]base.Event, error) {
+	var events []base.Event
 	tx, err := e.db.Begin(false)
 	if err != nil {
 		return nil, err
@@ -211,11 +210,11 @@ func (e *BBolt) GlobalEvents(start, count uint64) ([]eventsourcing.Event, error)
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("could not deserialize event data, %v", err))
 		}
-		event := eventsourcing.Event{
+		event := base.Event{
 			AggregateID:   bEvent.AggregateID,
 			AggregateType: bEvent.AggregateType,
-			Version:       eventsourcing.Version(bEvent.Version),
-			GlobalVersion: eventsourcing.Version(bEvent.GlobalVersion),
+			Version:       base.Version(bEvent.Version),
+			GlobalVersion: base.Version(bEvent.GlobalVersion),
 			Timestamp:     bEvent.Timestamp,
 			Metadata:      bEvent.Metadata,
 			Data:          eventData,

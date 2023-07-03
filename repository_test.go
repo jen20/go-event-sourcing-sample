@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/hallgren/eventsourcing"
+	"github.com/hallgren/eventsourcing/base"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
 	memsnap "github.com/hallgren/eventsourcing/snapshotstore/memory"
 )
@@ -109,7 +110,7 @@ func TestGetNoneExistingAggregate(t *testing.T) {
 }
 
 func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
-	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
+	ser := base.NewSerializer(xml.Marshal, xml.Unmarshal)
 	repo := eventsourcing.NewRepository(memory.Create(), eventsourcing.SnapshotNew(memsnap.New(), *ser))
 
 	person, err := CreatePerson("kalle")
@@ -146,7 +147,7 @@ func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
 }
 
 func TestSaveAndGetAggregateSnapshotAndEventsWithContext(t *testing.T) {
-	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
+	ser := base.NewSerializer(xml.Marshal, xml.Unmarshal)
 	repo := eventsourcing.NewRepository(memory.Create(), eventsourcing.SnapshotNew(memsnap.New(), *ser))
 
 	person, err := CreatePerson("kalle")
@@ -191,7 +192,7 @@ func TestSaveAndGetAggregateSnapshotAndEventsWithContext(t *testing.T) {
 }
 
 func TestSaveSnapshotWithUnsavedEvents(t *testing.T) {
-	ser := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
+	ser := base.NewSerializer(json.Marshal, json.Unmarshal)
 	repo := eventsourcing.NewRepository(memory.Create(), eventsourcing.SnapshotNew(memsnap.New(), *ser))
 
 	person, err := CreatePerson("kalle")
@@ -221,7 +222,7 @@ func TestSaveSnapshotWithoutSnapshotStore(t *testing.T) {
 
 func TestSubscriptionAllEvent(t *testing.T) {
 	counter := 0
-	f := func(e eventsourcing.Event) {
+	f := func(e base.Event) {
 		counter++
 	}
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
@@ -247,7 +248,7 @@ func TestSubscriptionAllEvent(t *testing.T) {
 
 func TestSubscriptionSpecificEvent(t *testing.T) {
 	counter := 0
-	f := func(e eventsourcing.Event) {
+	f := func(e base.Event) {
 		counter++
 	}
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
@@ -273,7 +274,7 @@ func TestSubscriptionSpecificEvent(t *testing.T) {
 
 func TestSubscriptionAggregate(t *testing.T) {
 	counter := 0
-	f := func(e eventsourcing.Event) {
+	f := func(e base.Event) {
 		counter++
 	}
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
@@ -299,7 +300,7 @@ func TestSubscriptionAggregate(t *testing.T) {
 
 func TestSubscriptionSpecificAggregate(t *testing.T) {
 	counter := 0
-	f := func(e eventsourcing.Event) {
+	f := func(e base.Event) {
 		counter++
 	}
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
@@ -328,9 +329,9 @@ func TestEventChainDoesNotHang(t *testing.T) {
 	repo := eventsourcing.NewRepository(memory.Create(), nil)
 
 	// eventChan can hold 5 events before it get full and blocks.
-	eventChan := make(chan eventsourcing.Event, 5)
+	eventChan := make(chan base.Event, 5)
 	doneChan := make(chan struct{})
-	f := func(e eventsourcing.Event) {
+	f := func(e base.Event) {
 		eventChan <- e
 	}
 
@@ -360,7 +361,7 @@ func TestEventChainDoesNotHang(t *testing.T) {
 
 	// subscribe to all events and filter out AgedOneYear
 	ageCounter := 0
-	s2 := repo.Subscribers().All(func(e eventsourcing.Event) {
+	s2 := repo.Subscribers().All(func(e base.Event) {
 		switch e.Data.(type) {
 		case *AgedOneYear:
 			// will match three times on the initial person and one each on the resulting AgedOneYear event

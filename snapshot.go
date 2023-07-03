@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"reflect"
+
+	"github.com/hallgren/eventsourcing/base"
 )
 
 // ErrEmptyID indicates that the aggregate ID was empty
@@ -17,25 +19,25 @@ type Snapshot struct {
 	ID            string
 	Type          string
 	State         []byte
-	Version       Version
-	GlobalVersion Version
+	Version       base.Version
+	GlobalVersion base.Version
 }
 
 // SnapshotAggregate is an Aggregate plus extra methods to help serialize into a snapshot
 type SnapshotAggregate interface {
 	Aggregate
-	Marshal(m MarshalSnapshotFunc) ([]byte, error)
-	Unmarshal(m UnmarshalSnapshotFunc, b []byte) error
+	Marshal(m base.MarshalSnapshotFunc) ([]byte, error)
+	Unmarshal(m base.UnmarshalSnapshotFunc, b []byte) error
 }
 
 // SnapshotHandler gets and saves snapshots
 type SnapshotHandler struct {
 	snapshotStore SnapshotStore
-	serializer    Serializer
+	serializer    base.Serializer
 }
 
 // SnapshotNew constructs a SnapshotHandler
-func SnapshotNew(ss SnapshotStore, ser Serializer) *SnapshotHandler {
+func SnapshotNew(ss SnapshotStore, ser base.Serializer) *SnapshotHandler {
 	return &SnapshotHandler{
 		snapshotStore: ss,
 		serializer:    ser,

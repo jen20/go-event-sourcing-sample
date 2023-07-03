@@ -4,19 +4,9 @@ import (
 	"context"
 	"errors"
 	"reflect"
+
+	"github.com/hallgren/eventsourcing/base"
 )
-
-// EventIterator is the interface an event store Get needs to return
-type EventIterator interface {
-	Next() (Event, error)
-	Close()
-}
-
-// EventStore interface expose the methods an event store must uphold
-type EventStore interface {
-	Save(events []Event) error
-	Get(ctx context.Context, id string, aggregateType string, afterVersion Version) (EventIterator, error)
-}
 
 // SnapshotStore interface expose the methods an snapshot store must uphold
 type SnapshotStore interface {
@@ -27,15 +17,15 @@ type SnapshotStore interface {
 // Aggregate interface to use the aggregate root specific methods
 type Aggregate interface {
 	Root() *AggregateRoot
-	Transition(event Event)
+	Transition(event base.Event)
 }
 
 type EventSubscribers interface {
-	All(f func(e Event)) *subscription
-	AggregateID(f func(e Event), aggregates ...Aggregate) *subscription
-	Aggregate(f func(e Event), aggregates ...Aggregate) *subscription
-	Event(f func(e Event), events ...interface{}) *subscription
-	Name(f func(e Event), aggregate string, events ...string) *subscription
+	All(f func(e base.Event)) *subscription
+	AggregateID(f func(e base.Event), aggregates ...Aggregate) *subscription
+	Aggregate(f func(e base.Event), aggregates ...Aggregate) *subscription
+	Event(f func(e base.Event), events ...interface{}) *subscription
+	Name(f func(e base.Event), aggregate string, events ...string) *subscription
 }
 
 // ErrSnapshotNotFound returns if snapshot not found
@@ -47,12 +37,12 @@ var ErrAggregateNotFound = errors.New("aggregate not found")
 // Repository is the returned instance from the factory function
 type Repository struct {
 	eventStream *EventStream
-	eventStore  EventStore
+	eventStore  base.EventStore
 	snapshot    *SnapshotHandler
 }
 
 // NewRepository factory function
-func NewRepository(eventStore EventStore, snapshot *SnapshotHandler) *Repository {
+func NewRepository(eventStore base.EventStore, snapshot *SnapshotHandler) *Repository {
 	return &Repository{
 		eventStore:  eventStore,
 		snapshot:    snapshot,
@@ -110,9 +100,9 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Ag
 	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
 	// fetch events after the current version of the aggregate that could be fetched from the snapshot store
 	eventIterator, err := r.eventStore.Get(ctx, id, aggregateType, root.Version())
-	if err != nil && !errors.Is(err, ErrNoEvents) {
+	if err != nil && !errors.Is(err, base.ErrNoEvents) {
 		return err
-	} else if errors.Is(err, ErrNoEvents) && root.Version() == 0 {
+	} else if errors.Is(err, base.ErrNoEvents) && root.Version() == 0 {
 		// no events and no snapshot
 		return ErrAggregateNotFound
 	} else if ctx.Err() != nil {
@@ -125,16 +115,16 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Ag
 			return ctx.Err()
 		default:
 			event, err := eventIterator.Next()
-			if err != nil && !errors.Is(err, ErrNoMoreEvents) {
+			if err != nil && !errors.Is(err, base.ErrNoMoreEvents) {
 				return err
-			} else if errors.Is(err, ErrNoMoreEvents) && root.Version() == 0 {
+			} else if errors.Is(err, base.ErrNoMoreEvents) && root.Version() == 0 {
 				// no events and no snapshot (some eventstore will not return the error ErrNoEvent on Get())
 				return ErrAggregateNotFound
-			} else if errors.Is(err, ErrNoMoreEvents) {
+			} else if errors.Is(err, base.ErrNoMoreEvents) {
 				return nil
 			}
 			// apply the event on the aggregate
-			root.BuildFromHistory(aggregate, []Event{event})
+			root.BuildFromHistory(aggregate, []base.Event{event})
 		}
 	}
 }
