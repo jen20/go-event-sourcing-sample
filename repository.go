@@ -8,12 +8,6 @@ import (
 	"github.com/hallgren/eventsourcing/base"
 )
 
-// SnapshotStore interface expose the methods an snapshot store must uphold
-type SnapshotStore interface {
-	Save(s Snapshot) error
-	Get(ctx context.Context, id, typ string) (Snapshot, error)
-}
-
 // Aggregate interface to use the aggregate root specific methods
 type Aggregate interface {
 	Root() *AggregateRoot
@@ -28,9 +22,6 @@ type EventSubscribers interface {
 	Name(f func(e base.Event), aggregate string, events ...string) *subscription
 }
 
-// ErrSnapshotNotFound returns if snapshot not found
-var ErrSnapshotNotFound = errors.New("snapshot not found")
-
 // ErrAggregateNotFound returns if snapshot or event not found for aggregate
 var ErrAggregateNotFound = errors.New("aggregate not found")
 
@@ -38,14 +29,12 @@ var ErrAggregateNotFound = errors.New("aggregate not found")
 type Repository struct {
 	eventStream *EventStream
 	eventStore  base.EventStore
-	snapshot    *SnapshotHandler
 }
 
 // NewRepository factory function
-func NewRepository(eventStore base.EventStore, snapshot *SnapshotHandler) *Repository {
+func NewRepository(eventStore base.EventStore) *Repository {
 	return &Repository{
 		eventStore:  eventStore,
-		snapshot:    snapshot,
 		eventStream: NewEventStream(),
 	}
 }
@@ -71,31 +60,13 @@ func (r *Repository) Save(aggregate Aggregate) error {
 	return nil
 }
 
-// SaveSnapshot saves the current state of the aggregate but only if it has no unsaved events
-func (r *Repository) SaveSnapshot(aggregate Aggregate) error {
-	if r.snapshot == nil {
-		return errors.New("no snapshot store has been initialized")
-	}
-	return r.snapshot.Save(aggregate)
-}
-
-// GetWithContext fetches the aggregates event and build up the aggregate
-// If there is a snapshot store try fetch a snapshot of the aggregate and fetch event after the
-// version of the aggregate if any
+// GetWithContext fetches the aggregates event and build up the aggregate based on it's current version.
 // The event fetching can be canceled from the outside.
 func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Aggregate) error {
 	if reflect.ValueOf(aggregate).Kind() != reflect.Ptr {
 		return errors.New("aggregate needs to be a pointer")
 	}
-	// if there is a snapshot store try fetch aggregate snapshot
-	if r.snapshot != nil {
-		err := r.snapshot.Get(ctx, id, aggregate)
-		if err != nil && !errors.Is(err, ErrSnapshotNotFound) {
-			return err
-		} else if ctx.Err() != nil {
-			return ctx.Err()
-		}
-	}
+
 	root := aggregate.Root()
 	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
 	// fetch events after the current version of the aggregate that could be fetched from the snapshot store
