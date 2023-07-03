@@ -5,15 +5,16 @@ import (
 	"time"
 
 	"github.com/hallgren/eventsourcing"
+	"github.com/hallgren/eventsourcing/base"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
 )
 
 func main() {
-	var c = make(chan eventsourcing.Event)
+	var c = make(chan base.Event)
 	// Setup a memory based event store
 	eventStore := memory.Create()
 	repo := eventsourcing.NewRepository(eventStore, nil)
-	f := func(e eventsourcing.Event) {
+	f := func(e base.Event) {
 		fmt.Printf("Event from stream %q\n", e)
 		// Its a good practice making this function as fast as possible not blocking the event sourcing call for to long
 		// Here we use a channel to store the events to be consumed async
