@@ -51,13 +51,13 @@ func (ar *AggregateRoot) TrackChangeWithMetadata(a Aggregate, data interface{}, 
 		Metadata:      metadata,
 	}
 	ar.aggregateEvents = append(ar.aggregateEvents, event)
-	a.Transition(event)
+	a.Transition(convertEvent(event))
 }
 
 // BuildFromHistory builds the aggregate state from events
 func (ar *AggregateRoot) BuildFromHistory(a Aggregate, events []base.Event) {
 	for _, event := range events {
-		a.Transition(event)
+		a.Transition(convertEvent(event))
 		//Set the aggregate ID
 		ar.aggregateID = event.AggregateID
 		// Make sure the aggregate is in the correct version (the last event)
@@ -128,13 +128,22 @@ func (ar *AggregateRoot) GlobalVersion() base.Version {
 
 // Events return the aggregate events from the aggregate
 // make a copy of the slice preventing outsiders modifying events.
-func (ar *AggregateRoot) Events() []base.Event {
-	e := make([]base.Event, len(ar.aggregateEvents))
-	copy(e, ar.aggregateEvents)
+func (ar *AggregateRoot) Events() []Event {
+	e := make([]Event, len(ar.aggregateEvents))
+	// convert internal event to external event
+	for i, event := range ar.aggregateEvents {
+		e[i] = convertEvent(event)
+	}
 	return e
 }
 
 // UnsavedEvents return true if there's unsaved events on the aggregate
 func (ar *AggregateRoot) UnsavedEvents() bool {
 	return len(ar.aggregateEvents) > 0
+}
+
+func convertEvent(e base.Event) Event {
+	return Event{
+		event: e,
+	}
 }

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/hallgren/eventsourcing"
-	"github.com/hallgren/eventsourcing/base"
 )
 
 // Person aggregate
@@ -62,8 +61,8 @@ func (person *Person) GrowOlder() {
 }
 
 // Transition the person state dependent on the events
-func (person *Person) Transition(event base.Event) {
-	switch e := event.Data.(type) {
+func (person *Person) Transition(event eventsourcing.Event) {
+	switch e := event.Data().(type) {
 	case *Born:
 		person.Age = 0
 		person.Name = e.Name
@@ -95,16 +94,16 @@ func TestCreateNewPerson(t *testing.T) {
 		t.Fatal("Wrong version on the person aggregateRoot", person.Version())
 	}
 
-	if person.Events()[0].Timestamp.Before(timeBefore) {
+	if person.Events()[0].Timestamp().Before(timeBefore) {
 		t.Fatal("event timestamp before timeBefore")
 	}
 
-	if person.Events()[0].Timestamp.After(time.Now().UTC()) {
+	if person.Events()[0].Timestamp().After(time.Now().UTC()) {
 		t.Fatal("event timestamp after current time")
 	}
 
-	if person.Events()[0].GlobalVersion != 0 {
-		t.Fatalf("global version should not be set when event is created, was %d", person.Events()[0].GlobalVersion)
+	if person.Events()[0].GlobalVersion() != 0 {
+		t.Fatalf("global version should not be set when event is created, was %d", person.Events()[0].GlobalVersion())
 	}
 }
 
@@ -151,7 +150,7 @@ func TestPersonAgedOneYear(t *testing.T) {
 		t.Fatal("The last event reason should be AgedOneYear", person.Events()[len(person.Events())-1].Reason())
 	}
 
-	d, ok := person.Events()[1].Metadata["foo"]
+	d, ok := person.Events()[1].Metadata()["foo"]
 
 	if !ok {
 		t.Fatal("meta data not present")
@@ -205,6 +204,7 @@ func TestIDFuncGeneratingRandomIDs(t *testing.T) {
 	}
 }
 
+/* no possible anymore
 func TestMutateEvents(t *testing.T) {
 	var m = "mutated from the outside"
 	person, _ := CreatePerson("kalle")
@@ -215,3 +215,4 @@ func TestMutateEvents(t *testing.T) {
 		t.Fatal("events should not be mutated from the outside")
 	}
 }
+*/

@@ -4,22 +4,63 @@ import (
 	"context"
 	"errors"
 	"reflect"
+	"time"
 
 	"github.com/hallgren/eventsourcing/base"
 )
 
+type Event struct {
+	event base.Event // internal event
+}
+
+func EventConvert(e base.Event) Event {
+	return Event{e}
+}
+
+func (e Event) Data() interface{} {
+	return e.event.Data
+}
+
+func (e Event) Metadata() map[string]interface{} {
+	return e.event.Metadata
+}
+
+func (e Event) AggregateType() string {
+	return e.event.AggregateType
+}
+
+func (e Event) AggregateID() string {
+	return e.event.AggregateID
+}
+
+func (e Event) Reason() string {
+	return e.event.Reason()
+}
+
+func (e Event) Version() uint64 {
+	return uint64(e.event.Version)
+}
+
+func (e Event) Timestamp() time.Time {
+	return e.event.Timestamp
+}
+
+func (e Event) GlobalVersion() uint64 {
+	return uint64(e.event.GlobalVersion)
+}
+
 // Aggregate interface to use the aggregate root specific methods
 type Aggregate interface {
 	Root() *AggregateRoot
-	Transition(event base.Event)
+	Transition(event Event)
 }
 
 type EventSubscribers interface {
-	All(f func(e base.Event)) *subscription
-	AggregateID(f func(e base.Event), aggregates ...Aggregate) *subscription
-	Aggregate(f func(e base.Event), aggregates ...Aggregate) *subscription
-	Event(f func(e base.Event), events ...interface{}) *subscription
-	Name(f func(e base.Event), aggregate string, events ...string) *subscription
+	All(f func(e Event)) *subscription
+	AggregateID(f func(e Event), aggregates ...Aggregate) *subscription
+	Aggregate(f func(e Event), aggregates ...Aggregate) *subscription
+	Event(f func(e Event), events ...interface{}) *subscription
+	Name(f func(e Event), aggregate string, events ...string) *subscription
 }
 
 // ErrAggregateNotFound returns if snapshot or event not found for aggregate

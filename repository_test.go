@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/hallgren/eventsourcing"
-	"github.com/hallgren/eventsourcing/base"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
 )
 
@@ -226,7 +225,7 @@ func TestSaveSnapshotWithoutSnapshotStore(t *testing.T) {
 
 func TestSubscriptionAllEvent(t *testing.T) {
 	counter := 0
-	f := func(e base.Event) {
+	f := func(e eventsourcing.Event) {
 		counter++
 	}
 	repo := eventsourcing.NewRepository(memory.Create())
@@ -252,7 +251,7 @@ func TestSubscriptionAllEvent(t *testing.T) {
 
 func TestSubscriptionSpecificEvent(t *testing.T) {
 	counter := 0
-	f := func(e base.Event) {
+	f := func(e eventsourcing.Event) {
 		counter++
 	}
 	repo := eventsourcing.NewRepository(memory.Create())
@@ -278,7 +277,7 @@ func TestSubscriptionSpecificEvent(t *testing.T) {
 
 func TestSubscriptionAggregate(t *testing.T) {
 	counter := 0
-	f := func(e base.Event) {
+	f := func(e eventsourcing.Event) {
 		counter++
 	}
 	repo := eventsourcing.NewRepository(memory.Create())
@@ -304,7 +303,7 @@ func TestSubscriptionAggregate(t *testing.T) {
 
 func TestSubscriptionSpecificAggregate(t *testing.T) {
 	counter := 0
-	f := func(e base.Event) {
+	f := func(e eventsourcing.Event) {
 		counter++
 	}
 	repo := eventsourcing.NewRepository(memory.Create())
@@ -333,16 +332,16 @@ func TestEventChainDoesNotHang(t *testing.T) {
 	repo := eventsourcing.NewRepository(memory.Create())
 
 	// eventChan can hold 5 events before it get full and blocks.
-	eventChan := make(chan base.Event, 5)
+	eventChan := make(chan eventsourcing.Event, 5)
 	doneChan := make(chan struct{})
-	f := func(e base.Event) {
+	f := func(e eventsourcing.Event) {
 		eventChan <- e
 	}
 
 	// for every AgedOnYear create a new person and make it grow one year older
 	go func() {
 		for e := range eventChan {
-			switch e.Data.(type) {
+			switch e.Data().(type) {
 			case *AgedOneYear:
 				person, err := CreatePerson("kalle")
 				if err != nil {
@@ -365,8 +364,8 @@ func TestEventChainDoesNotHang(t *testing.T) {
 
 	// subscribe to all events and filter out AgedOneYear
 	ageCounter := 0
-	s2 := repo.Subscribers().All(func(e base.Event) {
-		switch e.Data.(type) {
+	s2 := repo.Subscribers().All(func(e eventsourcing.Event) {
+		switch e.Data().(type) {
 		case *AgedOneYear:
 			// will match three times on the initial person and one each on the resulting AgedOneYear event
 			ageCounter++
