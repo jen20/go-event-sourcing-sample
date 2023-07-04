@@ -136,7 +136,7 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Ag
 				return nil
 			}
 			// apply the event on the aggregate
-			root.BuildFromHistory(aggregate, []base.Event{event})
+			root.BuildFromHistory(aggregate, []Event{EventConvert(event)})
 		}
 	}
 }

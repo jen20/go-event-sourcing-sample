@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/hallgren/eventsourcing"
-	"github.com/hallgren/eventsourcing/base"
 )
 
 // FrequentFlierAccount represents the state of an instance of the frequent flier
@@ -63,7 +62,7 @@ func CreateFrequentFlierAccount(id string) *FrequentFlierAccountAggregate {
 
 // NewFrequentFlierAccountFromHistory creates a FrequentFlierAccount given a history
 // of the changes which have occurred for that account.
-func NewFrequentFlierAccountFromHistory(events []base.Event) *FrequentFlierAccountAggregate {
+func NewFrequentFlierAccountFromHistory(events []eventsourcing.Event) *FrequentFlierAccountAggregate {
 	state := FrequentFlierAccountAggregate{}
 	state.BuildFromHistory(&state, events)
 	return &state
@@ -89,9 +88,9 @@ func (f *FrequentFlierAccountAggregate) RecordFlightTaken(miles int, tierPoints 
 
 // Transition implements the pattern match against event types used both as part
 // of the fold when loading from history and when tracking an individual change.
-func (f *FrequentFlierAccountAggregate) Transition(event base.Event) {
+func (f *FrequentFlierAccountAggregate) Transition(event eventsourcing.Event) {
 
-	switch e := event.Data.(type) {
+	switch e := event.Data().(type) {
 
 	case *FrequentFlierAccountCreated:
 		f.miles = e.OpeningMiles
@@ -118,7 +117,7 @@ func (f FrequentFlierAccountAggregate) String() string {
 
 	if len(f.Events()) > 0 {
 		reason = f.Events()[0].Reason()
-		aggregateType = f.Events()[0].AggregateType
+		aggregateType = f.Events()[0].AggregateType()
 	} else {
 		reason = "No reason"
 		aggregateType = "No aggregateType"

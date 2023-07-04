@@ -55,14 +55,14 @@ func (ar *AggregateRoot) TrackChangeWithMetadata(a Aggregate, data interface{}, 
 }
 
 // BuildFromHistory builds the aggregate state from events
-func (ar *AggregateRoot) BuildFromHistory(a Aggregate, events []base.Event) {
+func (ar *AggregateRoot) BuildFromHistory(a Aggregate, events []Event) {
 	for _, event := range events {
-		a.Transition(convertEvent(event))
+		a.Transition(event)
 		//Set the aggregate ID
-		ar.aggregateID = event.AggregateID
+		ar.aggregateID = event.AggregateID()
 		// Make sure the aggregate is in the correct version (the last event)
-		ar.aggregateVersion = event.Version
-		ar.aggregateGlobalVersion = event.GlobalVersion
+		ar.aggregateVersion = base.Version(event.Version())
+		ar.aggregateGlobalVersion = base.Version(event.GlobalVersion())
 	}
 }
 
