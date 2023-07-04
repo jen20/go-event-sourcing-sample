@@ -8,9 +8,6 @@ import (
 	"github.com/hallgren/eventsourcing/base"
 )
 
-// Version is the event version used in event.Version, event.GlobalVersion and aggregateRoot
-type Version uint64
-
 // AggregateRoot to be included into aggregates
 type AggregateRoot struct {
 	aggregateID            string
@@ -74,7 +71,7 @@ func (ar *AggregateRoot) setInternals(id string, version, globalVersion base.Ver
 }
 
 func (ar *AggregateRoot) nextVersion() base.Version {
-	return ar.Version() + 1
+	return base.Version(ar.Version()) + 1
 }
 
 // update sets the AggregateVersion and AggregateGlobalVersion to the values in the last event
@@ -114,16 +111,16 @@ func (ar *AggregateRoot) Root() *AggregateRoot {
 }
 
 // Version return the version based on events that are not stored
-func (ar *AggregateRoot) Version() base.Version {
+func (ar *AggregateRoot) Version() Version {
 	if len(ar.aggregateEvents) > 0 {
-		return ar.aggregateEvents[len(ar.aggregateEvents)-1].Version
+		return Version(ar.aggregateEvents[len(ar.aggregateEvents)-1].Version)
 	}
-	return ar.aggregateVersion
+	return Version(ar.aggregateVersion)
 }
 
 // GlobalVersion returns the global version based on the last stored event
-func (ar *AggregateRoot) GlobalVersion() base.Version {
-	return ar.aggregateGlobalVersion
+func (ar *AggregateRoot) GlobalVersion() Version {
+	return Version(ar.aggregateGlobalVersion)
 }
 
 // Events return the aggregate events from the aggregate
@@ -142,6 +139,7 @@ func (ar *AggregateRoot) UnsavedEvents() bool {
 	return len(ar.aggregateEvents) > 0
 }
 
+// converts the internal event to the external Event
 func convertEvent(e base.Event) Event {
 	return Event{
 		event: e,

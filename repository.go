@@ -70,7 +70,7 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Ag
 	root := aggregate.Root()
 	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
 	// fetch events after the current version of the aggregate that could be fetched from the snapshot store
-	eventIterator, err := r.eventStore.Get(ctx, id, aggregateType, root.Version())
+	eventIterator, err := r.eventStore.Get(ctx, id, aggregateType, root.aggregateVersion)
 	if err != nil && !errors.Is(err, base.ErrNoEvents) {
 		return err
 	} else if errors.Is(err, base.ErrNoEvents) && root.Version() == 0 {

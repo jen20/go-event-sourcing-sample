@@ -6,6 +6,9 @@ import (
 	"github.com/hallgren/eventsourcing/base"
 )
 
+// Version is the event version used in event.Version, event.GlobalVersion and aggregateRoot
+type Version base.Version
+
 type Event struct {
 	event base.Event // internal event
 }
@@ -34,14 +37,14 @@ func (e Event) Reason() string {
 	return e.event.Reason()
 }
 
-func (e Event) Version() uint64 {
-	return uint64(e.event.Version)
+func (e Event) Version() Version {
+	return Version(e.event.Version)
 }
 
 func (e Event) Timestamp() time.Time {
 	return e.event.Timestamp
 }
 
-func (e Event) GlobalVersion() uint64 {
-	return uint64(e.event.GlobalVersion)
+func (e Event) GlobalVersion() Version {
+	return Version(e.event.GlobalVersion)
 }
