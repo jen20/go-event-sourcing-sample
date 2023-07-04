@@ -21,12 +21,12 @@ func AggregateID() string {
 	return fmt.Sprintf("%d", r)
 }
 
-type eventstoreFunc = func(ser eventstore.Serializer) (eventstore.EventStore, func(), error)
+type eventstoreFunc = func(ser eventstore.Serializer) (base.EventStore, func(), error)
 
 func Test(t *testing.T, esFunc eventstoreFunc) {
 	tests := []struct {
 		title string
-		run   func(es eventstore.EventStore) error
+		run   func(es base.EventStore) error
 	}{
 		{"should save and get events", saveAndGetEvents},
 		{"should get events after version", getEventsAfterVersion},
@@ -128,7 +128,7 @@ func testEventOtherAggregate(aggregateID string) base.Event {
 	return base.Event{AggregateID: aggregateID, Version: 1, AggregateType: aggregateType, Timestamp: timestamp, Data: &FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}}
 }
 
-func saveAndGetEvents(es eventstore.EventStore) error {
+func saveAndGetEvents(es base.EventStore) error {
 	aggregateID := AggregateID()
 	events := testEvents(aggregateID)
 	fetchedEvents := []base.Event{}
@@ -213,7 +213,7 @@ func saveAndGetEvents(es eventstore.EventStore) error {
 	return nil
 }
 
-func getEventsAfterVersion(es eventstore.EventStore) error {
+func getEventsAfterVersion(es base.EventStore) error {
 	var fetchedEvents []base.Event
 	aggregateID := AggregateID()
 	err := es.Save(testEvents(aggregateID))
@@ -245,7 +245,7 @@ func getEventsAfterVersion(es eventstore.EventStore) error {
 	return nil
 }
 
-func saveEventsFromMoreThanOneAggregate(es eventstore.EventStore) error {
+func saveEventsFromMoreThanOneAggregate(es base.EventStore) error {
 	aggregateID := AggregateID()
 	aggregateIDOther := AggregateID()
 	invalidEvent := append(testEvents(aggregateID), testEventOtherAggregate(aggregateIDOther))
@@ -256,7 +256,7 @@ func saveEventsFromMoreThanOneAggregate(es eventstore.EventStore) error {
 	return nil
 }
 
-func saveEventsFromMoreThanOneAggregateType(es eventstore.EventStore) error {
+func saveEventsFromMoreThanOneAggregateType(es base.EventStore) error {
 	aggregateID := AggregateID()
 	events := testEvents(aggregateID)
 	events[1].AggregateType = "OtherAggregateType"
@@ -268,7 +268,7 @@ func saveEventsFromMoreThanOneAggregateType(es eventstore.EventStore) error {
 	return nil
 }
 
-func saveEventsInWrongOrder(es eventstore.EventStore) error {
+func saveEventsInWrongOrder(es base.EventStore) error {
 	aggregateID := AggregateID()
 	events := append(testEvents(aggregateID), testEvents(aggregateID)[0])
 	err := es.Save(events)
@@ -278,7 +278,7 @@ func saveEventsInWrongOrder(es eventstore.EventStore) error {
 	return nil
 }
 
-func saveEventsInWrongVersion(es eventstore.EventStore) error {
+func saveEventsInWrongVersion(es base.EventStore) error {
 	aggregateID := AggregateID()
 	events := testEventsPartTwo(aggregateID)
 	err := es.Save(events)
@@ -288,7 +288,7 @@ func saveEventsInWrongVersion(es eventstore.EventStore) error {
 	return nil
 }
 
-func saveEventsWithEmptyReason(es eventstore.EventStore) error {
+func saveEventsWithEmptyReason(es base.EventStore) error {
 	aggregateID := AggregateID()
 	events := testEvents(aggregateID)
 	events[2].Data = nil
@@ -299,7 +299,7 @@ func saveEventsWithEmptyReason(es eventstore.EventStore) error {
 	return nil
 }
 
-func saveAndGetEventsConcurrently(es eventstore.EventStore) error {
+func saveAndGetEventsConcurrently(es base.EventStore) error {
 	wg := sync.WaitGroup{}
 	var err error
 	aggregateID := AggregateID()
@@ -352,7 +352,7 @@ func saveAndGetEventsConcurrently(es eventstore.EventStore) error {
 	return nil
 }
 
-func getErrWhenNoEvents(es eventstore.EventStore) error {
+func getErrWhenNoEvents(es base.EventStore) error {
 	aggregateID := AggregateID()
 	iterator, err := es.Get(context.Background(), aggregateID, aggregateType, 0)
 	if err != nil {
@@ -369,7 +369,7 @@ func getErrWhenNoEvents(es eventstore.EventStore) error {
 	return nil
 }
 
-func saveReturnGlobalEventOrder(es eventstore.EventStore) error {
+func saveReturnGlobalEventOrder(es base.EventStore) error {
 	aggregateID := AggregateID()
 	aggregateID2 := AggregateID()
 	events := testEvents(aggregateID)

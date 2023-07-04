@@ -6,7 +6,6 @@ import (
 	"reflect"
 
 	"github.com/hallgren/eventsourcing/base"
-	eventstore "github.com/hallgren/eventsourcing/eventstore"
 )
 
 // Aggregate interface to use the aggregate root specific methods
@@ -29,11 +28,11 @@ var ErrAggregateNotFound = errors.New("aggregate not found")
 // Repository is the returned instance from the factory function
 type Repository struct {
 	eventStream *EventStream
-	eventStore  eventstore.EventStore
+	eventStore  base.EventStore
 }
 
 // NewRepository factory function
-func NewRepository(eventStore eventstore.EventStore) *Repository {
+func NewRepository(eventStore base.EventStore) *Repository {
 	return &Repository{
 		eventStore:  eventStore,
 		eventStream: NewEventStream(),

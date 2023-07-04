@@ -1,6 +1,7 @@
 package base
 
 import (
+	"context"
 	"errors"
 )
 
@@ -15,6 +16,12 @@ var ErrConcurrency = errors.New("concurrency error")
 
 // ErrReasonMissing when the reason is not present in the events
 var ErrReasonMissing = errors.New("event holds no reason")
+
+// EventStore interface expose the methods an event store must uphold
+type EventStore interface {
+	Save(events []Event) error
+	Get(ctx context.Context, id string, aggregateType string, afterVersion Version) (EventIterator, error)
+}
 
 // ValidateEvents make sure the incoming events are valid
 func ValidateEvents(aggregateID string, currentVersion Version, events []Event) error {
