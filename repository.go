@@ -98,6 +98,11 @@ func (r *Repository) Save(aggregate Aggregate) error {
 		return err
 	}
 
+	// update the global version on event bound to the aggregate
+	for i, event := range esEvents {
+		root.aggregateEvents[i].event.GlobalVersion = event.GlobalVersion
+	}
+
 	// publish the saved events to subscribers
 	r.eventStream.Publish(*root, root.Events())
 

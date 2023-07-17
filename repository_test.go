@@ -11,7 +11,7 @@ import (
 
 func TestSaveAndGetAggregate(t *testing.T) {
 	repo := eventsourcing.NewRepository(memory.Create())
-
+	repo.Register(&Person{})
 	person, err := CreatePerson("kalle")
 	if err != nil {
 		t.Fatal(err)
