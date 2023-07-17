@@ -60,7 +60,7 @@ func (person *Person) GrowOlder() {
 	person.TrackChangeWithMetadata(person, &AgedOneYear{}, metaData)
 }
 
-func (person *Person) RegisterEvents(f eventsourcing.EventsFunc) error {
+func (person *Person) AggregateEvents(f eventsourcing.RegisterFunc) error {
 	return f(&Born{}, &AgedOneYear{})
 }
 
