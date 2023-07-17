@@ -8,20 +8,17 @@ import (
 	"time"
 
 	"github.com/hallgren/eventsourcing/base"
-	eventstore "github.com/hallgren/eventsourcing/eventstore"
 )
 
 // SQL event store handler
 type SQL struct {
-	db         *sql.DB
-	serializer eventstore.Serializer
+	db *sql.DB
 }
 
 // Open connection to database
-func Open(db *sql.DB, serializer eventstore.Serializer) *SQL {
+func Open(db *sql.DB) *SQL {
 	return &SQL{
-		db:         db,
-		serializer: serializer,
+		db: db,
 	}
 }
 
@@ -68,19 +65,21 @@ func (s *SQL) Save(events []base.Event) error {
 	var lastInsertedID int64
 	insert := `Insert into events (id, version, reason, type, timestamp, data, metadata) values ($1, $2, $3, $4, $5, $6, $7)`
 	for i, event := range events {
-		var e, m []byte
+		/*
+			var e, m []byte
 
-		e, err := s.serializer.Marshal(event.Data)
-		if err != nil {
-			return err
-		}
-		if event.Metadata != nil {
-			m, err = s.serializer.Marshal(event.Metadata)
+			e, err := s.serializer.Marshal(event.Data)
 			if err != nil {
 				return err
 			}
-		}
-		res, err := tx.Exec(insert, event.AggregateID, event.Version, event.Reason(), event.AggregateType, event.Timestamp.Format(time.RFC3339), string(e), string(m))
+			if event.Metadata != nil {
+				m, err = s.serializer.Marshal(event.Metadata)
+				if err != nil {
+					return err
+				}
+			}
+		*/
+		res, err := tx.Exec(insert, event.AggregateID, event.Version, event.Reason, event.AggregateType, event.Timestamp.Format(time.RFC3339), event.Data, event.Metadata)
 		if err != nil {
 			return err
 		}
@@ -103,7 +102,7 @@ func (s *SQL) Get(ctx context.Context, id string, aggregateType string, afterVer
 	} else if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
-	i := iterator{rows: rows, serializer: s.serializer}
+	i := iterator{rows: rows}
 	return &i, nil
 }
 
@@ -122,10 +121,9 @@ func (s *SQL) eventsFromRows(rows *sql.Rows) ([]base.Event, error) {
 	var events []base.Event
 	for rows.Next() {
 		var globalVersion base.Version
-		var eventMetadata map[string]interface{}
 		var version base.Version
 		var id, reason, typ, timestamp string
-		var data, metadata string
+		var data, metadata []byte
 		if err := rows.Scan(&globalVersion, &id, &version, &reason, &typ, &timestamp, &data, &metadata); err != nil {
 			return nil, err
 		}
@@ -135,23 +133,25 @@ func (s *SQL) eventsFromRows(rows *sql.Rows) ([]base.Event, error) {
 			return nil, err
 		}
 
-		f, ok := s.serializer.Type(typ, reason)
-		if !ok {
-			// if the typ/reason is not register jump over the event
-			continue
-		}
+		/*
+			f, ok := s.serializer.Type(typ, reason)
+			if !ok {
+				// if the typ/reason is not register jump over the event
+				continue
+			}
 
-		eventData := f()
-		err = s.serializer.Unmarshal([]byte(data), &eventData)
-		if err != nil {
-			return nil, err
-		}
-		if metadata != "" {
-			err = s.serializer.Unmarshal([]byte(metadata), &eventMetadata)
+			eventData := f()
+			err = s.serializer.Unmarshal([]byte(data), &eventData)
 			if err != nil {
 				return nil, err
 			}
-		}
+			if metadata != "" {
+				err = s.serializer.Unmarshal([]byte(metadata), &eventMetadata)
+				if err != nil {
+					return nil, err
+				}
+			}
+		*/
 
 		events = append(events, base.Event{
 			AggregateID:   id,
@@ -159,8 +159,9 @@ func (s *SQL) eventsFromRows(rows *sql.Rows) ([]base.Event, error) {
 			GlobalVersion: globalVersion,
 			AggregateType: typ,
 			Timestamp:     t,
-			Data:          eventData,
-			Metadata:      eventMetadata,
+			Data:          data,
+			Metadata:      metadata,
+			Reason:        reason,
 		})
 	}
 	if err := rows.Err(); err != nil {

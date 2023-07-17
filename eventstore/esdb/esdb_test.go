@@ -17,7 +17,7 @@ import (
 )
 
 func TestSuite(t *testing.T) {
-	f := func(ser eventstore.Serializer) (base.EventStore, func(), error) {
+	f := func() (base.EventStore, func(), error) {
 		// region createClient
 		settings, err := esdb.ParseConnectionString("esdb://localhost:2113?tls=false")
 		if err != nil {

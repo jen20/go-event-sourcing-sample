@@ -5,7 +5,6 @@ import (
 	"reflect"
 )
 
-type eventFunc = func() interface{}
 type EventsFunc = func(events ...interface{}) error
 type MarshalSnapshotFunc func(v interface{}) ([]byte, error)
 type UnmarshalSnapshotFunc func(data []byte, v interface{}) error

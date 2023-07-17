@@ -3,12 +3,12 @@ package bbolt
 import (
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"github.com/hallgren/eventsourcing/base"
-	eventstore "github.com/hallgren/eventsourcing/eventstore"
 	"go.etcd.io/bbolt"
 )
 
@@ -25,8 +25,7 @@ func itob(v uint64) []byte {
 
 // BBolt is the eventstore handler
 type BBolt struct {
-	db         *bbolt.DB             // The bbolt db where we store everything
-	serializer eventstore.Serializer // The serializer
+	db *bbolt.DB // The bbolt db where we store everything
 }
 
 type boltEvent struct {
@@ -37,12 +36,12 @@ type boltEvent struct {
 	AggregateType string
 	Timestamp     time.Time
 	Data          []byte
-	Metadata      map[string]interface{}
+	Metadata      []byte // map[string]interface{}
 }
 
 // MustOpenBBolt opens the event stream found in the given file. If the file is not found it will be created and
 // initialized. Will panic if it has problems persisting the changes to the filesystem.
-func MustOpenBBolt(dbFile string, s eventstore.Serializer) *BBolt {
+func MustOpenBBolt(dbFile string) *BBolt {
 	db, err := bbolt.Open(dbFile, 0600, &bbolt.Options{
 		Timeout: 1 * time.Second,
 	})
@@ -61,8 +60,7 @@ func MustOpenBBolt(dbFile string, s eventstore.Serializer) *BBolt {
 		panic(err)
 	}
 	return &BBolt{
-		db:         db,
-		serializer: s,
+		db: db,
 	}
 }
 
@@ -94,12 +92,12 @@ func (e *BBolt) Save(events []base.Event) error {
 		evBucket = tx.Bucket([]byte(bucketName))
 	}
 
-	currentVersion := base.Version(0)
+	currentVersion := uint64(0)
 	cursor := evBucket.Cursor()
 	k, obj := cursor.Last()
 	if k != nil {
-		lastEvent := base.Event{}
-		err := e.serializer.Unmarshal(obj, &lastEvent)
+		lastEvent := boltEvent{}
+		err := json.Unmarshal(obj, &lastEvent)
 		if err != nil {
 			return errors.New(fmt.Sprintf("could not serialize event, %v", err))
 		}
@@ -107,7 +105,7 @@ func (e *BBolt) Save(events []base.Event) error {
 	}
 
 	//Validate events
-	err = base.ValidateEvents(aggregateID, currentVersion, events)
+	err = base.ValidateEvents(aggregateID, base.Version(currentVersion), events)
 	if err != nil {
 		return err
 	}
@@ -132,25 +130,19 @@ func (e *BBolt) Save(events []base.Event) error {
 			return errors.New("could not get next sequence for global bucket")
 		}
 
-		// marshal the event.Data separately to be able to handle the type info
-		eventData, err := e.serializer.Marshal(event.Data)
-		if err != nil {
-			return errors.New(fmt.Sprintf("could not serialize event data, %v", err))
-		}
-
 		// build the internal bolt event
 		bEvent := boltEvent{
 			AggregateID:   event.AggregateID,
 			AggregateType: event.AggregateType,
 			Version:       uint64(event.Version),
 			GlobalVersion: globalSequence,
-			Reason:        event.Reason(),
+			Reason:        event.Reason,
 			Timestamp:     event.Timestamp,
 			Metadata:      event.Metadata,
-			Data:          eventData,
+			Data:          event.Data,
 		}
 
-		value, err := e.serializer.Marshal(bEvent)
+		value, err := json.Marshal(bEvent)
 		if err != nil {
 			return errors.New(fmt.Sprintf("could not serialize event, %v", err))
 		}
@@ -179,7 +171,7 @@ func (e *BBolt) Get(ctx context.Context, id string, aggregateType string, afterV
 		return nil, err
 	}
 	firstEvent := afterVersion + 1
-	i := iterator{tx: tx, bucketName: bucketName, firstEventIndex: uint64(firstEvent), serializer: e.serializer}
+	i := iterator{tx: tx, bucketName: bucketName, firstEventIndex: uint64(firstEvent)}
 	return &i, nil
 
 }
@@ -197,20 +189,22 @@ func (e *BBolt) GlobalEvents(start, count uint64) ([]base.Event, error) {
 	cursor := globalBucket.Cursor()
 	for k, obj := cursor.Seek(itob(start)); k != nil; k, obj = cursor.Next() {
 		bEvent := boltEvent{}
-		err := e.serializer.Unmarshal(obj, &bEvent)
+		err := json.Unmarshal(obj, &bEvent)
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("could not deserialize event, %v", err))
 		}
-		f, ok := e.serializer.Type(bEvent.AggregateType, bEvent.Reason)
-		if !ok {
-			// if the typ/reason is not register jump over the event
-			continue
-		}
-		eventData := f()
-		err = e.serializer.Unmarshal(bEvent.Data, &eventData)
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("could not deserialize event data, %v", err))
-		}
+		/*
+			f, ok := e.serializer.Type(bEvent.AggregateType, bEvent.Reason)
+			if !ok {
+				// if the typ/reason is not register jump over the event
+				continue
+			}
+			eventData := f()
+			err = e.serializer.Unmarshal(bEvent.Data, &eventData)
+			if err != nil {
+				return nil, errors.New(fmt.Sprintf("could not deserialize event data, %v", err))
+			}
+		*/
 		event := base.Event{
 			AggregateID:   bEvent.AggregateID,
 			AggregateType: bEvent.AggregateType,
@@ -218,7 +212,8 @@ func (e *BBolt) GlobalEvents(start, count uint64) ([]base.Event, error) {
 			GlobalVersion: base.Version(bEvent.GlobalVersion),
 			Timestamp:     bEvent.Timestamp,
 			Metadata:      bEvent.Metadata,
-			Data:          eventData,
+			Data:          bEvent.Data,
+			Reason:        bEvent.Reason,
 		}
 		events = append(events, event)
 		count--

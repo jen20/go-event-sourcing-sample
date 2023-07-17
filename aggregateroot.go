@@ -11,9 +11,9 @@ import (
 // AggregateRoot to be included into aggregates
 type AggregateRoot struct {
 	aggregateID            string
-	aggregateVersion       base.Version
-	aggregateGlobalVersion base.Version
-	aggregateEvents        []base.Event
+	aggregateVersion       Version
+	aggregateGlobalVersion Version
+	aggregateEvents        []Event
 }
 
 const (
@@ -39,16 +39,18 @@ func (ar *AggregateRoot) TrackChangeWithMetadata(a Aggregate, data interface{}, 
 	}
 
 	name := reflect.TypeOf(a).Elem().Name()
-	event := base.Event{
-		AggregateID:   ar.aggregateID,
-		Version:       ar.nextVersion(),
-		AggregateType: name,
-		Timestamp:     time.Now().UTC(),
-		Data:          data,
-		Metadata:      metadata,
+	event := Event{
+		event: base.Event{
+			AggregateID:   ar.aggregateID,
+			Version:       ar.nextVersion(),
+			AggregateType: name,
+			Timestamp:     time.Now().UTC(),
+		},
+		data:     data,
+		metadata: metadata,
 	}
 	ar.aggregateEvents = append(ar.aggregateEvents, event)
-	a.Transition(convertEvent(event))
+	a.Transition(event)
 }
 
 // BuildFromHistory builds the aggregate state from events
@@ -58,16 +60,16 @@ func (ar *AggregateRoot) BuildFromHistory(a Aggregate, events []Event) {
 		//Set the aggregate ID
 		ar.aggregateID = event.AggregateID()
 		// Make sure the aggregate is in the correct version (the last event)
-		ar.aggregateVersion = base.Version(event.Version())
-		ar.aggregateGlobalVersion = base.Version(event.GlobalVersion())
+		ar.aggregateVersion = event.Version()
+		ar.aggregateGlobalVersion = event.GlobalVersion()
 	}
 }
 
-func (ar *AggregateRoot) setInternals(id string, version, globalVersion base.Version) {
+func (ar *AggregateRoot) setInternals(id string, version, globalVersion Version) {
 	ar.aggregateID = id
 	ar.aggregateVersion = version
 	ar.aggregateGlobalVersion = globalVersion
-	ar.aggregateEvents = []base.Event{}
+	ar.aggregateEvents = []Event{}
 }
 
 func (ar *AggregateRoot) nextVersion() base.Version {
@@ -79,9 +81,9 @@ func (ar *AggregateRoot) nextVersion() base.Version {
 func (ar *AggregateRoot) update() {
 	if len(ar.aggregateEvents) > 0 {
 		lastEvent := ar.aggregateEvents[len(ar.aggregateEvents)-1]
-		ar.aggregateVersion = lastEvent.Version
-		ar.aggregateGlobalVersion = lastEvent.GlobalVersion
-		ar.aggregateEvents = []base.Event{}
+		ar.aggregateVersion = lastEvent.Version()
+		ar.aggregateGlobalVersion = lastEvent.GlobalVersion()
+		ar.aggregateEvents = []Event{}
 	}
 }
 
@@ -113,7 +115,7 @@ func (ar *AggregateRoot) Root() *AggregateRoot {
 // Version return the version based on events that are not stored
 func (ar *AggregateRoot) Version() Version {
 	if len(ar.aggregateEvents) > 0 {
-		return Version(ar.aggregateEvents[len(ar.aggregateEvents)-1].Version)
+		return ar.aggregateEvents[len(ar.aggregateEvents)-1].Version()
 	}
 	return Version(ar.aggregateVersion)
 }
@@ -129,7 +131,7 @@ func (ar *AggregateRoot) Events() []Event {
 	e := make([]Event, len(ar.aggregateEvents))
 	// convert internal event to external event
 	for i, event := range ar.aggregateEvents {
-		e[i] = convertEvent(event)
+		e[i] = event
 	}
 	return e
 }

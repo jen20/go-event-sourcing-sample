@@ -1,6 +1,7 @@
 package eventsourcing_test
 
 import (
+	"encoding/json"
 	"sync"
 	"testing"
 
@@ -26,8 +27,13 @@ func (a *AnotherAggregate) Transition(e eventsourcing.Event) {}
 
 type AnotherEvent struct{}
 
-var event = eventsourcing.EventConvert(base.Event{Version: 123, Data: &AnEvent{Name: "123"}, AggregateType: "AnAggregate"})
-var otherEvent = eventsourcing.EventConvert(base.Event{Version: 456, Data: &AnotherEvent{}, AggregateType: "AnotherAggregate"})
+var event = eventsourcing.EventConvert(base.Event{Version: 123, AggregateType: "AnAggregate", Data: eventToByte(&AnEvent{Name: "123"})}, &AnEvent{Name: "123"}, nil)
+var otherEvent = eventsourcing.EventConvert(base.Event{Version: 456, Data: eventToByte(&AnotherEvent{}), AggregateType: "AnotherAggregate"}, &AnotherEvent{}, nil)
+
+func eventToByte(i interface{}) []byte {
+	b, _ := json.Marshal(i)
+	return b
+}
 
 func TestSubAll(t *testing.T) {
 	var streamEvent *eventsourcing.Event

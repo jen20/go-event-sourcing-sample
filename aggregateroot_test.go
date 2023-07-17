@@ -60,6 +60,10 @@ func (person *Person) GrowOlder() {
 	person.TrackChangeWithMetadata(person, &AgedOneYear{}, metaData)
 }
 
+func (person *Person) RegisterEvents(f eventsourcing.EventsFunc) error {
+	return f(&Born{}, &AgedOneYear{})
+}
+
 // Transition the person state dependent on the events
 func (person *Person) Transition(event eventsourcing.Event) {
 	switch e := event.Data().(type) {

@@ -40,7 +40,7 @@ func ValidateEvents(aggregateID string, currentVersion Version, events []Event) 
 			return ErrConcurrency
 		}
 
-		if event.Reason() == "" {
+		if event.Reason == "" {
 			return ErrReasonMissing
 		}
 
@@ -66,7 +66,7 @@ func ValidateEventsNoVersionCheck(aggregateID string, events []Event) error {
 		if currentVersion+1 != event.Version {
 			return ErrConcurrency
 		}
-		if event.Reason() == "" {
+		if event.Reason == "" {
 			return ErrReasonMissing
 		}
 		currentVersion = event.Version

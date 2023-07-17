@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/hallgren/eventsourcing/base"
-	eventstore "github.com/hallgren/eventsourcing/eventstore"
 	"github.com/hallgren/eventsourcing/eventstore/sql"
 	"github.com/hallgren/eventsourcing/eventstore/suite"
 	_ "github.com/proullon/ramsql/driver"
@@ -18,7 +17,7 @@ import (
 var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func TestSuite(t *testing.T) {
-	f := func(ser eventstore.Serializer) (base.EventStore, func(), error) {
+	f := func() (base.EventStore, func(), error) {
 		// use random int to get a new db on each test run
 		r := seededRand.Intn(999999999999)
 		db, err := sqldriver.Open("ramsql", fmt.Sprintf("%d", r))
@@ -30,7 +29,7 @@ func TestSuite(t *testing.T) {
 			return nil, nil, errors.New(fmt.Sprintf("could not ping database %v", err))
 		}
 
-		es := sql.Open(db, ser)
+		es := sql.Open(db)
 		err = es.MigrateTest()
 		if err != nil {
 			return nil, nil, errors.New(fmt.Sprintf("could not migrate database %v", err))

@@ -3,7 +3,6 @@ package base
 import (
 	"encoding/json"
 	"errors"
-	"reflect"
 	"time"
 )
 
@@ -29,19 +28,24 @@ type Event struct {
 	GlobalVersion Version
 	AggregateType string
 	Timestamp     time.Time
-	Data          interface{}
-	Metadata      map[string]interface{}
+	Reason        string // based on the Data type
+	Data          []byte // interface{}
+	Metadata      []byte // map[string]interface{}
 }
 
 // Reason returns the name of the data struct
+// TODO: Not sure this should be in this struct.
+/*
 func (e Event) Reason() string {
 	if e.Data == nil {
 		return ""
 	}
 	return reflect.TypeOf(e.Data).Elem().Name()
 }
+*/
 
 // DataAs convert the event.Data to the supplied type.
+// TODO: Not sure this should be in this struct.
 func (e Event) DataAs(i interface{}) error {
 	b, err := json.Marshal(e.Data)
 	if err != nil {

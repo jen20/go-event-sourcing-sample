@@ -5,21 +5,18 @@ import (
 	"time"
 
 	"github.com/hallgren/eventsourcing/base"
-	eventstore "github.com/hallgren/eventsourcing/eventstore"
 )
 
 type iterator struct {
-	rows       *sql.Rows
-	serializer eventstore.Serializer
+	rows *sql.Rows
 }
 
 // Next return the next event
 func (i *iterator) Next() (base.Event, error) {
 	var globalVersion base.Version
-	var eventMetadata map[string]interface{}
 	var version base.Version
 	var id, reason, typ, timestamp string
-	var data, metadata string
+	var data, metadata []byte
 	if !i.rows.Next() {
 		if err := i.rows.Err(); err != nil {
 			return base.Event{}, err
@@ -35,23 +32,26 @@ func (i *iterator) Next() (base.Event, error) {
 		return base.Event{}, err
 	}
 
-	f, ok := i.serializer.Type(typ, reason)
-	if !ok {
-		// if the typ/reason is not register jump over the event
-		return i.Next()
-	}
-
-	eventData := f()
-	err = i.serializer.Unmarshal([]byte(data), &eventData)
-	if err != nil {
-		return base.Event{}, err
-	}
-	if metadata != "" {
-		err = i.serializer.Unmarshal([]byte(metadata), &eventMetadata)
-		if err != nil {
-			return base.Event{}, err
+	/*
+		f, ok := i.serializer.Type(typ, reason)
+		if !ok {
+			// if the typ/reason is not register jump over the event
+			return i.Next()
 		}
-	}
+
+
+			eventData := f()
+			err = i.serializer.Unmarshal([]byte(data), &eventData)
+			if err != nil {
+				return base.Event{}, err
+			}
+			if metadata != "" {
+				err = i.serializer.Unmarshal([]byte(metadata), &eventMetadata)
+				if err != nil {
+					return base.Event{}, err
+				}
+			}
+	*/
 
 	event := base.Event{
 		AggregateID:   id,
@@ -59,8 +59,9 @@ func (i *iterator) Next() (base.Event, error) {
 		GlobalVersion: globalVersion,
 		AggregateType: typ,
 		Timestamp:     t,
-		Data:          eventData,
-		Metadata:      eventMetadata,
+		Data:          data,
+		Metadata:      metadata,
+		Reason:        reason,
 	}
 	return event, nil
 }

@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/hallgren/eventsourcing/base"
-	eventstore "github.com/hallgren/eventsourcing/eventstore"
 
 	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 )
@@ -14,12 +13,11 @@ const streamSeparator = "-"
 // ESDB is the event store handler
 type ESDB struct {
 	client      *esdb.Client
-	serializer  eventstore.Serializer
 	contentType esdb.ContentType
 }
 
 // Open binds the event store db client
-func Open(client *esdb.Client, serializer eventstore.Serializer, jsonSerializer bool) *ESDB {
+func Open(client *esdb.Client, jsonSerializer bool) *ESDB {
 	// defaults to binary
 	var contentType esdb.ContentType
 	if jsonSerializer {
@@ -27,7 +25,6 @@ func Open(client *esdb.Client, serializer eventstore.Serializer, jsonSerializer 
 	}
 	return &ESDB{
 		client:      client,
-		serializer:  serializer,
 		contentType: contentType,
 	}
 }
@@ -53,23 +50,26 @@ func (es *ESDB) Save(events []base.Event) error {
 	esdbEvents := make([]esdb.EventData, len(events))
 
 	for i, event := range events {
-		var e, m []byte
+		/*
+			var e, m []byte
 
-		e, err := es.serializer.Marshal(event.Data)
-		if err != nil {
-			return err
-		}
-		if event.Metadata != nil {
-			m, err = es.serializer.Marshal(event.Metadata)
-			if err != nil {
-				return err
-			}
-		}
+
+				e, err := es.serializer.Marshal(event.Data)
+				if err != nil {
+					return err
+				}
+				if event.Metadata != nil {
+					m, err = es.serializer.Marshal(event.Metadata)
+					if err != nil {
+						return err
+					}
+				}
+		*/
 		eventData := esdb.EventData{
 			ContentType: es.contentType,
-			EventType:   event.Reason(),
-			Data:        e,
-			Metadata:    m,
+			EventType:   event.Reason,
+			Data:        event.Data,
+			Metadata:    event.Metadata,
 		}
 
 		esdbEvents[i] = eventData
@@ -108,7 +108,7 @@ func (es *ESDB) Get(ctx context.Context, id string, aggregateType string, afterV
 	} else if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
-	return &iterator{stream: stream, serializer: es.serializer}, nil
+	return &iterator{stream: stream}, nil
 }
 
 func stream(aggregateType, aggregateID string) string {

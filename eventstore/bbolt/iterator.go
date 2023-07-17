@@ -1,11 +1,11 @@
 package bbolt
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/hallgren/eventsourcing/base"
-	eventstore "github.com/hallgren/eventsourcing/eventstore"
 	"go.etcd.io/bbolt"
 )
 
@@ -14,7 +14,6 @@ type iterator struct {
 	bucketName      string
 	firstEventIndex uint64
 	cursor          *bbolt.Cursor
-	serializer      eventstore.Serializer
 }
 
 // Close closes the iterator
@@ -42,20 +41,22 @@ func (i *iterator) Next() (base.Event, error) {
 		return base.Event{}, base.ErrNoMoreEvents
 	}
 	bEvent := boltEvent{}
-	err := i.serializer.Unmarshal(obj, &bEvent)
+	err := json.Unmarshal(obj, &bEvent)
 	if err != nil {
 		return base.Event{}, errors.New(fmt.Sprintf("could not deserialize event, %v", err))
 	}
-	f, ok := i.serializer.Type(bEvent.AggregateType, bEvent.Reason)
-	if !ok {
-		// if the typ/reason is not register jump over the event
-		return i.Next()
-	}
-	eventData := f()
-	err = i.serializer.Unmarshal(bEvent.Data, &eventData)
-	if err != nil {
-		return base.Event{}, errors.New(fmt.Sprintf("could not deserialize event data, %v", err))
-	}
+	/*
+		f, ok := i.serializer.Type(bEvent.AggregateType, bEvent.Reason)
+		if !ok {
+			// if the typ/reason is not register jump over the event
+			return i.Next()
+		}
+		eventData := f()
+		err = i.serializer.Unmarshal(bEvent.Data, &eventData)
+		if err != nil {
+			return base.Event{}, errors.New(fmt.Sprintf("could not deserialize event data, %v", err))
+		}
+	*/
 	event := base.Event{
 		AggregateID:   bEvent.AggregateID,
 		AggregateType: bEvent.AggregateType,
@@ -63,7 +64,8 @@ func (i *iterator) Next() (base.Event, error) {
 		GlobalVersion: base.Version(bEvent.GlobalVersion),
 		Timestamp:     bEvent.Timestamp,
 		Metadata:      bEvent.Metadata,
-		Data:          eventData,
+		Data:          bEvent.Data,
+		Reason:        bEvent.Reason,
 	}
 	return event, nil
 }
