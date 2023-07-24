@@ -27,8 +27,8 @@ func (a *AnotherAggregate) Transition(e eventsourcing.Event) {}
 
 type AnotherEvent struct{}
 
-var event = eventsourcing.EventConvert(base.Event{Version: 123, AggregateType: "AnAggregate", Data: eventToByte(&AnEvent{Name: "123"})}, &AnEvent{Name: "123"}, nil)
-var otherEvent = eventsourcing.EventConvert(base.Event{Version: 456, Data: eventToByte(&AnotherEvent{}), AggregateType: "AnotherAggregate"}, &AnotherEvent{}, nil)
+var event = eventsourcing.NewEvent(base.Event{Version: 123, AggregateType: "AnAggregate", Data: eventToByte(&AnEvent{Name: "123"})}, &AnEvent{Name: "123"}, nil)
+var otherEvent = eventsourcing.NewEvent(base.Event{Version: 456, Data: eventToByte(&AnotherEvent{}), AggregateType: "AnotherAggregate"}, &AnotherEvent{}, nil)
 
 func eventToByte(i interface{}) []byte {
 	b, _ := json.Marshal(i)

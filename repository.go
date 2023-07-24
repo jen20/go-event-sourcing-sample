@@ -55,11 +55,6 @@ func (r *Repository) Register(a aggregate) error {
 	return r.register.RegisterAggregate(a)
 }
 
-func (r *Repository) EventConvert(e base.Event) Event {
-	// deserialize the Data and MetaData
-	return Event{event: e}
-}
-
 // Subscribers returns an interface with all event subscribers
 func (r *Repository) Subscribers() EventSubscribers {
 	return r.eventStream
@@ -125,7 +120,7 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Ag
 	if err != nil && !errors.Is(err, base.ErrNoEvents) {
 		return err
 	} else if errors.Is(err, base.ErrNoEvents) && root.Version() == 0 {
-		// no events and no snapshot
+		// no events and not based on a snapshot
 		return ErrAggregateNotFound
 	} else if ctx.Err() != nil {
 		return ctx.Err()
@@ -145,7 +140,7 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Ag
 			} else if errors.Is(err, base.ErrNoMoreEvents) {
 				return nil
 			}
-			// apply the event on the aggregate
+			// apply the event to the aggregate
 			f, found := r.register.Type(event.AggregateType, event.Reason)
 			if !found {
 				continue
@@ -161,7 +156,7 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Ag
 				return err
 			}
 
-			e := EventConvert(event, data, metadata)
+			e := NewEvent(event, data, metadata)
 			root.BuildFromHistory(aggregate, []Event{e})
 		}
 	}

@@ -16,7 +16,7 @@ type Event struct {
 	metadata map[string]interface{}
 }
 
-func EventConvert(e base.Event, data interface{}, metadata map[string]interface{}) Event {
+func NewEvent(e base.Event, data interface{}, metadata map[string]interface{}) Event {
 	return Event{event: e, data: data, metadata: metadata}
 }
 
