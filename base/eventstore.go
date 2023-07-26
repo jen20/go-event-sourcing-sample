@@ -20,7 +20,7 @@ var ErrReasonMissing = errors.New("event holds no reason")
 // EventStore interface expose the methods an event store must uphold
 type EventStore interface {
 	Save(events []Event) error
-	Get(ctx context.Context, id string, aggregateType string, afterVersion Version) (EventIterator, error)
+	Get(ctx context.Context, id string, aggregateType string, afterVersion Version) (Iterator, error)
 }
 
 // ValidateEvents make sure the incoming events are valid

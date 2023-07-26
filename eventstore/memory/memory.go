@@ -86,7 +86,7 @@ func (e *Memory) Save(events []base.Event) error {
 }
 
 // Get aggregate events
-func (e *Memory) Get(ctx context.Context, id string, aggregateType string, afterVersion base.Version) (base.EventIterator, error) {
+func (e *Memory) Get(ctx context.Context, id string, aggregateType string, afterVersion base.Version) (base.Iterator, error) {
 	var events []base.Event
 	// make sure its thread safe
 	e.lock.Lock()

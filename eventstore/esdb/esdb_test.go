@@ -11,7 +11,6 @@ import (
 	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 
 	"github.com/hallgren/eventsourcing/base"
-	eventstore "github.com/hallgren/eventsourcing/eventstore"
 	es "github.com/hallgren/eventsourcing/eventstore/esdb"
 	"github.com/hallgren/eventsourcing/eventstore/suite"
 )
@@ -29,7 +28,7 @@ func TestSuite(t *testing.T) {
 			return nil, nil, err
 		}
 
-		es := es.Open(db, ser, true)
+		es := es.Open(db, true)
 		return es, func() {
 		}, nil
 	}

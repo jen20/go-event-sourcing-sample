@@ -163,7 +163,7 @@ func (e *BBolt) Save(events []base.Event) error {
 }
 
 // Get aggregate events
-func (e *BBolt) Get(ctx context.Context, id string, aggregateType string, afterVersion base.Version) (base.EventIterator, error) {
+func (e *BBolt) Get(ctx context.Context, id string, aggregateType string, afterVersion base.Version) (base.Iterator, error) {
 	bucketName := aggregateKey(aggregateType, id)
 
 	tx, err := e.db.Begin(false)

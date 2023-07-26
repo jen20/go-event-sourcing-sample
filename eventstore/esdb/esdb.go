@@ -93,7 +93,7 @@ func (es *ESDB) Save(events []base.Event) error {
 	return nil
 }
 
-func (es *ESDB) Get(ctx context.Context, id string, aggregateType string, afterVersion base.Version) (base.EventIterator, error) {
+func (es *ESDB) Get(ctx context.Context, id string, aggregateType string, afterVersion base.Version) (base.Iterator, error) {
 	streamID := stream(aggregateType, id)
 
 	from := esdb.StreamRevision{Value: uint64(afterVersion)}

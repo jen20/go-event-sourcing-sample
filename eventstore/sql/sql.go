@@ -94,7 +94,7 @@ func (s *SQL) Save(events []base.Event) error {
 }
 
 // Get the events from database
-func (s *SQL) Get(ctx context.Context, id string, aggregateType string, afterVersion base.Version) (base.EventIterator, error) {
+func (s *SQL) Get(ctx context.Context, id string, aggregateType string, afterVersion base.Version) (base.Iterator, error) {
 	selectStm := `Select seq, id, version, reason, type, timestamp, data, metadata from events where id=? and type=? and version>? order by version asc`
 	rows, err := s.db.QueryContext(ctx, selectStm, id, aggregateType, afterVersion)
 	if err != nil {

@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Version is the event version used in event.Version, event.GlobalVersion and aggregateRoot
+// Version is the event version used in event.Version and event.GlobalVersio
 type Version uint64
 
 // ErrNoEvents when there is no events to get
@@ -14,8 +14,8 @@ var ErrNoEvents = errors.New("no events")
 // ErrNoMoreEvents when iterator has no more events to deliver
 var ErrNoMoreEvents = errors.New("no more events")
 
-// EventIterator is the interface an event store Get needs to return
-type EventIterator interface {
+// Iterator is the interface an event store Get needs to return
+type Iterator interface {
 	Next() (Event, error)
 	Close()
 }
