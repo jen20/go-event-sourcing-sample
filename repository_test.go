@@ -12,6 +12,7 @@ import (
 func TestSaveAndGetAggregate(t *testing.T) {
 	repo := eventsourcing.NewRepository(memory.Create())
 	repo.Register(&Person{})
+
 	person, err := CreatePerson("kalle")
 	if err != nil {
 		t.Fatal(err)
@@ -74,6 +75,7 @@ func TestGetWithContext(t *testing.T) {
 
 func TestGetWithContextCancel(t *testing.T) {
 	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&Person{})
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -97,6 +99,7 @@ func TestGetWithContextCancel(t *testing.T) {
 
 func TestGetNoneExistingAggregate(t *testing.T) {
 	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&Person{})
 
 	p := Person{}
 	err := repo.Get("none_existing", &p)
@@ -111,6 +114,8 @@ func TestSubscriptionAllEvent(t *testing.T) {
 		counter++
 	}
 	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&Person{})
+
 	s := repo.Subscribers().All(f)
 	defer s.Close()
 
@@ -137,6 +142,8 @@ func TestSubscriptionSpecificEvent(t *testing.T) {
 		counter++
 	}
 	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&Person{})
+
 	s := repo.Subscribers().Event(f, &Born{}, &AgedOneYear{})
 	defer s.Close()
 
@@ -163,6 +170,8 @@ func TestSubscriptionAggregate(t *testing.T) {
 		counter++
 	}
 	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&Person{})
+
 	s := repo.Subscribers().Aggregate(f, &Person{})
 	defer s.Close()
 
@@ -189,6 +198,7 @@ func TestSubscriptionSpecificAggregate(t *testing.T) {
 		counter++
 	}
 	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&Person{})
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -212,6 +222,7 @@ func TestSubscriptionSpecificAggregate(t *testing.T) {
 
 func TestEventChainDoesNotHang(t *testing.T) {
 	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&Person{})
 
 	// eventChan can hold 5 events before it get full and blocks.
 	eventChan := make(chan eventsourcing.Event, 5)
@@ -267,5 +278,18 @@ func TestEventChainDoesNotHang(t *testing.T) {
 	<-doneChan
 	if ageCounter != 6 {
 		t.Errorf("wrong number in ageCounter expected 6, got %v", ageCounter)
+	}
+}
+
+func TestSaveWhenNotRegistered(t *testing.T) {
+	repo := eventsourcing.NewRepository(memory.Create())
+
+	person, err := CreatePerson("kalle")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = repo.Save(person)
+	if !errors.Is(err, eventsourcing.ErrAggregateNotRegistered) {
+		t.Fatalf("could save aggregate that was not registered, err: %v", err)
 	}
 }

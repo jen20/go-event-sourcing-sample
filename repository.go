@@ -24,8 +24,13 @@ type EventSubscribers interface {
 	Name(f func(e Event), aggregate string, events ...string) *subscription
 }
 
-// ErrAggregateNotFound returns if events not found for aggregate or aggregate was not based on snapshot from the outside
-var ErrAggregateNotFound = errors.New("aggregate not found")
+var (
+	// ErrAggregateNotFound returns if events not found for aggregate or aggregate was not based on snapshot from the outside
+	ErrAggregateNotFound = errors.New("aggregate not found")
+
+	// ErrAggregateNotRegistered when saving aggregate when it's not registered in the repository
+	ErrAggregateNotRegistered = errors.New("aggregate not registered")
+)
 
 type MarshalFunc func(v interface{}) ([]byte, error)
 type UnmarshalFunc func(data []byte, v interface{}) error
@@ -64,6 +69,9 @@ func (r *Repository) Subscribers() EventSubscribers {
 // Save an aggregates events
 func (r *Repository) Save(a aggregate) error {
 	// TODO: check that the aggregate is registered before saving it?
+	if !r.register.AggregateRegistered(a) {
+		return ErrAggregateNotRegistered
+	}
 
 	root := a.Root()
 	// use under laying event slice to set GlobalVersion
@@ -117,7 +125,7 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, a aggregate)
 	}
 
 	root := a.Root()
-	aggregateType := reflect.TypeOf(a).Elem().Name()
+	aggregateType := aggregateType(a)
 	// fetch events after the current version of the aggregate that could be fetched from the snapshot store
 	eventIterator, err := r.eventStore.Get(ctx, id, aggregateType, base.Version(root.aggregateVersion))
 	if err != nil && !errors.Is(err, base.ErrNoEvents) {
@@ -144,7 +152,7 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, a aggregate)
 				return nil
 			}
 			// apply the event to the aggregate
-			f, found := r.register.Type(event.AggregateType, event.Reason)
+			f, found := r.register.EventRegistered(event)
 			if !found {
 				continue
 			}

@@ -207,7 +207,7 @@ repo := NewRepository(eventStore EventStore) *Repository
 Here is an example of a person being saved and fetched from the repository.
 
 ```go
-// first the person type has to be registered in the repository
+// the person aggregate has to be registered in the repository
 repo.Register(&Person{})
 
 person := person.CreatePerson("Alice")

@@ -38,12 +38,11 @@ func (ar *AggregateRoot) TrackChangeWithMetadata(a aggregate, data interface{}, 
 		ar.aggregateID = idFunc()
 	}
 
-	name := reflect.TypeOf(a).Elem().Name()
 	event := Event{
 		event: base.Event{
 			AggregateID:   ar.aggregateID,
 			Version:       ar.nextVersion(),
-			AggregateType: name,
+			AggregateType: aggregateType(a),
 			Timestamp:     time.Now().UTC(),
 		},
 		data:     data,
@@ -141,9 +140,6 @@ func (ar *AggregateRoot) UnsavedEvents() bool {
 	return len(ar.aggregateEvents) > 0
 }
 
-// converts the internal event to the external Event
-func convertEvent(e base.Event) Event {
-	return Event{
-		event: e,
-	}
+func aggregateType(a aggregate) string {
+	return reflect.TypeOf(a).Elem().Name()
 }
