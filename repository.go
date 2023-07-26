@@ -36,8 +36,8 @@ type Repository struct {
 	// register that convert the Data []byte to correct type
 	register *register
 	// serializer / deserializer
-	serializer   MarshalFunc
-	deserializer UnmarshalFunc
+	Serializer   MarshalFunc
+	Deserializer UnmarshalFunc
 }
 
 // NewRepository factory function
@@ -45,8 +45,8 @@ func NewRepository(eventStore base.EventStore) *Repository {
 	return &Repository{
 		eventStore:   eventStore,
 		eventStream:  NewEventStream(),
-		serializer:   json.Marshal,
-		deserializer: json.Unmarshal,
+		Serializer:   json.Marshal,
+		Deserializer: json.Unmarshal,
 		register:     newRegister(),
 	}
 }
@@ -69,11 +69,11 @@ func (r *Repository) Save(aggregate Aggregate) error {
 
 	// serialize the data and meta data into []byte
 	for _, event := range root.aggregateEvents {
-		data, err := r.serializer(event.Data())
+		data, err := r.Serializer(event.Data())
 		if err != nil {
 			return err
 		}
-		metadata, err := r.serializer(event.Metadata())
+		metadata, err := r.Serializer(event.Metadata())
 		if err != nil {
 			return err
 		}
@@ -146,12 +146,12 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Ag
 				continue
 			}
 			data := f()
-			err = r.deserializer(event.Data, &data)
+			err = r.Deserializer(event.Data, &data)
 			if err != nil {
 				return err
 			}
 			metadata := make(map[string]interface{})
-			err = r.deserializer(event.Metadata, &metadata)
+			err = r.Deserializer(event.Metadata, &metadata)
 			if err != nil {
 				return err
 			}
