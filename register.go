@@ -13,7 +13,7 @@ type register struct {
 }
 
 type aggregate interface {
-	AggregateEvents(RegisterFunc) error
+	Register(RegisterFunc) error
 }
 
 var (
@@ -67,7 +67,7 @@ func (r *register) RegisterAggregate(a aggregate) error {
 		return nil
 	}
 
-	return a.AggregateEvents(fu)
+	return a.Register(fu)
 }
 
 func eventToFunc(event interface{}) registerFunc {

@@ -13,6 +13,8 @@ func main() {
 	// Setup a memory based event store
 	eventStore := memory.Create()
 	repo := eventsourcing.NewRepository(eventStore)
+	repo.Register(&FrequentFlierAccountAggregate{})
+
 	f := func(e eventsourcing.Event) {
 		fmt.Printf("Event from stream %q\n", e)
 		// Its a good practice making this function as fast as possible not blocking the event sourcing call for to long
