@@ -1,7 +1,6 @@
 package eventsourcing
 
 import (
-	"errors"
 	"reflect"
 )
 
@@ -11,17 +10,6 @@ type RegisterFunc = func(events ...interface{})
 type register struct {
 	r map[string]registerFunc
 }
-
-var (
-	// ErrAggregateNameMissing return if aggregate name is missing
-	ErrAggregateNameMissing = errors.New("missing aggregate name")
-
-	// ErrNoEventsToRegister return if no events to register
-	ErrNoEventsToRegister = errors.New("no events to register")
-
-	// ErrEventNameMissing return if Event name is missing
-	ErrEventNameMissing = errors.New("missing event name")
-)
 
 func newRegister() *register {
 	return &register{
