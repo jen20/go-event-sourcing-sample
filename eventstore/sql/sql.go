@@ -65,20 +65,6 @@ func (s *SQL) Save(events []base.Event) error {
 	var lastInsertedID int64
 	insert := `Insert into events (id, version, reason, type, timestamp, data, metadata) values ($1, $2, $3, $4, $5, $6, $7)`
 	for i, event := range events {
-		/*
-			var e, m []byte
-
-			e, err := s.serializer.Marshal(event.Data)
-			if err != nil {
-				return err
-			}
-			if event.Metadata != nil {
-				m, err = s.serializer.Marshal(event.Metadata)
-				if err != nil {
-					return err
-				}
-			}
-		*/
 		res, err := tx.Exec(insert, event.AggregateID, event.Version, event.Reason, event.AggregateType, event.Timestamp.Format(time.RFC3339), event.Data, event.Metadata)
 		if err != nil {
 			return err
@@ -132,26 +118,6 @@ func (s *SQL) eventsFromRows(rows *sql.Rows) ([]base.Event, error) {
 		if err != nil {
 			return nil, err
 		}
-
-		/*
-			f, ok := s.serializer.Type(typ, reason)
-			if !ok {
-				// if the typ/reason is not register jump over the event
-				continue
-			}
-
-			eventData := f()
-			err = s.serializer.Unmarshal([]byte(data), &eventData)
-			if err != nil {
-				return nil, err
-			}
-			if metadata != "" {
-				err = s.serializer.Unmarshal([]byte(metadata), &eventMetadata)
-				if err != nil {
-					return nil, err
-				}
-			}
-		*/
 
 		events = append(events, base.Event{
 			AggregateID:   id,

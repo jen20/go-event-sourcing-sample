@@ -193,18 +193,7 @@ func (e *BBolt) GlobalEvents(start, count uint64) ([]base.Event, error) {
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("could not deserialize event, %v", err))
 		}
-		/*
-			f, ok := e.serializer.Type(bEvent.AggregateType, bEvent.Reason)
-			if !ok {
-				// if the typ/reason is not register jump over the event
-				continue
-			}
-			eventData := f()
-			err = e.serializer.Unmarshal(bEvent.Data, &eventData)
-			if err != nil {
-				return nil, errors.New(fmt.Sprintf("could not deserialize event data, %v", err))
-			}
-		*/
+
 		event := base.Event{
 			AggregateID:   bEvent.AggregateID,
 			AggregateType: bEvent.AggregateType,

@@ -45,18 +45,7 @@ func (i *iterator) Next() (base.Event, error) {
 	if err != nil {
 		return base.Event{}, errors.New(fmt.Sprintf("could not deserialize event, %v", err))
 	}
-	/*
-		f, ok := i.serializer.Type(bEvent.AggregateType, bEvent.Reason)
-		if !ok {
-			// if the typ/reason is not register jump over the event
-			return i.Next()
-		}
-		eventData := f()
-		err = i.serializer.Unmarshal(bEvent.Data, &eventData)
-		if err != nil {
-			return base.Event{}, errors.New(fmt.Sprintf("could not deserialize event data, %v", err))
-		}
-	*/
+
 	event := base.Event{
 		AggregateID:   bEvent.AggregateID,
 		AggregateType: bEvent.AggregateType,

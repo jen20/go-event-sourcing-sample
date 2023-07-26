@@ -64,11 +64,11 @@ const (
 	StatusGold   Status = iota
 )
 
+/*
 type FrequentFlierAccount struct {
 	//eventsourcing.AggregateRoot
 }
-
-//func (f *FrequentFlierAccount) Transition(e base.Event) {}
+*/
 
 type FrequentFlierAccountCreated struct {
 	AccountId         string
@@ -192,21 +192,6 @@ func saveAndGetEvents(es base.EventStore) error {
 	if fetchedEventsIncludingPartTwo[0].Reason != testEvents(aggregateID)[0].Reason {
 		return errors.New("wrong event reason returned")
 	}
-	/*
-		if fetchedEventsIncludingPartTwo[0].Metadata["test"] != "hello" {
-			return errors.New("wrong event meta data returned")
-		}
-
-		data, ok := fetchedEventsIncludingPartTwo[0].Data.(*FrequentFlierAccountCreated)
-		if !ok {
-			return errors.New("wrong type in Data")
-		}
-
-
-		if data.OpeningMiles != 10000 {
-			return fmt.Errorf("wrong OpeningMiles %d", data.OpeningMiles)
-		}
-	*/
 	return nil
 }
 

@@ -37,24 +37,6 @@ func (i *iterator) Next() (base.Event, error) {
 
 	stream := strings.Split(eventESDB.Event.StreamID, streamSeparator)
 
-	/*
-		f, ok := i.serializer.Type(stream[0], eventESDB.Event.EventType)
-		if !ok {
-			// if the typ/reason is not register jump over the event
-			return i.Next()
-		}
-		eventData := f()
-		err = i.serializer.Unmarshal(eventESDB.Event.Data, &eventData)
-		if err != nil {
-			return base.Event{}, err
-		}
-		if eventESDB.Event.UserMetadata != nil {
-			err = i.serializer.Unmarshal(eventESDB.Event.UserMetadata, &eventMetadata)
-			if err != nil {
-				return base.Event{}, err
-			}
-		}
-	*/
 	event := base.Event{
 		AggregateID:   stream[1],
 		Version:       base.Version(eventESDB.Event.EventNumber) + 1, // +1 as the eventsourcing Version starts on 1 but the esdb event version starts on 0

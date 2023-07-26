@@ -32,27 +32,6 @@ func (i *iterator) Next() (base.Event, error) {
 		return base.Event{}, err
 	}
 
-	/*
-		f, ok := i.serializer.Type(typ, reason)
-		if !ok {
-			// if the typ/reason is not register jump over the event
-			return i.Next()
-		}
-
-
-			eventData := f()
-			err = i.serializer.Unmarshal([]byte(data), &eventData)
-			if err != nil {
-				return base.Event{}, err
-			}
-			if metadata != "" {
-				err = i.serializer.Unmarshal([]byte(metadata), &eventMetadata)
-				if err != nil {
-					return base.Event{}, err
-				}
-			}
-	*/
-
 	event := base.Event{
 		AggregateID:   id,
 		Version:       version,

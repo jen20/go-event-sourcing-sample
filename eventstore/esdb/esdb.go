@@ -50,21 +50,6 @@ func (es *ESDB) Save(events []base.Event) error {
 	esdbEvents := make([]esdb.EventData, len(events))
 
 	for i, event := range events {
-		/*
-			var e, m []byte
-
-
-				e, err := es.serializer.Marshal(event.Data)
-				if err != nil {
-					return err
-				}
-				if event.Metadata != nil {
-					m, err = es.serializer.Marshal(event.Metadata)
-					if err != nil {
-						return err
-					}
-				}
-		*/
 		eventData := esdb.EventData{
 			ContentType: es.contentType,
 			EventType:   event.Reason,
