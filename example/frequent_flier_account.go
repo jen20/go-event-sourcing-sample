@@ -88,8 +88,13 @@ func (f *FrequentFlierAccountAggregate) RecordFlightTaken(miles int, tierPoints 
 
 // Register is a callback method that register the events to the repository to unmarshal event.Data to it's
 // correct type.
-func (f *FrequentFlierAccountAggregate) Register(r eventsourcing.RegisterFunc) error {
-	return r(&FrequentFlierAccountCreated{}, &StatusMatched{}, &FlightTaken{}, &PromotedToGoldStatus{})
+func (f *FrequentFlierAccountAggregate) Register(r eventsourcing.RegisterFunc) {
+	r(
+		&FrequentFlierAccountCreated{},
+		&StatusMatched{},
+		&FlightTaken{},
+		&PromotedToGoldStatus{},
+	)
 }
 
 // Transition implements the pattern match against event types used both as part

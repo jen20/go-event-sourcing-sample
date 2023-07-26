@@ -6,14 +6,14 @@ import (
 )
 
 type registerFunc = func() interface{}
-type RegisterFunc = func(events ...interface{}) error
+type RegisterFunc = func(events ...interface{})
 
 type register struct {
 	r map[string]registerFunc
 }
 
 type aggregate interface {
-	Register(RegisterFunc) error
+	Register(RegisterFunc)
 }
 
 var (
@@ -39,11 +39,8 @@ func (r *register) Type(typ, reason string) (registerFunc, bool) {
 	return d, ok
 }
 
-func (r *register) RegisterAggregate(a aggregate) error {
+func (r *register) Register(a aggregate) {
 	typ := reflect.TypeOf(a).Elem().Name()
-	if typ == "" {
-		return ErrAggregateNameMissing
-	}
 
 	// fe is a helper function to make the event type registration simpler
 	fe := func(events ...interface{}) []registerFunc {
@@ -54,20 +51,15 @@ func (r *register) RegisterAggregate(a aggregate) error {
 		return res
 	}
 
-	fu := func(events ...interface{}) error {
+	fu := func(events ...interface{}) {
 		eventsF := fe(events...)
 		for _, f := range eventsF {
 			event := f()
 			reason := reflect.TypeOf(event).Elem().Name()
-			if reason == "" {
-				return ErrEventNameMissing
-			}
 			r.r[typ+"_"+reason] = f
 		}
-		return nil
 	}
-
-	return a.Register(fu)
+	a.Register(fu)
 }
 
 func eventToFunc(event interface{}) registerFunc {

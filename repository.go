@@ -51,8 +51,8 @@ func NewRepository(eventStore base.EventStore) *Repository {
 	}
 }
 
-func (r *Repository) Register(a aggregate) error {
-	return r.register.RegisterAggregate(a)
+func (r *Repository) Register(a aggregate) {
+	r.register.Register(a)
 }
 
 // Subscribers returns an interface with all event subscribers

@@ -61,8 +61,8 @@ func (person *Person) GrowOlder() {
 }
 
 // Register bind the events to the repository when the aggregate is registered.
-func (person *Person) Register(f eventsourcing.RegisterFunc) error {
-	return f(&Born{}, &AgedOneYear{})
+func (person *Person) Register(f eventsourcing.RegisterFunc) {
+	f(&Born{}, &AgedOneYear{})
 }
 
 // Transition the person state dependent on the events
