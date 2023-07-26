@@ -7,7 +7,7 @@ import (
 	"github.com/hallgren/eventsourcing/base"
 )
 
-// Version is the event version used in event.Version, event.GlobalVersion and aggregateRoot
+// Version is the event version used in event.Version and event.GlobalVersion
 type Version base.Version
 
 type Event struct {
