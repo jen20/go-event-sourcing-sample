@@ -12,10 +12,6 @@ type register struct {
 	r map[string]registerFunc
 }
 
-type aggregate interface {
-	Register(RegisterFunc)
-}
-
 var (
 	// ErrAggregateNameMissing return if aggregate name is missing
 	ErrAggregateNameMissing = errors.New("missing aggregate name")

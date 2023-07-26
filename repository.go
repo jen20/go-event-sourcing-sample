@@ -10,15 +10,16 @@ import (
 )
 
 // Aggregate interface to use the aggregate root specific methods
-type Aggregate interface {
+type aggregate interface {
 	Root() *AggregateRoot
 	Transition(event Event)
+	Register(RegisterFunc)
 }
 
 type EventSubscribers interface {
 	All(f func(e Event)) *subscription
-	AggregateID(f func(e Event), aggregates ...Aggregate) *subscription
-	Aggregate(f func(e Event), aggregates ...Aggregate) *subscription
+	AggregateID(f func(e Event), aggregates ...aggregate) *subscription
+	Aggregate(f func(e Event), aggregates ...aggregate) *subscription
 	Event(f func(e Event), events ...interface{}) *subscription
 	Name(f func(e Event), aggregate string, events ...string) *subscription
 }
@@ -61,8 +62,8 @@ func (r *Repository) Subscribers() EventSubscribers {
 }
 
 // Save an aggregates events
-func (r *Repository) Save(aggregate Aggregate) error {
-	root := aggregate.Root()
+func (r *Repository) Save(a aggregate) error {
+	root := a.Root()
 	// use under laying event slice to set GlobalVersion
 
 	var esEvents = make([]base.Event, 0)
@@ -108,13 +109,13 @@ func (r *Repository) Save(aggregate Aggregate) error {
 
 // GetWithContext fetches the aggregates event and build up the aggregate based on it's current version.
 // The event fetching can be canceled from the outside.
-func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Aggregate) error {
-	if reflect.ValueOf(aggregate).Kind() != reflect.Ptr {
+func (r *Repository) GetWithContext(ctx context.Context, id string, a aggregate) error {
+	if reflect.ValueOf(a).Kind() != reflect.Ptr {
 		return errors.New("aggregate needs to be a pointer")
 	}
 
-	root := aggregate.Root()
-	aggregateType := reflect.TypeOf(aggregate).Elem().Name()
+	root := a.Root()
+	aggregateType := reflect.TypeOf(a).Elem().Name()
 	// fetch events after the current version of the aggregate that could be fetched from the snapshot store
 	eventIterator, err := r.eventStore.Get(ctx, id, aggregateType, base.Version(root.aggregateVersion))
 	if err != nil && !errors.Is(err, base.ErrNoEvents) {
@@ -157,7 +158,7 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Ag
 			}
 
 			e := NewEvent(event, data, metadata)
-			root.BuildFromHistory(aggregate, []Event{e})
+			root.BuildFromHistory(a, []Event{e})
 		}
 	}
 }
@@ -165,6 +166,6 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, aggregate Ag
 // Get fetches the aggregates event and build up the aggregate
 // If there is a snapshot store try fetch a snapshot of the aggregate and fetch event after the
 // version of the aggregate if any
-func (r *Repository) Get(id string, aggregate Aggregate) error {
-	return r.GetWithContext(context.Background(), id, aggregate)
+func (r *Repository) Get(id string, a aggregate) error {
+	return r.GetWithContext(context.Background(), id, a)
 }
