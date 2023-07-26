@@ -63,6 +63,8 @@ func (r *Repository) Subscribers() EventSubscribers {
 
 // Save an aggregates events
 func (r *Repository) Save(a aggregate) error {
+	// TODO: check that the aggregate is registered before saving it?
+
 	root := a.Root()
 	// use under laying event slice to set GlobalVersion
 

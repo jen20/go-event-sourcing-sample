@@ -24,24 +24,35 @@ type Person struct {
 }
 ```
 
-The aggregate needs to implement the `Transition(event eventsourcing.Event)` function to fulfill the aggregate interface. This function define how events are transformed to build the aggregate state.
+The aggregate needs to implement the `Transition(event eventsourcing.Event)` and `Regsiter(r eventsourcing.RegsiterFunc)` methods to fulfill the aggregate interface. This methods define how events are transformed to build the aggregate state and which events to register into the repository. 
 
-Example of the Transition function from the `Person` aggregate.
+Example of the Transition method from the `Person` aggregate.
 
 ```go
 // Transition the person state dependent on the events
 func (person *Person) Transition(event eventsourcing.Event) {
-        switch e := event.Data.(type) {
-        case *Born:
-                person.Age = 0
-                person.Name = e.Name
-        case *AgedOneYear:
-                person.Age += 1
-        }
+    switch e := event.Data().(type) {
+    case *Born:
+            person.Age = 0
+            person.Name = e.Name
+    case *AgedOneYear:
+            person.Age += 1
+    }
 }
 ```
 
-In this example we can see that the `Born` event sets the `Person` property `Age` and `Name`, and that the `AgedOneYear` adds one year to the `Age` property. This makes the state of the aggregate flexible and could easily change in the future if required.
+The `Born` event sets the `Person` property `Age` and `Name`, and the `AgedOneYear` adds one year to the `Age` property. This makes the state of the aggregate flexible and could easily change in the future if required.
+
+Exampel or the Register method.
+
+```go
+// Register callback method that register Person events to the repository
+func (person *Person) Register(r eventsourcing.RegsiterFunc) {
+    r(&Born{}, &AgedOneYear{})
+}
+```
+
+The `Born` and `AgedOneYear` events are now registered to the repository when the aggregate is registered.
 
 ### Aggregate Event
 
@@ -52,7 +63,7 @@ Example of two events from the `Person` aggregate.
 ```go
 // Initial event
 type Born struct {
-        Name string
+    Name string
 }
 
 // Event that happens once a year
@@ -73,7 +84,7 @@ func CreatePerson(name string) (*Person, error) {
 }
 ```
 
-When a person is created, more events could be created via functions on the `Person` aggregate. Below is the `GrowOlder` function which in turn triggers the event `AgedOneYear`. This event is tracked on the person aggregate.
+When a person is created, more events could be created via methods on the `Person` aggregate. Below is the `GrowOlder` method which in turn triggers the event `AgedOneYear`. This event is tracked on the person aggregate.
 
 ```go
 // GrowOlder command
@@ -82,30 +93,69 @@ func (person *Person) GrowOlder() {
 }
 ```
 
-Internally the `TrackChange` functions calls the `Transition` function on the aggregate to transform the aggregate based on the newly created event.
+Internally the `TrackChange` methods calls the `Transition` method on the aggregate to transform the aggregate based on the newly created event.
 
-To bind metadata to events use the `TrackChangeWithMetadata` function.
+To bind metadata to events use the `TrackChangeWithMetadata` method.
   
-
 The internal `Event` looks like this.
 
 ```go
 type Event struct {
     // aggregate identifier 
-    AggregateID string
+    aggregateID string
     // the aggregate version when this event was created
-    Version         Version
+    version         Version
     // the global version is based on all events (this value is only set after the event is saved to the event store) 
-    GlobalVersion   Version
+    globalVersion   Version
     // aggregate type (Person in the example above)
-    AggregateType   string
+    aggregateType   string
     // UTC time when the event was created  
-    Timestamp       time.Time
+    timestamp       time.Time
     // the specific event data specified in the application (Born{}, AgedOneYear{})
-    Data            interface{}
+    data            interface{}
     // data that don´t belongs to the application state (could be correlation id or other request references)
-    Metadata        map[string]interface{}
+    metadata        map[string]interface{}
 }
+```
+
+To access properties on the event there are methods exposing them. This prevent external parties to modify the event from the outside.
+
+```go
+    func (e Event) AggregateID() string {
+        return e.event.AggregateID
+    }
+
+    func (e Event) Version() Version {
+        return Version(e.event.Version)
+    }
+
+    func (e Event) GlobalVersion() Version {
+        return Version(e.event.GlobalVersion)
+    }
+
+    func (e Event) AggregateType() string {
+        return e.event.AggregateType
+    }
+
+    func (e Event) Timestamp() time.Time {
+        return e.event.Timestamp
+    }
+
+    func (e Event) Data() interface{} {
+        return e.data
+    }
+
+    func (e Event) Metadata() map[string]interface{} {
+        return e.metadata
+    }
+
+    // Reason is based on the data type
+    func (e Event) Reason() string {
+        if e.data == nil {
+            return ""
+        }
+        return reflect.TypeOf(e.data).Elem().Name()
+    }
 ```
 
 ### Aggregate ID
@@ -138,32 +188,28 @@ The repository is used to save and retrieve aggregates. The main functions are:
 
 ```go
 // saves the events on the aggregate
-Save(aggregate Aggregate) error
+Save(a aggregate) error
 
 // retrieves and build an aggregate from events based on its identifier
 // possible to cancel from the outside
-GetWithContext(ctx context.Context, id string, aggregate Aggregate) error
+GetWithContext(ctx context.Context, id string, a aggregate) error
 
 // retrieves and build an aggregate from events based on its identifier
-Get(id string, aggregate Aggregate) error
+Get(id string, a aggregate) error
 ```
 
-It is possible to save a snapshot of an aggregate reducing the amount of event needed to be fetched and applied.
+The repository constructor input values is an event store, this handles the reading and writing of events and builds the aggregate based on the events.
 
 ```go
-// saves the aggregate (an error will be returned if there are unsaved events on the aggregate when doing this operation)
-SaveSnapshot(aggregate Aggregate) error
-```
-
-The repository constructor input values is an event store and a snapshot store, this handles the reading and writing of events and snapshots. We will dig deeper on the internals below.
-
-```go
-NewRepository(eventStore EventStore, snapshotStore SnapshotStore) *Repository
+repo := NewRepository(eventStore EventStore) *Repository
 ```
 
 Here is an example of a person being saved and fetched from the repository.
 
 ```go
+// first the person type has to be registered in the repository
+repo.Register(&Person{})
+
 person := person.CreatePerson("Alice")
 person.GrowOlder()
 repo.Save(person)
@@ -180,7 +226,7 @@ The only thing an event store handles are events, and it must implement the foll
 Save(events []eventsourcing.Event) error
 
 // fetches events based on identifier and type but also after a specific version. The version is used to load event that happened after a snapshot was taken.
-Get(id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.EventIterator, error)
+Get(id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.Iterator, error)
 ```
 
 Currently, there are three implementations.
@@ -200,120 +246,9 @@ Submodules needs to be fetched separately via go get.
 
 The memory based event store is part of the main module and does not need to be fetched separately.
 
-### Snapshot Handler and Snapshot Store
-
-A snapshot store save and get aggregate snapshots. A snapshot is a fix state of an aggregate on a specific version. The properties of an aggregate have to be exported for them to be saved in the snapshot.
-
-If you want to keep the properties unexported the aggregate has to implement the Marshal/Unmarshal methods.
-
-```go
-Marshal(m eventsourcing.MarshalSnapshotFunc) ([]byte, error)
-Unmarshal(m eventsourcing.UnmarshalSnapshotFunc, b []byte) error
-```
- 
-Here is an exampel how the Marshal/Unmarshal methods is used in the snapshot aggregate. Marshal maps its properties to a new internal struct with all its
-properties exported. The Unmarshal method unmarshal the internal struct and sets the aggregate properties.
-
-```go
-type snapshot struct {
-	eventsourcing.AggregateRoot
-	unexported string
-	Exported   string
-}
-
-type snapshotInternal struct {
-	UnExported string
-	Exported   string
-}
-
-func (s *snapshot) Marshal(m eventsourcing.MarshalSnapshotFunc) ([]byte, error) {
-	snap := snapshotInternal{
-		Unexported: s.unexported,
-		Exported:   s.Exported,
-	}
-	return m(snap)
-}
-
-func (s *snapshot) Unmarshal(m eventsourcing.UnmarshalSnapshotFunc, b []byte) error {
-	snap := snapshotInternal{}
-	err := m(b, &snap)
-	if err != nil {
-		return err
-	}
-	s.unexported = snap.UnExported
-	s.Exported = snap.Exported
-	return nil
-}
-```
-
-
-The Snapshot Handler is the top layer that integrates with the repository.
-
-```go
-// Save transform an aggregate to a snapshot
-Save(a interface{}) error {
-
-// Get fetch a snapshot and reconstruct an aggregate
-Get(ctx context.Context, id string, a interface{}) error {
-```
-
-A Snapshot store is the actual layer that stores the snapshot.
-
-```go
-// get snapshot by identifier
-Get(ctx context.Context, id, typ string) (eventsource.Snapshot, error)
-
-// saves snapshot
-Save(s eventsourcing.Snapshot) error
-```
-
-Currently, there are two implementations of the snapshot store.
-
-* SQL
-* RAM Memory
-
-Where the SQL snapshot store is a submodule and can be fetched via `go get github.com/hallgren/eventsourcing/snapshotstore/sql`
-
 ## Serializer
 
-To store events and snapshots they have to be serialised into `[]byte`. This is handled differently depending on event
-store implementation. The sql event store only marshal the event.Data and event.Metadata properties. (The rest is stored
-in separate columns), while the bbolt event store marshal the hole event in its key / value database. The memory based event
-store does not use a serializer due to it never serialise events to `[]byte`.
-
-To be open to different storage solution the serializer takes as parameter to its constructor a marshal and unmarshal function,
-that follows the declaration from the `"encoding/json"` package.
-
-```go
-NewSerializer(marshalF MarshalSnapshotFunc, unmarshalF UnmarshalSnapshotFunc) *Serializer
-
-creating a json based serializer: 
-serializer := NewSerializer(json.Marshal, json.Unmarshal)
-```
-
-The registered event function is used internally inside the event store to set the correct type info when unmarshalling
-event data into the `eventsourcing.Event`.
-
-```go
-Register(aggregate Aggregate, events []func() interface{})
-
-Register the aggregate Person and the events Born and AgedOneYear (Makes use of the helper method `Events` from the serializer instance):
-serializer.Register(&Person{}, serializer.Events(&Born{}, &AgedOneYear{}))
-```
-
-A problem with the above way of register the aggregate and its events is when new events are introduced. As the registration to the serializer is apart from the definition of the events it's easy to miss register them to the serializer. A solution to this is the optional callback function `RegisterEvents` that can be defined on the aggregate. This function is called by the serializer when an aggregate is registered via the `RegisterAggregate` method.
-
-```go
-func (s *Person) RegisterEvents(f eventsourcing.EventsFunc) error {
-	return f(
-		&Born{},
-        &AgedOneYear{},
-	)
-}
-
-s := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
-s.RegisterAggregate(&Person{}) // will call the RegisterEvents function on the Person aggregate.
-```
+To store events they have to be serialised into `[]byte`. Default the `encoding/json` is used but it could be replaced on the repoository by setting the `repo.Serializer` and `repo.Deserializer` function properties.
 
 ### Event Subscription
 
@@ -321,10 +256,10 @@ The repository expose four possibilities to subscribe to events in realtime as t
 
 `All(func (e Event)) *subscription` subscribes to all events.
 
-`AggregateID(func (e Event), events ...Aggregate) *subscription` events bound to specific aggregate based on type and identity.
+`AggregateID(func (e Event), events ...aggregate) *subscription` events bound to specific aggregate based on type and identity.
 This makes it possible to get events pinpointed to one specific aggregate instance.
 
-`Aggregate(func (e Event), aggregates ...Aggregate) *subscription` subscribes to events bound to specific aggregate type. 
+`Aggregate(func (e Event), aggregates ...aggregate) *subscription` subscribes to events bound to specific aggregate type. 
  
 `Event(func (e Event), events ...interface{}) *subscription` subscribes to specific events. There are no restrictions that the events need
 to come from the same aggregate, you can mix and match as you please.
@@ -341,11 +276,12 @@ Example on how to set up the event subscription and consume the event `FrequentF
 
 ```go
 // Setup a memory based repository
-repo := eventsourcing.NewRepository(memory.Create(), nil)
+repo := eventsourcing.NewRepository(memory.Create())
+repo.Register(&FrequentFlierAccountAggregate{})
 
 // subscriber that will trigger on every saved events
 s := repo.Subscribers().All(func(e eventsourcing.Event) {
-    switch e := event.Data.(type) {
+    switch e := event.Data().(type) {
         case *FrequentFlierAccountCreated:
             // e now have type info
             fmt.Println(e)
@@ -359,7 +295,7 @@ s.Close()
 
 ## Custom made components
 
-Parts of this package may not fulfill your application need, either it can be that the event or snapshot stores uses the wrong database for storage.
+Parts of this package may not fulfill your application need, either it can be that the event store uses the wrong database for storage.
 
 #### Event Store
 
@@ -368,17 +304,6 @@ A custom-made event store has to implement the following functions to fulfill th
 ```go
 type EventStore interface {
     Save(events []Event) error
-    Get(id string, aggregateType string, afterVersion Version) (EventIterator, error)
-}
-```
-
-#### Snapshot Store
-
-If the snapshot store is the thing you need to change here is the interface you need to uphold.
-
-```go
-type SnapshotStore interface {
-    Get(ctx context.Context, id string, a interface{}) error
-    Save(id string, a interface{}) error
+    Get(id string, aggregateType string, afterVersion Version) (Iterator, error)
 }
 ```
