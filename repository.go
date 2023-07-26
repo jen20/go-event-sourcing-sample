@@ -24,7 +24,7 @@ type EventSubscribers interface {
 	Name(f func(e Event), aggregate string, events ...string) *subscription
 }
 
-// ErrAggregateNotFound returns if snapshot or event not found for aggregate
+// ErrAggregateNotFound returns if events not found for aggregate or aggregate was not based on snapshot from the outside
 var ErrAggregateNotFound = errors.New("aggregate not found")
 
 type MarshalFunc func(v interface{}) ([]byte, error)
@@ -165,9 +165,9 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, a aggregate)
 	}
 }
 
-// Get fetches the aggregates event and build up the aggregate
-// If there is a snapshot store try fetch a snapshot of the aggregate and fetch event after the
-// version of the aggregate if any
+// Get fetches the aggregates event and build up the aggregate.
+// If the aggregate is based on a snapshot it fetches event after the
+// version of the aggregate.
 func (r *Repository) Get(id string, a aggregate) error {
 	return r.GetWithContext(context.Background(), id, a)
 }

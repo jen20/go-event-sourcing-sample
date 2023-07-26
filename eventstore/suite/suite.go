@@ -64,12 +64,6 @@ const (
 	StatusGold   Status = iota
 )
 
-/*
-type FrequentFlierAccount struct {
-	//eventsourcing.AggregateRoot
-}
-*/
-
 type FrequentFlierAccountCreated struct {
 	AccountId         string
 	OpeningMiles      int

@@ -208,16 +208,3 @@ func TestIDFuncGeneratingRandomIDs(t *testing.T) {
 		ids[person.ID()] = struct{}{}
 	}
 }
-
-/* no possible anymore
-func TestMutateEvents(t *testing.T) {
-	var m = "mutated from the outside"
-	person, _ := CreatePerson("kalle")
-
-	events := person.Events()
-	events[0].AggregateType = m
-	if person.Events()[0].AggregateType == m {
-		t.Fatal("events should not be mutated from the outside")
-	}
-}
-*/
