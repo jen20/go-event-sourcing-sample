@@ -281,7 +281,7 @@ func TestEventChainDoesNotHang(t *testing.T) {
 	}
 }
 
-func TestSaveWhenNotRegistered(t *testing.T) {
+func TestSaveWhenAggregateNotRegistered(t *testing.T) {
 	repo := eventsourcing.NewRepository(memory.Create())
 
 	person, err := CreatePerson("kalle")
@@ -292,4 +292,54 @@ func TestSaveWhenNotRegistered(t *testing.T) {
 	if !errors.Is(err, eventsourcing.ErrAggregateNotRegistered) {
 		t.Fatalf("could save aggregate that was not registered, err: %v", err)
 	}
+}
+
+func TestSaveWhenEventNotRegistered(t *testing.T) {
+	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&PersonNoRegisterEvents{})
+
+	person, err := CreatePersonNoRegisteredEvents("kalle")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = repo.Save(person)
+	if !errors.Is(err, eventsourcing.ErrEventNotRegistered) {
+		t.Fatalf("could save aggregate events that was not registered, err: %v", err)
+	}
+}
+
+// Person aggregate
+type PersonNoRegisterEvents struct {
+	eventsourcing.AggregateRoot
+	Name string
+	Age  int
+	Dead int
+}
+
+// Born event
+type BornNoRegisteredEvents struct {
+	Name string
+}
+
+// CreatePersonNoRegisteredEvents constructor for the PersonNoRegisteredEvents
+func CreatePersonNoRegisteredEvents(name string) (*PersonNoRegisterEvents, error) {
+	if name == "" {
+		return nil, errors.New("name can't be blank")
+	}
+	person := PersonNoRegisterEvents{}
+	person.TrackChange(&person, &BornNoRegisteredEvents{Name: name})
+	return &person, nil
+}
+
+// Transition the person state dependent on the events
+func (person *PersonNoRegisterEvents) Transition(event eventsourcing.Event) {
+	switch e := event.Data().(type) {
+	case *BornNoRegisteredEvents:
+		person.Age = 0
+		person.Name = e.Name
+	}
+}
+
+// Register bind the events to the repository when the aggregate is registered.
+func (person *PersonNoRegisterEvents) Register(f eventsourcing.RegisterFunc) {
 }

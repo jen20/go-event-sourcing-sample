@@ -30,6 +30,9 @@ var (
 
 	// ErrAggregateNotRegistered when saving aggregate when it's not registered in the repository
 	ErrAggregateNotRegistered = errors.New("aggregate not registered")
+
+	// ErrEventNotRegistered when saving aggregate and one event is not registered in the repository
+	ErrEventNotRegistered = errors.New("event not registered")
 )
 
 type MarshalFunc func(v interface{}) ([]byte, error)
@@ -88,7 +91,8 @@ func (r *Repository) Save(a aggregate) error {
 		if err != nil {
 			return err
 		}
-		esEvents = append(esEvents, base.Event{
+
+		esEvent := base.Event{
 			AggregateID:   event.AggregateID(),
 			Version:       base.Version(event.Version()),
 			AggregateType: event.AggregateType(),
@@ -96,7 +100,12 @@ func (r *Repository) Save(a aggregate) error {
 			Data:          data,
 			Metadata:      metadata,
 			Reason:        event.Reason(),
-		})
+		}
+		_, ok := r.register.EventRegistered(esEvent)
+		if !ok {
+			return ErrEventNotRegistered
+		}
+		esEvents = append(esEvents, esEvent)
 	}
 
 	err := r.eventStore.Save(esEvents)
