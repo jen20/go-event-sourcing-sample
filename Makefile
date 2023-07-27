@@ -3,6 +3,8 @@ all:
 	go build
 
 test:
+	#base
+	cd base && go test -count 1 validator_test.go
 	# event stores
 	cd eventstore/bbolt && go test -count 1 ./...
 	cd eventstore/sql && go test -count 1 ./...

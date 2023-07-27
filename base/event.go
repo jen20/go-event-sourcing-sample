@@ -1,24 +1,11 @@
 package base
 
 import (
-	"errors"
 	"time"
 )
 
 // Version is the event version used in event.Version and event.GlobalVersio
 type Version uint64
-
-// ErrNoEvents when there is no events to get
-var ErrNoEvents = errors.New("no events")
-
-// ErrNoMoreEvents when iterator has no more events to deliver
-var ErrNoMoreEvents = errors.New("no more events")
-
-// Iterator is the interface an event store Get needs to return
-type Iterator interface {
-	Next() (Event, error)
-	Close()
-}
 
 // Event holding meta data and the application specific event in the Data property
 type Event struct {
