@@ -22,6 +22,64 @@ func AggregateID() string {
 
 type eventstoreFunc = func() (base.EventStore, func(), error)
 
+// Status represents the Red, Silver or Gold tier level of a FrequentFlierAccount
+type Status int
+
+const (
+	StatusRed    Status = iota
+	StatusSilver Status = iota
+	StatusGold   Status = iota
+)
+
+type FrequentFlierAccountCreated struct {
+	AccountId         string
+	OpeningMiles      int
+	OpeningTierPoints int
+}
+
+type StatusMatched struct {
+	NewStatus Status
+}
+
+type FlightTaken struct {
+	MilesAdded      int
+	TierPointsAdded int
+}
+
+var aggregateType = "FrequentFlierAccount"
+var timestamp = time.Now()
+
+func eventToByte(i interface{}) []byte {
+	b, _ := json.Marshal(i)
+	return b
+}
+
+func testEvents(aggregateID string) []base.Event {
+	metadata := make(map[string]interface{})
+	metadata["test"] = "hello"
+	history := []base.Event{
+		{AggregateID: aggregateID, Version: 1, AggregateType: aggregateType, Timestamp: timestamp, Reason: "FrequentFlierAccountCreated", Data: eventToByte(&FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}), Metadata: eventToByte(metadata)},
+		{AggregateID: aggregateID, Version: 2, AggregateType: aggregateType, Timestamp: timestamp, Reason: "StatusMatched", Data: eventToByte(&StatusMatched{NewStatus: StatusSilver}), Metadata: eventToByte(metadata)},
+		{AggregateID: aggregateID, Version: 3, AggregateType: aggregateType, Timestamp: timestamp, Reason: "FlightTaken", Data: eventToByte(&FlightTaken{MilesAdded: 2525, TierPointsAdded: 5}), Metadata: eventToByte(metadata)},
+		{AggregateID: aggregateID, Version: 4, AggregateType: aggregateType, Timestamp: timestamp, Reason: "FlightTaken", Data: eventToByte(&FlightTaken{MilesAdded: 2512, TierPointsAdded: 5}), Metadata: eventToByte(metadata)},
+		{AggregateID: aggregateID, Version: 5, AggregateType: aggregateType, Timestamp: timestamp, Reason: "FlightTaken", Data: eventToByte(&FlightTaken{MilesAdded: 5600, TierPointsAdded: 5}), Metadata: eventToByte(metadata)},
+		{AggregateID: aggregateID, Version: 6, AggregateType: aggregateType, Timestamp: timestamp, Reason: "FlightTaken", Data: eventToByte(&FlightTaken{MilesAdded: 3000, TierPointsAdded: 3}), Metadata: eventToByte(metadata)},
+	}
+	return history
+}
+
+func testEventsPartTwo(aggregateID string) []base.Event {
+	history := []base.Event{
+		{AggregateID: aggregateID, Version: 7, AggregateType: aggregateType, Timestamp: timestamp, Reason: "FlightTaken", Data: eventToByte(&FlightTaken{MilesAdded: 5600, TierPointsAdded: 5})},
+		{AggregateID: aggregateID, Version: 8, AggregateType: aggregateType, Timestamp: timestamp, Reason: "FlightTaken", Data: eventToByte(&FlightTaken{MilesAdded: 3000, TierPointsAdded: 3})},
+	}
+	return history
+}
+
+func testEventOtherAggregate(aggregateID string) base.Event {
+	return base.Event{AggregateID: aggregateID, Version: 1, AggregateType: aggregateType, Timestamp: timestamp, Reason: "FrequentFlierAccountCreated", Data: eventToByte(&FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0})}
+}
+
 func Test(t *testing.T, esFunc eventstoreFunc) {
 	tests := []struct {
 		title string
@@ -53,68 +111,6 @@ func Test(t *testing.T, esFunc eventstoreFunc) {
 			closeFunc()
 		})
 	}
-}
-
-// Status represents the Red, Silver or Gold tier level of a FrequentFlierAccount
-type Status int
-
-const (
-	StatusRed    Status = iota
-	StatusSilver Status = iota
-	StatusGold   Status = iota
-)
-
-type FrequentFlierAccountCreated struct {
-	AccountId         string
-	OpeningMiles      int
-	OpeningTierPoints int
-}
-
-type StatusMatched struct {
-	NewStatus Status
-}
-
-type FlightTaken struct {
-	MilesAdded      int
-	TierPointsAdded int
-}
-
-var aggregateType = "FrequentFlierAccount"
-var timestamp = time.Now()
-
-func testEventsWithID(aggregateID string) []base.Event {
-	metadata := make(map[string]interface{})
-	metadata["test"] = "hello"
-	history := []base.Event{
-		{AggregateID: aggregateID, Version: 1, AggregateType: aggregateType, Timestamp: timestamp, Reason: "FrequentFlierAccountCreated", Data: eventToByte(&FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0}), Metadata: eventToByte(metadata)},
-		{AggregateID: aggregateID, Version: 2, AggregateType: aggregateType, Timestamp: timestamp, Reason: "StatusMatched", Data: eventToByte(&StatusMatched{NewStatus: StatusSilver}), Metadata: eventToByte(metadata)},
-		{AggregateID: aggregateID, Version: 3, AggregateType: aggregateType, Timestamp: timestamp, Reason: "FlightTaken", Data: eventToByte(&FlightTaken{MilesAdded: 2525, TierPointsAdded: 5}), Metadata: eventToByte(metadata)},
-		{AggregateID: aggregateID, Version: 4, AggregateType: aggregateType, Timestamp: timestamp, Reason: "FlightTaken", Data: eventToByte(&FlightTaken{MilesAdded: 2512, TierPointsAdded: 5}), Metadata: eventToByte(metadata)},
-		{AggregateID: aggregateID, Version: 5, AggregateType: aggregateType, Timestamp: timestamp, Reason: "FlightTaken", Data: eventToByte(&FlightTaken{MilesAdded: 5600, TierPointsAdded: 5}), Metadata: eventToByte(metadata)},
-		{AggregateID: aggregateID, Version: 6, AggregateType: aggregateType, Timestamp: timestamp, Reason: "FlightTaken", Data: eventToByte(&FlightTaken{MilesAdded: 3000, TierPointsAdded: 3}), Metadata: eventToByte(metadata)},
-	}
-	return history
-}
-
-func eventToByte(i interface{}) []byte {
-	b, _ := json.Marshal(i)
-	return b
-}
-
-func testEvents(aggregateID string) []base.Event {
-	return testEventsWithID(aggregateID)
-}
-
-func testEventsPartTwo(aggregateID string) []base.Event {
-	history := []base.Event{
-		{AggregateID: aggregateID, Version: 7, AggregateType: aggregateType, Timestamp: timestamp, Reason: "FlightTaken", Data: eventToByte(&FlightTaken{MilesAdded: 5600, TierPointsAdded: 5})},
-		{AggregateID: aggregateID, Version: 8, AggregateType: aggregateType, Timestamp: timestamp, Reason: "FlightTaken", Data: eventToByte(&FlightTaken{MilesAdded: 3000, TierPointsAdded: 3})},
-	}
-	return history
-}
-
-func testEventOtherAggregate(aggregateID string) base.Event {
-	return base.Event{AggregateID: aggregateID, Version: 1, AggregateType: aggregateType, Timestamp: timestamp, Reason: "FrequentFlierAccountCreated", Data: eventToByte(&FrequentFlierAccountCreated{AccountId: "1234567", OpeningMiles: 10000, OpeningTierPoints: 0})}
 }
 
 func saveAndGetEvents(es base.EventStore) error {
@@ -282,7 +278,7 @@ func saveAndGetEventsConcurrently(es base.EventStore) error {
 
 	wg.Add(10)
 	for i := 0; i < 10; i++ {
-		events := testEventsWithID(fmt.Sprintf("%s-%d", aggregateID, i))
+		events := testEvents(fmt.Sprintf("%s-%d", aggregateID, i))
 		go func() {
 			e := es.Save(events)
 			if e != nil {
