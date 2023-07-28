@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/hallgren/eventsourcing/base"
+	"github.com/hallgren/eventsourcing/base/suite"
 	"github.com/hallgren/eventsourcing/eventstore/sql"
-	"github.com/hallgren/eventsourcing/eventstore/suite"
 	_ "github.com/proullon/ramsql/driver"
 )
 
