@@ -3,10 +3,8 @@ package esdb
 import (
 	"context"
 
-	"github.com/hallgren/eventsourcing/eventstore"
-
 	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
-	"github.com/hallgren/eventsourcing"
+	"github.com/hallgren/eventsourcing/core"
 )
 
 const streamSeparator = "-"
@@ -14,12 +12,11 @@ const streamSeparator = "-"
 // ESDB is the event store handler
 type ESDB struct {
 	client      *esdb.Client
-	serializer  eventsourcing.Serializer
 	contentType esdb.ContentType
 }
 
 // Open binds the event store db client
-func Open(client *esdb.Client, serializer eventsourcing.Serializer, jsonSerializer bool) *ESDB {
+func Open(client *esdb.Client, jsonSerializer bool) *ESDB {
 	// defaults to binary
 	var contentType esdb.ContentType
 	if jsonSerializer {
@@ -27,13 +24,12 @@ func Open(client *esdb.Client, serializer eventsourcing.Serializer, jsonSerializ
 	}
 	return &ESDB{
 		client:      client,
-		serializer:  serializer,
 		contentType: contentType,
 	}
 }
 
 // Save persists events to the database
-func (es *ESDB) Save(events []eventsourcing.Event) error {
+func (es *ESDB) Save(events []core.Event) error {
 	// If no event return no error
 	if len(events) == 0 {
 		return nil
@@ -45,7 +41,7 @@ func (es *ESDB) Save(events []eventsourcing.Event) error {
 	version := events[0].Version
 	stream := stream(aggregateType, aggregateID)
 
-	err := eventstore.ValidateEventsNoVersionCheck(aggregateID, events)
+	err := core.ValidateEventsNoVersionCheck(aggregateID, events)
 	if err != nil {
 		return err
 	}
@@ -53,23 +49,11 @@ func (es *ESDB) Save(events []eventsourcing.Event) error {
 	esdbEvents := make([]esdb.EventData, len(events))
 
 	for i, event := range events {
-		var e, m []byte
-
-		e, err := es.serializer.Marshal(event.Data)
-		if err != nil {
-			return err
-		}
-		if event.Metadata != nil {
-			m, err = es.serializer.Marshal(event.Metadata)
-			if err != nil {
-				return err
-			}
-		}
 		eventData := esdb.EventData{
 			ContentType: es.contentType,
-			EventType:   event.Reason(),
-			Data:        e,
-			Metadata:    m,
+			EventType:   event.Reason,
+			Data:        event.Data,
+			Metadata:    event.Metadata,
 		}
 
 		esdbEvents[i] = eventData
@@ -88,12 +72,12 @@ func (es *ESDB) Save(events []eventsourcing.Event) error {
 	}
 	for i := range events {
 		// Set all events GlobalVersion to the last events commit position.
-		events[i].GlobalVersion = eventsourcing.Version(wr.CommitPosition)
+		events[i].GlobalVersion = core.Version(wr.CommitPosition)
 	}
 	return nil
 }
 
-func (es *ESDB) Get(ctx context.Context, id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.EventIterator, error) {
+func (es *ESDB) Get(ctx context.Context, id string, aggregateType string, afterVersion core.Version) (core.Iterator, error) {
 	streamID := stream(aggregateType, id)
 
 	from := esdb.StreamRevision{Value: uint64(afterVersion)}
@@ -101,14 +85,14 @@ func (es *ESDB) Get(ctx context.Context, id string, aggregateType string, afterV
 	if err != nil {
 		if err, ok := esdb.FromError(err); !ok {
 			if err.Code() == esdb.ErrorCodeResourceNotFound {
-				return nil, eventsourcing.ErrNoEvents
+				return nil, core.ErrNoEvents
 			}
 		}
 		return nil, err
 	} else if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
-	return &iterator{stream: stream, serializer: es.serializer}, nil
+	return &iterator{stream: stream}, nil
 }
 
 func stream(aggregateType, aggregateID string) string {

@@ -69,7 +69,7 @@ func (e *EventStream) allPublisher(event Event) {
 
 // call functions that has registered for the specific event
 func (e *EventStream) specificEventPublisher(event Event) {
-	ref := reflect.TypeOf(event.Data)
+	ref := reflect.TypeOf(event.Data())
 	if subs, ok := e.specificEvents[ref]; ok {
 		publish(subs, event)
 	}
@@ -77,7 +77,7 @@ func (e *EventStream) specificEventPublisher(event Event) {
 
 // call functions that has registered for the aggregate type events
 func (e *EventStream) aggregateTypePublisher(agg AggregateRoot, event Event) {
-	ref := fmt.Sprintf("%s_%s", agg.path(), event.AggregateType)
+	ref := fmt.Sprintf("%s_%s", agg.path(), event.AggregateType())
 	if subs, ok := e.aggregateTypes[ref]; ok {
 		publish(subs, event)
 	}
@@ -86,7 +86,7 @@ func (e *EventStream) aggregateTypePublisher(agg AggregateRoot, event Event) {
 // call functions that has registered for the aggregate type and ID events
 func (e *EventStream) specificAggregatesPublisher(agg AggregateRoot, event Event) {
 	// ref also include the package name ensuring that Aggregate Types can have the same name.
-	ref := fmt.Sprintf("%s_%s_%s", agg.path(), event.AggregateType, agg.ID())
+	ref := fmt.Sprintf("%s_%s_%s", agg.path(), event.AggregateType(), agg.ID())
 	if subs, ok := e.specificAggregates[ref]; ok {
 		publish(subs, event)
 	}
@@ -94,7 +94,7 @@ func (e *EventStream) specificAggregatesPublisher(agg AggregateRoot, event Event
 
 // call functions that has registered for the aggregate type events
 func (e *EventStream) namePublisher(event Event) {
-	ref := event.AggregateType + "_" + event.Reason()
+	ref := event.AggregateType() + "_" + event.Reason()
 	if subs, ok := e.names[ref]; ok {
 		publish(subs, event)
 	}
@@ -118,7 +118,7 @@ func (e *EventStream) All(f func(e Event)) *subscription {
 }
 
 // AggregateID subscribe to events that belongs to aggregate's based on its type and ID
-func (e *EventStream) AggregateID(f func(e Event), aggregates ...Aggregate) *subscription {
+func (e *EventStream) AggregateID(f func(e Event), aggregates ...aggregate) *subscription {
 	s := subscription{
 		eventF: f,
 	}
@@ -135,7 +135,7 @@ func (e *EventStream) AggregateID(f func(e Event), aggregates ...Aggregate) *sub
 	defer e.lock.Unlock()
 
 	for _, a := range aggregates {
-		name := reflect.TypeOf(a).Elem().Name()
+		name := aggregateType(a)
 		root := a.Root()
 		ref := fmt.Sprintf("%s_%s_%s", root.path(), name, root.ID())
 
@@ -146,7 +146,7 @@ func (e *EventStream) AggregateID(f func(e Event), aggregates ...Aggregate) *sub
 }
 
 // Aggregate subscribe to events based on the aggregate type
-func (e *EventStream) Aggregate(f func(e Event), aggregates ...Aggregate) *subscription {
+func (e *EventStream) Aggregate(f func(e Event), aggregates ...aggregate) *subscription {
 	s := subscription{
 		eventF: f,
 	}
@@ -163,7 +163,7 @@ func (e *EventStream) Aggregate(f func(e Event), aggregates ...Aggregate) *subsc
 	defer e.lock.Unlock()
 
 	for _, a := range aggregates {
-		name := reflect.TypeOf(a).Elem().Name()
+		name := aggregateType(a)
 		root := a.Root()
 		ref := fmt.Sprintf("%s_%s", root.path(), name)
 

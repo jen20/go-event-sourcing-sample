@@ -60,9 +60,14 @@ func (person *Person) GrowOlder() {
 	person.TrackChangeWithMetadata(person, &AgedOneYear{}, metaData)
 }
 
+// Register bind the events to the repository when the aggregate is registered.
+func (person *Person) Register(f eventsourcing.RegisterFunc) {
+	f(&Born{}, &AgedOneYear{})
+}
+
 // Transition the person state dependent on the events
 func (person *Person) Transition(event eventsourcing.Event) {
-	switch e := event.Data.(type) {
+	switch e := event.Data().(type) {
 	case *Born:
 		person.Age = 0
 		person.Name = e.Name
@@ -94,16 +99,16 @@ func TestCreateNewPerson(t *testing.T) {
 		t.Fatal("Wrong version on the person aggregateRoot", person.Version())
 	}
 
-	if person.Events()[0].Timestamp.Before(timeBefore) {
+	if person.Events()[0].Timestamp().Before(timeBefore) {
 		t.Fatal("event timestamp before timeBefore")
 	}
 
-	if person.Events()[0].Timestamp.After(time.Now().UTC()) {
+	if person.Events()[0].Timestamp().After(time.Now().UTC()) {
 		t.Fatal("event timestamp after current time")
 	}
 
-	if person.Events()[0].GlobalVersion != 0 {
-		t.Fatalf("global version should not be set when event is created, was %d", person.Events()[0].GlobalVersion)
+	if person.Events()[0].GlobalVersion() != 0 {
+		t.Fatalf("global version should not be set when event is created, was %d", person.Events()[0].GlobalVersion())
 	}
 }
 
@@ -150,7 +155,7 @@ func TestPersonAgedOneYear(t *testing.T) {
 		t.Fatal("The last event reason should be AgedOneYear", person.Events()[len(person.Events())-1].Reason())
 	}
 
-	d, ok := person.Events()[1].Metadata["foo"]
+	d, ok := person.Events()[1].Metadata()["foo"]
 
 	if !ok {
 		t.Fatal("meta data not present")
@@ -201,16 +206,5 @@ func TestIDFuncGeneratingRandomIDs(t *testing.T) {
 			t.Fatalf("id: %s, already created", person.ID())
 		}
 		ids[person.ID()] = struct{}{}
-	}
-}
-
-func TestMutateEvents(t *testing.T) {
-	var m = "mutated from the outside"
-	person, _ := CreatePerson("kalle")
-
-	events := person.Events()
-	events[0].AggregateType = m
-	if person.Events()[0].AggregateType == m {
-		t.Fatal("events should not be mutated from the outside")
 	}
 }

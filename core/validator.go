@@ -1,10 +1,6 @@
-package eventstore
+package core
 
-import (
-	"errors"
-
-	"github.com/hallgren/eventsourcing"
-)
+import "errors"
 
 // ErrEventMultipleAggregates when events holds different id
 var ErrEventMultipleAggregates = errors.New("events holds events for more than one aggregate")
@@ -19,7 +15,7 @@ var ErrConcurrency = errors.New("concurrency error")
 var ErrReasonMissing = errors.New("event holds no reason")
 
 // ValidateEvents make sure the incoming events are valid
-func ValidateEvents(aggregateID string, currentVersion eventsourcing.Version, events []eventsourcing.Event) error {
+func ValidateEvents(aggregateID string, currentVersion Version, events []Event) error {
 	aggregateType := events[0].AggregateType
 
 	for _, event := range events {
@@ -35,7 +31,7 @@ func ValidateEvents(aggregateID string, currentVersion eventsourcing.Version, ev
 			return ErrConcurrency
 		}
 
-		if event.Reason() == "" {
+		if event.Reason == "" {
 			return ErrReasonMissing
 		}
 
@@ -45,7 +41,7 @@ func ValidateEvents(aggregateID string, currentVersion eventsourcing.Version, ev
 }
 
 // ValidateEventsNoVersionCheck make sure the incoming events are valid
-func ValidateEventsNoVersionCheck(aggregateID string, events []eventsourcing.Event) error {
+func ValidateEventsNoVersionCheck(aggregateID string, events []Event) error {
 	aggregateType := events[0].AggregateType
 	currentVersion := events[0].Version - 1
 
@@ -61,7 +57,7 @@ func ValidateEventsNoVersionCheck(aggregateID string, events []eventsourcing.Eve
 		if currentVersion+1 != event.Version {
 			return ErrConcurrency
 		}
-		if event.Reason() == "" {
+		if event.Reason == "" {
 			return ErrReasonMissing
 		}
 		currentVersion = event.Version

@@ -4,10 +4,9 @@ import (
 	"errors"
 	"reflect"
 	"time"
-)
 
-// Version is the event version used in event.Version, event.GlobalVersion and aggregateRoot
-type Version uint64
+	"github.com/hallgren/eventsourcing/core"
+)
 
 // AggregateRoot to be included into aggregates
 type AggregateRoot struct {
@@ -26,41 +25,42 @@ var ErrAggregateAlreadyExists = errors.New("its not possible to set ID on alread
 
 // TrackChange is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
-func (ar *AggregateRoot) TrackChange(a Aggregate, data interface{}) {
+func (ar *AggregateRoot) TrackChange(a aggregate, data interface{}) {
 	ar.TrackChangeWithMetadata(a, data, nil)
 }
 
 // TrackChangeWithMetadata is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
 // meta data is handled by this func to store none related application state
-func (ar *AggregateRoot) TrackChangeWithMetadata(a Aggregate, data interface{}, metadata map[string]interface{}) {
+func (ar *AggregateRoot) TrackChangeWithMetadata(a aggregate, data interface{}, metadata map[string]interface{}) {
 	// This can be overwritten in the constructor of the aggregate
 	if ar.aggregateID == emptyAggregateID {
 		ar.aggregateID = idFunc()
 	}
 
-	name := reflect.TypeOf(a).Elem().Name()
 	event := Event{
-		AggregateID:   ar.aggregateID,
-		Version:       ar.nextVersion(),
-		AggregateType: name,
-		Timestamp:     time.Now().UTC(),
-		Data:          data,
-		Metadata:      metadata,
+		event: core.Event{
+			AggregateID:   ar.aggregateID,
+			Version:       ar.nextVersion(),
+			AggregateType: aggregateType(a),
+			Timestamp:     time.Now().UTC(),
+		},
+		data:     data,
+		metadata: metadata,
 	}
 	ar.aggregateEvents = append(ar.aggregateEvents, event)
 	a.Transition(event)
 }
 
 // BuildFromHistory builds the aggregate state from events
-func (ar *AggregateRoot) BuildFromHistory(a Aggregate, events []Event) {
+func (ar *AggregateRoot) BuildFromHistory(a aggregate, events []Event) {
 	for _, event := range events {
 		a.Transition(event)
 		//Set the aggregate ID
-		ar.aggregateID = event.AggregateID
+		ar.aggregateID = event.AggregateID()
 		// Make sure the aggregate is in the correct version (the last event)
-		ar.aggregateVersion = event.Version
-		ar.aggregateGlobalVersion = event.GlobalVersion
+		ar.aggregateVersion = event.Version()
+		ar.aggregateGlobalVersion = event.GlobalVersion()
 	}
 }
 
@@ -71,8 +71,8 @@ func (ar *AggregateRoot) setInternals(id string, version, globalVersion Version)
 	ar.aggregateEvents = []Event{}
 }
 
-func (ar *AggregateRoot) nextVersion() Version {
-	return ar.Version() + 1
+func (ar *AggregateRoot) nextVersion() core.Version {
+	return core.Version(ar.Version()) + 1
 }
 
 // update sets the AggregateVersion and AggregateGlobalVersion to the values in the last event
@@ -80,8 +80,8 @@ func (ar *AggregateRoot) nextVersion() Version {
 func (ar *AggregateRoot) update() {
 	if len(ar.aggregateEvents) > 0 {
 		lastEvent := ar.aggregateEvents[len(ar.aggregateEvents)-1]
-		ar.aggregateVersion = lastEvent.Version
-		ar.aggregateGlobalVersion = lastEvent.GlobalVersion
+		ar.aggregateVersion = lastEvent.Version()
+		ar.aggregateGlobalVersion = lastEvent.GlobalVersion()
 		ar.aggregateEvents = []Event{}
 	}
 }
@@ -114,25 +114,32 @@ func (ar *AggregateRoot) Root() *AggregateRoot {
 // Version return the version based on events that are not stored
 func (ar *AggregateRoot) Version() Version {
 	if len(ar.aggregateEvents) > 0 {
-		return ar.aggregateEvents[len(ar.aggregateEvents)-1].Version
+		return ar.aggregateEvents[len(ar.aggregateEvents)-1].Version()
 	}
-	return ar.aggregateVersion
+	return Version(ar.aggregateVersion)
 }
 
 // GlobalVersion returns the global version based on the last stored event
 func (ar *AggregateRoot) GlobalVersion() Version {
-	return ar.aggregateGlobalVersion
+	return Version(ar.aggregateGlobalVersion)
 }
 
 // Events return the aggregate events from the aggregate
 // make a copy of the slice preventing outsiders modifying events.
 func (ar *AggregateRoot) Events() []Event {
 	e := make([]Event, len(ar.aggregateEvents))
-	copy(e, ar.aggregateEvents)
+	// convert internal event to external event
+	for i, event := range ar.aggregateEvents {
+		e[i] = event
+	}
 	return e
 }
 
 // UnsavedEvents return true if there's unsaved events on the aggregate
 func (ar *AggregateRoot) UnsavedEvents() bool {
 	return len(ar.aggregateEvents) > 0
+}
+
+func aggregateType(a aggregate) string {
+	return reflect.TypeOf(a).Elem().Name()
 }

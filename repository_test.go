@@ -2,18 +2,16 @@ package eventsourcing_test
 
 import (
 	"context"
-	"encoding/json"
-	"encoding/xml"
 	"errors"
 	"testing"
 
 	"github.com/hallgren/eventsourcing"
 	"github.com/hallgren/eventsourcing/eventstore/memory"
-	memsnap "github.com/hallgren/eventsourcing/snapshotstore/memory"
 )
 
 func TestSaveAndGetAggregate(t *testing.T) {
-	repo := eventsourcing.NewRepository(memory.Create(), nil)
+	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&Person{})
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -21,7 +19,7 @@ func TestSaveAndGetAggregate(t *testing.T) {
 	}
 	err = repo.Save(person)
 	if err != nil {
-		t.Fatal("could not save aggregate")
+		t.Fatalf("could not save aggregate, err: %v", err)
 	}
 
 	// make sure the global version is set to 1
@@ -47,8 +45,8 @@ func TestSaveAndGetAggregate(t *testing.T) {
 }
 
 func TestGetWithContext(t *testing.T) {
-	repo := eventsourcing.NewRepository(memory.Create(), nil)
-
+	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&Person{})
 	person, err := CreatePerson("kalle")
 	if err != nil {
 		t.Fatal(err)
@@ -76,7 +74,8 @@ func TestGetWithContext(t *testing.T) {
 }
 
 func TestGetWithContextCancel(t *testing.T) {
-	repo := eventsourcing.NewRepository(memory.Create(), nil)
+	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&Person{})
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -99,7 +98,8 @@ func TestGetWithContextCancel(t *testing.T) {
 }
 
 func TestGetNoneExistingAggregate(t *testing.T) {
-	repo := eventsourcing.NewRepository(memory.Create(), nil)
+	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&Person{})
 
 	p := Person{}
 	err := repo.Get("none_existing", &p)
@@ -108,123 +108,14 @@ func TestGetNoneExistingAggregate(t *testing.T) {
 	}
 }
 
-func TestSaveAndGetAggregateSnapshotAndEvents(t *testing.T) {
-	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
-	repo := eventsourcing.NewRepository(memory.Create(), eventsourcing.SnapshotNew(memsnap.New(), *ser))
-
-	person, err := CreatePerson("kalle")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = repo.Save(person)
-	if err != nil {
-		t.Fatal("could not save aggregate")
-	}
-
-	// save person to snapshot store
-	err = repo.SaveSnapshot(person)
-	if err != nil {
-		t.Fatal(err)
-	}
-	person.GrowOlder()
-	repo.Save(person)
-	twin := Person{}
-	err = repo.Get(person.ID(), &twin)
-	if err != nil {
-		t.Fatal("could not get aggregate")
-	}
-
-	// Check internal aggregate version
-	if person.Version() != twin.Version() {
-		t.Fatalf("Wrong version org %q copy %q", person.Version(), twin.Version())
-	}
-
-	// Check person Name
-	if person.Name != twin.Name {
-		t.Fatalf("Wrong Name org %q copy %q", person.Name, twin.Name)
-	}
-}
-
-func TestSaveAndGetAggregateSnapshotAndEventsWithContext(t *testing.T) {
-	ser := eventsourcing.NewSerializer(xml.Marshal, xml.Unmarshal)
-	repo := eventsourcing.NewRepository(memory.Create(), eventsourcing.SnapshotNew(memsnap.New(), *ser))
-
-	person, err := CreatePerson("kalle")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = repo.Save(person)
-	if err != nil {
-		t.Fatal("could not save aggregate")
-	}
-
-	// save person to snapshot store
-	err = repo.SaveSnapshot(person)
-	if err != nil {
-		t.Fatal(err)
-	}
-	person.GrowOlder()
-	repo.Save(person)
-	twin := Person{}
-	ctx, cancel := context.WithCancel(context.Background())
-	err = repo.GetWithContext(ctx, person.ID(), &twin)
-	if err != nil {
-		t.Fatal("could not get aggregate")
-	}
-
-	// Check internal aggregate version
-	if person.Version() != twin.Version() {
-		t.Fatalf("Wrong version org %q copy %q", person.Version(), twin.Version())
-	}
-
-	// Check person Name
-	if person.Name != twin.Name {
-		t.Fatalf("Wrong Name org %q copy %q", person.Name, twin.Name)
-	}
-
-	// cancel the context
-	cancel()
-	err = repo.GetWithContext(ctx, person.ID(), &twin)
-	if !errors.Is(err, context.Canceled) {
-		t.Fatal("should be error context canceled")
-	}
-}
-
-func TestSaveSnapshotWithUnsavedEvents(t *testing.T) {
-	ser := eventsourcing.NewSerializer(json.Marshal, json.Unmarshal)
-	repo := eventsourcing.NewRepository(memory.Create(), eventsourcing.SnapshotNew(memsnap.New(), *ser))
-
-	person, err := CreatePerson("kalle")
-	if err != nil {
-		t.Fatal(err)
-	}
-	// save person to snapshot store
-	err = repo.SaveSnapshot(person)
-	if err == nil {
-		t.Fatalf("should not save snapshot with unsaved events %v", err)
-	}
-}
-
-func TestSaveSnapshotWithoutSnapshotStore(t *testing.T) {
-	repo := eventsourcing.NewRepository(memory.Create(), nil)
-
-	person, err := CreatePerson("kalle")
-	if err != nil {
-		t.Fatal(err)
-	}
-	// save person to snapshot store
-	err = repo.SaveSnapshot(person)
-	if err == nil {
-		t.Fatal("should not save snapshot when there is no snapshot store")
-	}
-}
-
 func TestSubscriptionAllEvent(t *testing.T) {
 	counter := 0
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
-	repo := eventsourcing.NewRepository(memory.Create(), nil)
+	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&Person{})
+
 	s := repo.Subscribers().All(f)
 	defer s.Close()
 
@@ -250,7 +141,9 @@ func TestSubscriptionSpecificEvent(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
-	repo := eventsourcing.NewRepository(memory.Create(), nil)
+	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&Person{})
+
 	s := repo.Subscribers().Event(f, &Born{}, &AgedOneYear{})
 	defer s.Close()
 
@@ -276,7 +169,9 @@ func TestSubscriptionAggregate(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
-	repo := eventsourcing.NewRepository(memory.Create(), nil)
+	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&Person{})
+
 	s := repo.Subscribers().Aggregate(f, &Person{})
 	defer s.Close()
 
@@ -302,7 +197,8 @@ func TestSubscriptionSpecificAggregate(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
-	repo := eventsourcing.NewRepository(memory.Create(), nil)
+	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&Person{})
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -325,7 +221,8 @@ func TestSubscriptionSpecificAggregate(t *testing.T) {
 }
 
 func TestEventChainDoesNotHang(t *testing.T) {
-	repo := eventsourcing.NewRepository(memory.Create(), nil)
+	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&Person{})
 
 	// eventChan can hold 5 events before it get full and blocks.
 	eventChan := make(chan eventsourcing.Event, 5)
@@ -337,7 +234,7 @@ func TestEventChainDoesNotHang(t *testing.T) {
 	// for every AgedOnYear create a new person and make it grow one year older
 	go func() {
 		for e := range eventChan {
-			switch e.Data.(type) {
+			switch e.Data().(type) {
 			case *AgedOneYear:
 				person, err := CreatePerson("kalle")
 				if err != nil {
@@ -361,7 +258,7 @@ func TestEventChainDoesNotHang(t *testing.T) {
 	// subscribe to all events and filter out AgedOneYear
 	ageCounter := 0
 	s2 := repo.Subscribers().All(func(e eventsourcing.Event) {
-		switch e.Data.(type) {
+		switch e.Data().(type) {
 		case *AgedOneYear:
 			// will match three times on the initial person and one each on the resulting AgedOneYear event
 			ageCounter++
@@ -382,4 +279,67 @@ func TestEventChainDoesNotHang(t *testing.T) {
 	if ageCounter != 6 {
 		t.Errorf("wrong number in ageCounter expected 6, got %v", ageCounter)
 	}
+}
+
+func TestSaveWhenAggregateNotRegistered(t *testing.T) {
+	repo := eventsourcing.NewRepository(memory.Create())
+
+	person, err := CreatePerson("kalle")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = repo.Save(person)
+	if !errors.Is(err, eventsourcing.ErrAggregateNotRegistered) {
+		t.Fatalf("could save aggregate that was not registered, err: %v", err)
+	}
+}
+
+func TestSaveWhenEventNotRegistered(t *testing.T) {
+	repo := eventsourcing.NewRepository(memory.Create())
+	repo.Register(&PersonNoRegisterEvents{})
+
+	person, err := CreatePersonNoRegisteredEvents("kalle")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = repo.Save(person)
+	if !errors.Is(err, eventsourcing.ErrEventNotRegistered) {
+		t.Fatalf("could save aggregate events that was not registered, err: %v", err)
+	}
+}
+
+// Person aggregate
+type PersonNoRegisterEvents struct {
+	eventsourcing.AggregateRoot
+	Name string
+	Age  int
+	Dead int
+}
+
+// Born event
+type BornNoRegisteredEvents struct {
+	Name string
+}
+
+// CreatePersonNoRegisteredEvents constructor for the PersonNoRegisteredEvents
+func CreatePersonNoRegisteredEvents(name string) (*PersonNoRegisterEvents, error) {
+	if name == "" {
+		return nil, errors.New("name can't be blank")
+	}
+	person := PersonNoRegisterEvents{}
+	person.TrackChange(&person, &BornNoRegisteredEvents{Name: name})
+	return &person, nil
+}
+
+// Transition the person state dependent on the events
+func (person *PersonNoRegisterEvents) Transition(event eventsourcing.Event) {
+	switch e := event.Data().(type) {
+	case *BornNoRegisteredEvents:
+		person.Age = 0
+		person.Name = e.Name
+	}
+}
+
+// Register bind the events to the repository when the aggregate is registered.
+func (person *PersonNoRegisterEvents) Register(f eventsourcing.RegisterFunc) {
 }

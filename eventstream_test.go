@@ -1,17 +1,20 @@
 package eventsourcing_test
 
 import (
+	"encoding/json"
 	"sync"
 	"testing"
 
 	"github.com/hallgren/eventsourcing"
+	"github.com/hallgren/eventsourcing/core"
 )
 
 type AnAggregate struct {
 	eventsourcing.AggregateRoot
 }
 
-func (a *AnAggregate) Transition(e eventsourcing.Event) {}
+func (a *AnAggregate) Transition(e eventsourcing.Event)      {}
+func (a *AnAggregate) Register(e eventsourcing.RegisterFunc) {}
 
 type AnEvent struct {
 	Name string
@@ -21,12 +24,18 @@ type AnotherAggregate struct {
 	eventsourcing.AggregateRoot
 }
 
-func (a *AnotherAggregate) Transition(e eventsourcing.Event) {}
+func (a *AnotherAggregate) Transition(e eventsourcing.Event)      {}
+func (a *AnotherAggregate) Register(e eventsourcing.RegisterFunc) {}
 
 type AnotherEvent struct{}
 
-var event = eventsourcing.Event{Version: 123, Data: &AnEvent{Name: "123"}, AggregateType: "AnAggregate"}
-var otherEvent = eventsourcing.Event{Version: 456, Data: &AnotherEvent{}, AggregateType: "AnotherAggregate"}
+var event = eventsourcing.NewEvent(core.Event{Version: 123, AggregateType: "AnAggregate", Data: eventToByte(&AnEvent{Name: "123"})}, &AnEvent{Name: "123"}, nil)
+var otherEvent = eventsourcing.NewEvent(core.Event{Version: 456, Data: eventToByte(&AnotherEvent{}), AggregateType: "AnotherAggregate"}, &AnotherEvent{}, nil)
+
+func eventToByte(i interface{}) []byte {
+	b, _ := json.Marshal(i)
+	return b
+}
 
 func TestSubAll(t *testing.T) {
 	var streamEvent *eventsourcing.Event
@@ -41,8 +50,8 @@ func TestSubAll(t *testing.T) {
 	if streamEvent == nil {
 		t.Fatalf("should have received event")
 	}
-	if streamEvent.Version != event.Version {
-		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, event.Version)
+	if streamEvent.Version() != event.Version() {
+		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version(), event.Version())
 	}
 }
 
@@ -61,8 +70,8 @@ func TestSubSpecificEvent(t *testing.T) {
 		t.Fatalf("should have received event")
 	}
 
-	if streamEvent.Version != event.Version {
-		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, event.Version)
+	if streamEvent.Version() != event.Version() {
+		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version(), event.Version())
 	}
 }
 
@@ -86,14 +95,14 @@ func TestSubAggregateID(t *testing.T) {
 	if streamEvent == nil {
 		t.Fatalf("should have received event")
 	}
-	if streamEvent.Version != event.Version {
-		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, event.Version)
+	if streamEvent.Version() != event.Version() {
+		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version(), event.Version())
 	}
 
 	// update with event from the AnotherAggregate aggregate
 	e.Publish(anOtherAggregate.AggregateRoot, []eventsourcing.Event{otherEvent})
-	if streamEvent.Version != otherEvent.Version {
-		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, otherEvent.Version)
+	if streamEvent.Version() != otherEvent.Version() {
+		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version(), otherEvent.Version())
 	}
 }
 
@@ -111,14 +120,14 @@ func TestSubAggregate(t *testing.T) {
 	if streamEvent == nil {
 		t.Fatalf("should have received event")
 	}
-	if streamEvent.Version != event.Version {
-		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, event.Version)
+	if streamEvent.Version() != event.Version() {
+		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version(), event.Version())
 	}
 
 	// update with event from the AnotherAggregate aggregate
 	e.Publish(AnotherAggregate{}.AggregateRoot, []eventsourcing.Event{otherEvent})
-	if streamEvent.Version != otherEvent.Version {
-		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, otherEvent.Version)
+	if streamEvent.Version() != otherEvent.Version() {
+		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version(), otherEvent.Version())
 	}
 }
 
@@ -142,12 +151,12 @@ func TestSubSpecificEventMultiplePublish(t *testing.T) {
 		t.Fatalf("should have received 2 events")
 	}
 
-	switch ev := streamEvents[0].Data.(type) {
+	switch ev := streamEvents[0].Data().(type) {
 	case *AnotherEvent:
 		t.Fatalf("expecting AnEvent got %q", ev)
 	}
 
-	switch ev := streamEvents[1].Data.(type) {
+	switch ev := streamEvents[1].Data().(type) {
 	case *AnEvent:
 		t.Fatalf("expecting OtherEvent got %q", ev)
 	}
@@ -155,7 +164,7 @@ func TestSubSpecificEventMultiplePublish(t *testing.T) {
 	type AnEvent2 struct {
 		Name string
 	}
-	switch ev := streamEvents[0].Data.(type) {
+	switch ev := streamEvents[0].Data().(type) {
 	case *AnEvent2:
 		t.Fatalf("expecting AnEvent got %q", ev)
 	}
@@ -336,16 +345,16 @@ func TestName(t *testing.T) {
 	defer s3.Close()
 	e.Publish(AnAggregate{}.AggregateRoot, []eventsourcing.Event{event})
 
-	if streamEvent.Version != event.Version {
-		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version, event.Version)
+	if streamEvent.Version() != event.Version() {
+		t.Fatalf("wrong info in event got %q expected %q", streamEvent.Version(), event.Version())
 	}
-	if streamEvent.Data == nil {
+	if streamEvent.Data() == nil {
 		t.Fatalf("should have received event data")
 	}
 
 	streamEvent = eventsourcing.Event{}
 	e.Publish(AnotherAggregate{}.AggregateRoot, []eventsourcing.Event{otherEvent})
-	if streamEvent.Version != 0 {
+	if streamEvent.Version() != 0 {
 		t.Fatalf("expected zero value")
 	}
 

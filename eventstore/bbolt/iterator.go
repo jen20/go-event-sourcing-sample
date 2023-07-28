@@ -1,10 +1,11 @@
 package bbolt
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 
-	"github.com/hallgren/eventsourcing"
+	"github.com/hallgren/eventsourcing/core"
 	"go.etcd.io/bbolt"
 )
 
@@ -13,7 +14,6 @@ type iterator struct {
 	bucketName      string
 	firstEventIndex uint64
 	cursor          *bbolt.Cursor
-	serializer      eventsourcing.Serializer
 }
 
 // Close closes the iterator
@@ -22,47 +22,39 @@ func (i *iterator) Close() {
 }
 
 // Next return the next event
-func (i *iterator) Next() (eventsourcing.Event, error) {
+func (i *iterator) Next() (core.Event, error) {
 	var k, obj []byte
 	if i.cursor == nil {
 		bucket := i.tx.Bucket([]byte(i.bucketName))
 		if bucket == nil {
-			return eventsourcing.Event{}, eventsourcing.ErrNoMoreEvents
+			return core.Event{}, core.ErrNoMoreEvents
 		}
 		i.cursor = bucket.Cursor()
 		k, obj = i.cursor.Seek(itob(i.firstEventIndex))
 		if k == nil {
-			return eventsourcing.Event{}, eventsourcing.ErrNoMoreEvents
+			return core.Event{}, core.ErrNoMoreEvents
 		}
 	} else {
 		k, obj = i.cursor.Next()
 	}
 	if k == nil {
-		return eventsourcing.Event{}, eventsourcing.ErrNoMoreEvents
+		return core.Event{}, core.ErrNoMoreEvents
 	}
 	bEvent := boltEvent{}
-	err := i.serializer.Unmarshal(obj, &bEvent)
+	err := json.Unmarshal(obj, &bEvent)
 	if err != nil {
-		return eventsourcing.Event{}, errors.New(fmt.Sprintf("could not deserialize event, %v", err))
+		return core.Event{}, errors.New(fmt.Sprintf("could not deserialize event, %v", err))
 	}
-	f, ok := i.serializer.Type(bEvent.AggregateType, bEvent.Reason)
-	if !ok {
-		// if the typ/reason is not register jump over the event
-		return i.Next()
-	}
-	eventData := f()
-	err = i.serializer.Unmarshal(bEvent.Data, &eventData)
-	if err != nil {
-		return eventsourcing.Event{}, errors.New(fmt.Sprintf("could not deserialize event data, %v", err))
-	}
-	event := eventsourcing.Event{
+
+	event := core.Event{
 		AggregateID:   bEvent.AggregateID,
 		AggregateType: bEvent.AggregateType,
-		Version:       eventsourcing.Version(bEvent.Version),
-		GlobalVersion: eventsourcing.Version(bEvent.GlobalVersion),
+		Version:       core.Version(bEvent.Version),
+		GlobalVersion: core.Version(bEvent.GlobalVersion),
 		Timestamp:     bEvent.Timestamp,
 		Metadata:      bEvent.Metadata,
-		Data:          eventData,
+		Data:          bEvent.Data,
+		Reason:        bEvent.Reason,
 	}
 	return event, nil
 }

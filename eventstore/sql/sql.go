@@ -7,21 +7,18 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hallgren/eventsourcing"
-	"github.com/hallgren/eventsourcing/eventstore"
+	"github.com/hallgren/eventsourcing/core"
 )
 
 // SQL event store handler
 type SQL struct {
-	db         *sql.DB
-	serializer eventsourcing.Serializer
+	db *sql.DB
 }
 
 // Open connection to database
-func Open(db *sql.DB, serializer eventsourcing.Serializer) *SQL {
+func Open(db *sql.DB) *SQL {
 	return &SQL{
-		db:         db,
-		serializer: serializer,
+		db: db,
 	}
 }
 
@@ -31,7 +28,7 @@ func (s *SQL) Close() {
 }
 
 // Save persists events to the database
-func (s *SQL) Save(events []eventsourcing.Event) error {
+func (s *SQL) Save(events []core.Event) error {
 	// If no event return no error
 	if len(events) == 0 {
 		return nil
@@ -45,7 +42,7 @@ func (s *SQL) Save(events []eventsourcing.Event) error {
 	}
 	defer tx.Rollback()
 
-	var currentVersion eventsourcing.Version
+	var currentVersion core.Version
 	var version int
 	selectStm := `Select version from events where id=? and type=? order by version desc limit 1`
 	err = tx.QueryRow(selectStm, aggregateID, aggregateType).Scan(&version)
@@ -53,14 +50,14 @@ func (s *SQL) Save(events []eventsourcing.Event) error {
 		return err
 	} else if err == sql.ErrNoRows {
 		// if no events are saved before set the current version to zero
-		currentVersion = eventsourcing.Version(0)
+		currentVersion = core.Version(0)
 	} else {
 		// set the current version to the last event stored
-		currentVersion = eventsourcing.Version(version)
+		currentVersion = core.Version(version)
 	}
 
 	//Validate events
-	err = eventstore.ValidateEvents(aggregateID, currentVersion, events)
+	err = core.ValidateEvents(aggregateID, currentVersion, events)
 	if err != nil {
 		return err
 	}
@@ -68,19 +65,7 @@ func (s *SQL) Save(events []eventsourcing.Event) error {
 	var lastInsertedID int64
 	insert := `Insert into events (id, version, reason, type, timestamp, data, metadata) values ($1, $2, $3, $4, $5, $6, $7)`
 	for i, event := range events {
-		var e, m []byte
-
-		e, err := s.serializer.Marshal(event.Data)
-		if err != nil {
-			return err
-		}
-		if event.Metadata != nil {
-			m, err = s.serializer.Marshal(event.Metadata)
-			if err != nil {
-				return err
-			}
-		}
-		res, err := tx.Exec(insert, event.AggregateID, event.Version, event.Reason(), event.AggregateType, event.Timestamp.Format(time.RFC3339), string(e), string(m))
+		res, err := tx.Exec(insert, event.AggregateID, event.Version, event.Reason, event.AggregateType, event.Timestamp.Format(time.RFC3339), event.Data, event.Metadata)
 		if err != nil {
 			return err
 		}
@@ -89,13 +74,13 @@ func (s *SQL) Save(events []eventsourcing.Event) error {
 			return err
 		}
 		// override the event in the slice exposing the GlobalVersion to the caller
-		events[i].GlobalVersion = eventsourcing.Version(lastInsertedID)
+		events[i].GlobalVersion = core.Version(lastInsertedID)
 	}
 	return tx.Commit()
 }
 
 // Get the events from database
-func (s *SQL) Get(ctx context.Context, id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.EventIterator, error) {
+func (s *SQL) Get(ctx context.Context, id string, aggregateType string, afterVersion core.Version) (core.Iterator, error) {
 	selectStm := `Select seq, id, version, reason, type, timestamp, data, metadata from events where id=? and type=? and version>? order by version asc`
 	rows, err := s.db.QueryContext(ctx, selectStm, id, aggregateType, afterVersion)
 	if err != nil {
@@ -103,12 +88,12 @@ func (s *SQL) Get(ctx context.Context, id string, aggregateType string, afterVer
 	} else if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}
-	i := iterator{rows: rows, serializer: s.serializer}
+	i := iterator{rows: rows}
 	return &i, nil
 }
 
 // GlobalEvents return count events in order globally from the start posistion
-func (s *SQL) GlobalEvents(start, count uint64) ([]eventsourcing.Event, error) {
+func (s *SQL) GlobalEvents(start, count uint64) ([]core.Event, error) {
 	selectStm := `Select seq, id, version, reason, type, timestamp, data, metadata from events where seq >= ? order by seq asc LIMIT ?`
 	rows, err := s.db.Query(selectStm, start, count)
 	if err != nil {
@@ -118,14 +103,13 @@ func (s *SQL) GlobalEvents(start, count uint64) ([]eventsourcing.Event, error) {
 	return s.eventsFromRows(rows)
 }
 
-func (s *SQL) eventsFromRows(rows *sql.Rows) ([]eventsourcing.Event, error) {
-	var events []eventsourcing.Event
+func (s *SQL) eventsFromRows(rows *sql.Rows) ([]core.Event, error) {
+	var events []core.Event
 	for rows.Next() {
-		var globalVersion eventsourcing.Version
-		var eventMetadata map[string]interface{}
-		var version eventsourcing.Version
+		var globalVersion core.Version
+		var version core.Version
 		var id, reason, typ, timestamp string
-		var data, metadata string
+		var data, metadata []byte
 		if err := rows.Scan(&globalVersion, &id, &version, &reason, &typ, &timestamp, &data, &metadata); err != nil {
 			return nil, err
 		}
@@ -135,32 +119,15 @@ func (s *SQL) eventsFromRows(rows *sql.Rows) ([]eventsourcing.Event, error) {
 			return nil, err
 		}
 
-		f, ok := s.serializer.Type(typ, reason)
-		if !ok {
-			// if the typ/reason is not register jump over the event
-			continue
-		}
-
-		eventData := f()
-		err = s.serializer.Unmarshal([]byte(data), &eventData)
-		if err != nil {
-			return nil, err
-		}
-		if metadata != "" {
-			err = s.serializer.Unmarshal([]byte(metadata), &eventMetadata)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		events = append(events, eventsourcing.Event{
+		events = append(events, core.Event{
 			AggregateID:   id,
 			Version:       version,
 			GlobalVersion: globalVersion,
 			AggregateType: typ,
 			Timestamp:     t,
-			Data:          eventData,
-			Metadata:      eventMetadata,
+			Data:          data,
+			Metadata:      metadata,
+			Reason:        reason,
 		})
 	}
 	if err := rows.Err(); err != nil {

@@ -86,11 +86,22 @@ func (f *FrequentFlierAccountAggregate) RecordFlightTaken(miles int, tierPoints 
 	}
 }
 
+// Register is a callback method that register the events to the repository to unmarshal event.Data to it's
+// correct type.
+func (f *FrequentFlierAccountAggregate) Register(r eventsourcing.RegisterFunc) {
+	r(
+		&FrequentFlierAccountCreated{},
+		&StatusMatched{},
+		&FlightTaken{},
+		&PromotedToGoldStatus{},
+	)
+}
+
 // Transition implements the pattern match against event types used both as part
 // of the fold when loading from history and when tracking an individual change.
 func (f *FrequentFlierAccountAggregate) Transition(event eventsourcing.Event) {
 
-	switch e := event.Data.(type) {
+	switch e := event.Data().(type) {
 
 	case *FrequentFlierAccountCreated:
 		f.miles = e.OpeningMiles
@@ -117,7 +128,7 @@ func (f FrequentFlierAccountAggregate) String() string {
 
 	if len(f.Events()) > 0 {
 		reason = f.Events()[0].Reason()
-		aggregateType = f.Events()[0].AggregateType
+		aggregateType = f.Events()[0].AggregateType()
 	} else {
 		reason = "No reason"
 		aggregateType = "No aggregateType"
