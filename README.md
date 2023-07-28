@@ -254,17 +254,15 @@ s := repo.Subscribers().All(func(e eventsourcing.Event) {
 s.Close()
 ```
 
-## Custom made components
+## Custom made event store
 
-Parts of this package may not fulfill your application need, either it can be that the event store uses the wrong database for storage.
-
-#### Event Store
-
-A custom-made event store has to implement the following functions to fulfill the interface in the repository.  
+If you want to store your events in another database beside the already implemented event stores: `sql`, `bbolt`, `esdb` or `memory`, you can implement a custom made event store. It has to implement the following  interface to support the eventsourcing.Repository.
 
 ```go
 type EventStore interface {
-    Save(events []Event) error
-    Get(id string, aggregateType string, afterVersion Version) (Iterator, error)
+    Save(events []core.Event) error
+    Get(id string, aggregateType string, afterVersion core.Version) (core.Iterator, error)
 }
 ```
+
+The event store needs to import the `github.com/hallgren/eventsourcing/core` module that expose the `core.Event`, `core.Version` and `core.Iterator` types.
