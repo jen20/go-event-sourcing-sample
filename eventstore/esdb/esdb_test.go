@@ -10,13 +10,13 @@ import (
 
 	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 
-	"github.com/hallgren/eventsourcing/base"
-	"github.com/hallgren/eventsourcing/base/suite"
+	"github.com/hallgren/eventsourcing/core"
+	"github.com/hallgren/eventsourcing/core/suite"
 	es "github.com/hallgren/eventsourcing/eventstore/esdb"
 )
 
 func TestSuite(t *testing.T) {
-	f := func() (base.EventStore, func(), error) {
+	f := func() (core.EventStore, func(), error) {
 		// region createClient
 		settings, err := esdb.ParseConnectionString("esdb://localhost:2113?tls=false")
 		if err != nil {

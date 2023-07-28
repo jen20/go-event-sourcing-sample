@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/hallgren/eventsourcing/base"
+	"github.com/hallgren/eventsourcing/core"
 )
 
 type iterator struct {
@@ -12,27 +12,27 @@ type iterator struct {
 }
 
 // Next return the next event
-func (i *iterator) Next() (base.Event, error) {
-	var globalVersion base.Version
-	var version base.Version
+func (i *iterator) Next() (core.Event, error) {
+	var globalVersion core.Version
+	var version core.Version
 	var id, reason, typ, timestamp string
 	var data, metadata []byte
 	if !i.rows.Next() {
 		if err := i.rows.Err(); err != nil {
-			return base.Event{}, err
+			return core.Event{}, err
 		}
-		return base.Event{}, base.ErrNoMoreEvents
+		return core.Event{}, core.ErrNoMoreEvents
 	}
 	if err := i.rows.Scan(&globalVersion, &id, &version, &reason, &typ, &timestamp, &data, &metadata); err != nil {
-		return base.Event{}, err
+		return core.Event{}, err
 	}
 
 	t, err := time.Parse(time.RFC3339, timestamp)
 	if err != nil {
-		return base.Event{}, err
+		return core.Event{}, err
 	}
 
-	event := base.Event{
+	event := core.Event{
 		AggregateID:   id,
 		Version:       version,
 		GlobalVersion: globalVersion,

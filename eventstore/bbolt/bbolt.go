@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/hallgren/eventsourcing/base"
+	"github.com/hallgren/eventsourcing/core"
 	"go.etcd.io/bbolt"
 )
 
@@ -65,7 +65,7 @@ func MustOpenBBolt(dbFile string) *BBolt {
 }
 
 // Save an aggregate (its events)
-func (e *BBolt) Save(events []base.Event) error {
+func (e *BBolt) Save(events []core.Event) error {
 	// Return if there is no events to save
 	if len(events) == 0 {
 		return nil
@@ -105,7 +105,7 @@ func (e *BBolt) Save(events []base.Event) error {
 	}
 
 	//Validate events
-	err = base.ValidateEvents(aggregateID, base.Version(currentVersion), events)
+	err = core.ValidateEvents(aggregateID, core.Version(currentVersion), events)
 	if err != nil {
 		return err
 	}
@@ -157,13 +157,13 @@ func (e *BBolt) Save(events []base.Event) error {
 		}
 
 		// override the event in the slice exposing the GlobalVersion to the caller
-		events[i].GlobalVersion = base.Version(globalSequence)
+		events[i].GlobalVersion = core.Version(globalSequence)
 	}
 	return tx.Commit()
 }
 
 // Get aggregate events
-func (e *BBolt) Get(ctx context.Context, id string, aggregateType string, afterVersion base.Version) (base.Iterator, error) {
+func (e *BBolt) Get(ctx context.Context, id string, aggregateType string, afterVersion core.Version) (core.Iterator, error) {
 	bucketName := aggregateKey(aggregateType, id)
 
 	tx, err := e.db.Begin(false)
@@ -177,8 +177,8 @@ func (e *BBolt) Get(ctx context.Context, id string, aggregateType string, afterV
 }
 
 // GlobalEvents return count events in order globally from the start posistion
-func (e *BBolt) GlobalEvents(start, count uint64) ([]base.Event, error) {
-	var events []base.Event
+func (e *BBolt) GlobalEvents(start, count uint64) ([]core.Event, error) {
+	var events []core.Event
 	tx, err := e.db.Begin(false)
 	if err != nil {
 		return nil, err
@@ -194,11 +194,11 @@ func (e *BBolt) GlobalEvents(start, count uint64) ([]base.Event, error) {
 			return nil, errors.New(fmt.Sprintf("could not deserialize event, %v", err))
 		}
 
-		event := base.Event{
+		event := core.Event{
 			AggregateID:   bEvent.AggregateID,
 			AggregateType: bEvent.AggregateType,
-			Version:       base.Version(bEvent.Version),
-			GlobalVersion: base.Version(bEvent.GlobalVersion),
+			Version:       core.Version(bEvent.Version),
+			GlobalVersion: core.Version(bEvent.GlobalVersion),
 			Timestamp:     bEvent.Timestamp,
 			Metadata:      bEvent.Metadata,
 			Data:          bEvent.Data,

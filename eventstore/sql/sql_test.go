@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hallgren/eventsourcing/base"
-	"github.com/hallgren/eventsourcing/base/suite"
+	"github.com/hallgren/eventsourcing/core"
+	"github.com/hallgren/eventsourcing/core/suite"
 	"github.com/hallgren/eventsourcing/eventstore/sql"
 	_ "github.com/proullon/ramsql/driver"
 )
@@ -17,7 +17,7 @@ import (
 var seededRand = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 func TestSuite(t *testing.T) {
-	f := func() (base.EventStore, func(), error) {
+	f := func() (core.EventStore, func(), error) {
 		// use random int to get a new db on each test run
 		r := seededRand.Intn(999999999999)
 		db, err := sqldriver.Open("ramsql", fmt.Sprintf("%d", r))

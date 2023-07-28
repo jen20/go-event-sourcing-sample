@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/hallgren/eventsourcing"
-	"github.com/hallgren/eventsourcing/base"
+	"github.com/hallgren/eventsourcing/core"
 )
 
 type AnAggregate struct {
@@ -29,8 +29,8 @@ func (a *AnotherAggregate) Register(e eventsourcing.RegisterFunc) {}
 
 type AnotherEvent struct{}
 
-var event = eventsourcing.NewEvent(base.Event{Version: 123, AggregateType: "AnAggregate", Data: eventToByte(&AnEvent{Name: "123"})}, &AnEvent{Name: "123"}, nil)
-var otherEvent = eventsourcing.NewEvent(base.Event{Version: 456, Data: eventToByte(&AnotherEvent{}), AggregateType: "AnotherAggregate"}, &AnotherEvent{}, nil)
+var event = eventsourcing.NewEvent(core.Event{Version: 123, AggregateType: "AnAggregate", Data: eventToByte(&AnEvent{Name: "123"})}, &AnEvent{Name: "123"}, nil)
+var otherEvent = eventsourcing.NewEvent(core.Event{Version: 456, Data: eventToByte(&AnotherEvent{}), AggregateType: "AnotherAggregate"}, &AnotherEvent{}, nil)
 
 func eventToByte(i interface{}) []byte {
 	b, _ := json.Marshal(i)

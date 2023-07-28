@@ -3,7 +3,7 @@ package eventsourcing
 import (
 	"reflect"
 
-	"github.com/hallgren/eventsourcing/base"
+	"github.com/hallgren/eventsourcing/core"
 )
 
 type registerFunc = func() interface{}
@@ -23,7 +23,7 @@ func newRegister() *register {
 
 // EventRegistered return the func to generate the correct event data type and true if it exists
 // otherwise false.
-func (r *register) EventRegistered(event base.Event) (registerFunc, bool) {
+func (r *register) EventRegistered(event core.Event) (registerFunc, bool) {
 	d, ok := r.aggregateEvents[event.AggregateType+"_"+event.Reason]
 	return d, ok
 }

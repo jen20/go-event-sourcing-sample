@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/hallgren/eventsourcing/base"
+	"github.com/hallgren/eventsourcing/core"
 )
 
 // AggregateRoot to be included into aggregates
@@ -39,7 +39,7 @@ func (ar *AggregateRoot) TrackChangeWithMetadata(a aggregate, data interface{}, 
 	}
 
 	event := Event{
-		event: base.Event{
+		event: core.Event{
 			AggregateID:   ar.aggregateID,
 			Version:       ar.nextVersion(),
 			AggregateType: aggregateType(a),
@@ -71,8 +71,8 @@ func (ar *AggregateRoot) setInternals(id string, version, globalVersion Version)
 	ar.aggregateEvents = []Event{}
 }
 
-func (ar *AggregateRoot) nextVersion() base.Version {
-	return base.Version(ar.Version()) + 1
+func (ar *AggregateRoot) nextVersion() core.Version {
+	return core.Version(ar.Version()) + 1
 }
 
 // update sets the AggregateVersion and AggregateGlobalVersion to the values in the last event

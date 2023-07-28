@@ -6,7 +6,7 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/hallgren/eventsourcing/base"
+	"github.com/hallgren/eventsourcing/core"
 )
 
 // Aggregate interface to use the aggregate root specific methods
@@ -41,7 +41,7 @@ type UnmarshalFunc func(data []byte, v interface{}) error
 // Repository is the returned instance from the factory function
 type Repository struct {
 	eventStream *EventStream
-	eventStore  base.EventStore
+	eventStore  core.EventStore
 	// register that convert the Data []byte to correct type
 	register *register
 	// serializer / deserializer
@@ -50,7 +50,7 @@ type Repository struct {
 }
 
 // NewRepository factory function
-func NewRepository(eventStore base.EventStore) *Repository {
+func NewRepository(eventStore core.EventStore) *Repository {
 	return &Repository{
 		eventStore:   eventStore,
 		eventStream:  NewEventStream(),
@@ -79,7 +79,7 @@ func (r *Repository) Save(a aggregate) error {
 	root := a.Root()
 	// use under laying event slice to set GlobalVersion
 
-	var esEvents = make([]base.Event, 0)
+	var esEvents = make([]core.Event, 0)
 
 	// serialize the data and meta data into []byte
 	for _, event := range root.aggregateEvents {
@@ -92,9 +92,9 @@ func (r *Repository) Save(a aggregate) error {
 			return err
 		}
 
-		esEvent := base.Event{
+		esEvent := core.Event{
 			AggregateID:   event.AggregateID(),
-			Version:       base.Version(event.Version()),
+			Version:       core.Version(event.Version()),
 			AggregateType: event.AggregateType(),
 			Timestamp:     event.Timestamp(),
 			Data:          data,
@@ -136,10 +136,10 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, a aggregate)
 	root := a.Root()
 	aggregateType := aggregateType(a)
 	// fetch events after the current version of the aggregate that could be fetched from the snapshot store
-	eventIterator, err := r.eventStore.Get(ctx, id, aggregateType, base.Version(root.aggregateVersion))
-	if err != nil && !errors.Is(err, base.ErrNoEvents) {
+	eventIterator, err := r.eventStore.Get(ctx, id, aggregateType, core.Version(root.aggregateVersion))
+	if err != nil && !errors.Is(err, core.ErrNoEvents) {
 		return err
-	} else if errors.Is(err, base.ErrNoEvents) && root.Version() == 0 {
+	} else if errors.Is(err, core.ErrNoEvents) && root.Version() == 0 {
 		// no events and not based on a snapshot
 		return ErrAggregateNotFound
 	} else if ctx.Err() != nil {
@@ -152,12 +152,12 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, a aggregate)
 			return ctx.Err()
 		default:
 			event, err := eventIterator.Next()
-			if err != nil && !errors.Is(err, base.ErrNoMoreEvents) {
+			if err != nil && !errors.Is(err, core.ErrNoMoreEvents) {
 				return err
-			} else if errors.Is(err, base.ErrNoMoreEvents) && root.Version() == 0 {
+			} else if errors.Is(err, core.ErrNoMoreEvents) && root.Version() == 0 {
 				// no events and no snapshot (some eventstore will not return the error ErrNoEvent on Get())
 				return ErrAggregateNotFound
-			} else if errors.Is(err, base.ErrNoMoreEvents) {
+			} else if errors.Is(err, core.ErrNoMoreEvents) {
 				return nil
 			}
 			// apply the event to the aggregate

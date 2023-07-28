@@ -3,9 +3,8 @@ package esdb
 import (
 	"context"
 
-	"github.com/hallgren/eventsourcing/base"
-
 	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
+	"github.com/hallgren/eventsourcing/core"
 )
 
 const streamSeparator = "-"
@@ -30,7 +29,7 @@ func Open(client *esdb.Client, jsonSerializer bool) *ESDB {
 }
 
 // Save persists events to the database
-func (es *ESDB) Save(events []base.Event) error {
+func (es *ESDB) Save(events []core.Event) error {
 	// If no event return no error
 	if len(events) == 0 {
 		return nil
@@ -42,7 +41,7 @@ func (es *ESDB) Save(events []base.Event) error {
 	version := events[0].Version
 	stream := stream(aggregateType, aggregateID)
 
-	err := base.ValidateEventsNoVersionCheck(aggregateID, events)
+	err := core.ValidateEventsNoVersionCheck(aggregateID, events)
 	if err != nil {
 		return err
 	}
@@ -73,12 +72,12 @@ func (es *ESDB) Save(events []base.Event) error {
 	}
 	for i := range events {
 		// Set all events GlobalVersion to the last events commit position.
-		events[i].GlobalVersion = base.Version(wr.CommitPosition)
+		events[i].GlobalVersion = core.Version(wr.CommitPosition)
 	}
 	return nil
 }
 
-func (es *ESDB) Get(ctx context.Context, id string, aggregateType string, afterVersion base.Version) (base.Iterator, error) {
+func (es *ESDB) Get(ctx context.Context, id string, aggregateType string, afterVersion core.Version) (core.Iterator, error) {
 	streamID := stream(aggregateType, id)
 
 	from := esdb.StreamRevision{Value: uint64(afterVersion)}
@@ -86,7 +85,7 @@ func (es *ESDB) Get(ctx context.Context, id string, aggregateType string, afterV
 	if err != nil {
 		if err, ok := esdb.FromError(err); !ok {
 			if err.Code() == esdb.ErrorCodeResourceNotFound {
-				return nil, base.ErrNoEvents
+				return nil, core.ErrNoEvents
 			}
 		}
 		return nil, err
