@@ -43,7 +43,7 @@ func (person *Person) Transition(event eventsourcing.Event) {
 
 The `Born` event sets the `Person` property `Age` and `Name`, and the `AgedOneYear` adds one year to the `Age` property. This makes the state of the aggregate flexible and could easily change in the future if required.
 
-Exampel or the Register method.
+Example or the Register method:
 
 ```go
 // Register callback method that register Person events to the repository
