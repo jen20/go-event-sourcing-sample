@@ -20,7 +20,6 @@ func (i *iterator) Close() {
 
 // Next returns next event from the stream
 func (i *iterator) Next() (base.Event, error) {
-	//var eventMetadata map[string]interface{}
 
 	eventESDB, err := i.stream.Recv()
 	if errors.Is(err, io.EOF) {
