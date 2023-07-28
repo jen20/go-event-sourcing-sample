@@ -118,46 +118,7 @@ type Event struct {
 }
 ```
 
-To access properties on the event there are methods exposing them. This prevent external parties to modify the event from the outside.
-
-```go
-    func (e Event) AggregateID() string {
-        return e.event.AggregateID
-    }
-
-    func (e Event) Version() Version {
-        return Version(e.event.Version)
-    }
-
-    func (e Event) GlobalVersion() Version {
-        return Version(e.event.GlobalVersion)
-    }
-
-    func (e Event) AggregateType() string {
-        return e.event.AggregateType
-    }
-
-    func (e Event) Timestamp() time.Time {
-        return e.event.Timestamp
-    }
-
-    func (e Event) Data() interface{} {
-        return e.data
-    }
-
-    func (e Event) Metadata() map[string]interface{} {
-        return e.metadata
-    }
-
-    // Reason is based on the data type
-    func (e Event) Reason() string {
-        if e.data == nil {
-            return ""
-        }
-        return reflect.TypeOf(e.data).Elem().Name()
-    }
-```
-
+To access properties on the event you can use the corresponding methods exposing them, e.g `AggregateID()`. This prevent external parties to modify the event from the outside.
 ### Aggregate ID
 
 The identifier on the aggregate is default set by a random generated string via the crypt/rand pkg. It is possible to change the default behaivior in two ways.
