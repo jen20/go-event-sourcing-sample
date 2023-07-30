@@ -104,7 +104,7 @@ func (e *BBolt) Save(events []core.Event) error {
 		currentVersion = lastEvent.Version
 	}
 
-	// Make sure no other has saved event to the same aggregate cuncurrently
+	// Make sure no other has saved event to the same aggregate concurrently
 	if core.Version(currentVersion)+1 != events[0].Version {
 		return core.ErrConcurrency
 	}
