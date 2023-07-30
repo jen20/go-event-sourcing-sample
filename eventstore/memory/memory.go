@@ -66,10 +66,9 @@ func (e *Memory) Save(events []core.Event) error {
 		currentVersion = lastEvent.Version
 	}
 
-	//Validate events
-	err := core.ValidateEvents(aggregateID, currentVersion, events)
-	if err != nil {
-		return err
+	// Make sure no other has saved event to the same aggregate concurrently
+	if core.Version(currentVersion)+1 != events[0].Version {
+		return core.ErrConcurrency
 	}
 
 	for i, event := range events {
