@@ -104,10 +104,9 @@ func (e *BBolt) Save(events []core.Event) error {
 		currentVersion = lastEvent.Version
 	}
 
-	//Validate events
-	err = core.ValidateEvents(aggregateID, core.Version(currentVersion), events)
-	if err != nil {
-		return err
+	// Make sure no other has saved event to the same aggregate cuncurrently
+	if core.Version(currentVersion)+1 != events[0].Version {
+		return core.ErrConcurrency
 	}
 
 	globalBucket := tx.Bucket([]byte(globalEventOrderBucketName))

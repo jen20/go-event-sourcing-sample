@@ -11,3 +11,5 @@ require (
 	github.com/proullon/ramsql v0.0.1
 	github.com/ziutek/mymysql v1.5.4 // indirect
 )
+
+replace github.com/hallgren/eventsourcing/core => ../../core

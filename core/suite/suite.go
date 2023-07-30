@@ -87,11 +87,7 @@ func Test(t *testing.T, esFunc eventstoreFunc) {
 	}{
 		{"should save and get events", saveAndGetEvents},
 		{"should get events after version", getEventsAfterVersion},
-		{"should not save events from different aggregates", saveEventsFromMoreThanOneAggregate},
-		{"should not save events from different aggregate types", saveEventsFromMoreThanOneAggregateType},
-		{"should not save events in wrong order", saveEventsInWrongOrder},
 		{"should not save events in wrong version", saveEventsInWrongVersion},
-		{"should not save event with no reason", saveEventsWithEmptyReason},
 		{"should save and get event concurrently", saveAndGetEventsConcurrently},
 		{"should return error when no events", getErrWhenNoEvents},
 		{"should get global event order from save", saveReturnGlobalEventOrder},
@@ -217,56 +213,12 @@ func getEventsAfterVersion(es core.EventStore) error {
 	return nil
 }
 
-func saveEventsFromMoreThanOneAggregate(es core.EventStore) error {
-	aggregateID := AggregateID()
-	aggregateIDOther := AggregateID()
-	invalidEvent := append(testEvents(aggregateID), testEventOtherAggregate(aggregateIDOther))
-	err := es.Save(invalidEvent)
-	if err == nil {
-		return errors.New("should not be able to save events that belongs to more than one aggregate")
-	}
-	return nil
-}
-
-func saveEventsFromMoreThanOneAggregateType(es core.EventStore) error {
-	aggregateID := AggregateID()
-	events := testEvents(aggregateID)
-	events[1].AggregateType = "OtherAggregateType"
-
-	err := es.Save(events)
-	if err == nil {
-		return errors.New("should not be able to save events that belongs to other aggregate type")
-	}
-	return nil
-}
-
-func saveEventsInWrongOrder(es core.EventStore) error {
-	aggregateID := AggregateID()
-	events := append(testEvents(aggregateID), testEvents(aggregateID)[0])
-	err := es.Save(events)
-	if err == nil {
-		return errors.New("should not be able to save events that are in wrong version order")
-	}
-	return nil
-}
-
 func saveEventsInWrongVersion(es core.EventStore) error {
 	aggregateID := AggregateID()
 	events := testEventsPartTwo(aggregateID)
 	err := es.Save(events)
 	if err == nil {
 		return errors.New("should not be able to save events that are out of sync compared to the storage order")
-	}
-	return nil
-}
-
-func saveEventsWithEmptyReason(es core.EventStore) error {
-	aggregateID := AggregateID()
-	events := testEvents(aggregateID)
-	events[2].Reason = ""
-	err := es.Save(events)
-	if err == nil {
-		return errors.New("should not be able to save events with empty reason")
 	}
 	return nil
 }

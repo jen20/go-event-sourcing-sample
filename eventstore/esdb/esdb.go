@@ -40,12 +40,6 @@ func (es *ESDB) Save(events []core.Event) error {
 	aggregateType := events[0].AggregateType
 	version := events[0].Version
 	stream := stream(aggregateType, aggregateID)
-
-	err := core.ValidateEventsNoVersionCheck(aggregateID, events)
-	if err != nil {
-		return err
-	}
-
 	esdbEvents := make([]esdb.EventData, len(events))
 
 	for i, event := range events {
