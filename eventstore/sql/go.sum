@@ -58,3 +58,5 @@ github.com/proullon/ramsql v0.0.0-20181213202341-817cee58a244 h1:fdX2U+a2Rmc4BjR
 github.com/proullon/ramsql v0.0.0-20181213202341-817cee58a244/go.mod h1:jG8oAQG0ZPHPyxg5QlMERS31airDC+ZuqiAe8DUvFVo=
 github.com/proullon/ramsql v0.0.0-20211120092837-c8d0a408b939 h1:mtMU7aT8cTAyNL3O4RyOfe/OOUxwCN525SIbKQoUvw0=
 github.com/proullon/ramsql v0.0.0-20211120092837-c8d0a408b939/go.mod h1:jG8oAQG0ZPHPyxg5QlMERS31airDC+ZuqiAe8DUvFVo=
+github.com/proullon/ramsql v0.0.1 h1:tI7qN48Oj1LTmgdo4aWlvI9z45a4QlWaXlmdJ+IIfbU=
+github.com/proullon/ramsql v0.0.1/go.mod h1:jG8oAQG0ZPHPyxg5QlMERS31airDC+ZuqiAe8DUvFVo=
