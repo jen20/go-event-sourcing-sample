@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 
 	"github.com/hallgren/eventsourcing/core"
@@ -33,6 +34,9 @@ var (
 
 	// ErrEventNotRegistered when saving aggregate and one event is not registered in the repository
 	ErrEventNotRegistered = errors.New("event not registered")
+
+	// ErrConcurrency when the currently saved version of the aggregate differs from the new events
+	ErrConcurrency = errors.New("concurrency error")
 )
 
 type MarshalFunc func(v interface{}) ([]byte, error)
@@ -110,7 +114,10 @@ func (r *Repository) Save(a aggregate) error {
 
 	err := r.eventStore.Save(esEvents)
 	if err != nil {
-		return err
+		if errors.Is(err, core.ErrConcurrency) {
+			return ErrConcurrency
+		}
+		return fmt.Errorf("error from event store: %w", err)
 	}
 
 	// update the global version on event bound to the aggregate

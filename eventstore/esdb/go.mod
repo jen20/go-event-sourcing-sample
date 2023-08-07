@@ -10,3 +10,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230726155614-23370e0ffb3e // indirect
 	google.golang.org/grpc v1.57.0 // indirect
 )
+
+replace github.com/hallgren/eventsourcing/core => ../../core
