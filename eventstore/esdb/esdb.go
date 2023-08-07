@@ -62,12 +62,12 @@ func (es *ESDB) Save(events []core.Event) error {
 	}
 	wr, err := es.client.AppendToStream(context.Background(), stream, streamOptions, esdbEvents...)
 	if err != nil {
-		/*
-			TODO: Handle the concurrently error
-			if errors.Is(err.Code, esdb.ErrorCodeWrongExpectedVersion) {
+		if err, ok := esdb.FromError(err); !ok {
+			if err.Code() == esdb.ErrorCodeWrongExpectedVersion {
+				// return typed error if version is not the expected.
 				return core.ErrConcurrency
 			}
-		*/
+		}
 		return err
 	}
 	for i := range events {

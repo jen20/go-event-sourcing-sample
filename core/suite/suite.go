@@ -217,7 +217,8 @@ func saveEventsInWrongVersion(es core.EventStore) error {
 	aggregateID := AggregateID()
 	events := testEventsPartTwo(aggregateID)
 	err := es.Save(events)
-	if err == nil {
+
+	if !errors.Is(err, core.ErrConcurrency) {
 		return errors.New("should not be able to save events that are out of sync compared to the storage order")
 	}
 	return nil

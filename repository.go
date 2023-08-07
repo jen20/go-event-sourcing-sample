@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 
 	"github.com/hallgren/eventsourcing/core"
@@ -116,7 +117,7 @@ func (r *Repository) Save(a aggregate) error {
 		if errors.Is(err, core.ErrConcurrency) {
 			return ErrConcurrency
 		}
-		return err
+		return fmt.Errorf("error from event store: %w", err)
 	}
 
 	// update the global version on event bound to the aggregate
