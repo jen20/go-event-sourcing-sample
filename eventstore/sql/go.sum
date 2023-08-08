@@ -39,6 +39,8 @@ github.com/google/pprof v0.0.0-20210407192527-94a9f03dee38 h1:yAJXTCF9TqKcTiHJAE
 github.com/google/pprof v0.0.0-20210407192527-94a9f03dee38/go.mod h1:kpwsk12EmLew5upagYY7GY0pfYCcupk39gWOCRROcvE=
 github.com/hallgren/eventsourcing/core v0.1.0 h1:0KDxNioGb8BGpEh442Fm0Z994bsp3/tjieyKx0gZ3TE=
 github.com/hallgren/eventsourcing/core v0.1.0/go.mod h1:rgo2kFwNVCb0bzUub5nOPlUYNlFkp1uUQBEQx5fM3Lk=
+github.com/hallgren/eventsourcing/core v0.2.0 h1:ysWxMLE8oO9m/Ic4uXkfZDUolHsp3d9lkDSQeCfDYS8=
+github.com/hallgren/eventsourcing/core v0.2.0/go.mod h1:rgo2kFwNVCb0bzUub5nOPlUYNlFkp1uUQBEQx5fM3Lk=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
 github.com/ianlancetaylor/demangle v0.0.0-20200824232613-28f6c0f3b639/go.mod h1:aSSvb/t6k1mPoxDqO4vJh6VOCGPwU4O0C2/Eqndh1Sc=
 github.com/lib/pq v1.0.0 h1:X5PMW56eZitiTeO7tKzZxFCSpbFZJtkMMooicw2us9A=
