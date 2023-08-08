@@ -110,6 +110,10 @@ func TestCreateNewPerson(t *testing.T) {
 	if person.Events()[0].GlobalVersion() != 0 {
 		t.Fatalf("global version should not be set when event is created, was %d", person.Events()[0].GlobalVersion())
 	}
+
+	if !person.UnsavedEvents() {
+		t.Fatal("there should be event on the aggregate")
+	}
 }
 
 func TestCreateNewPersonWithIDFromOutside(t *testing.T) {
