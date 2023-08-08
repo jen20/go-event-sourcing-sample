@@ -11,7 +11,7 @@ import (
 	"github.com/EventStore/EventStore-Client-Go/v3/esdb"
 
 	"github.com/hallgren/eventsourcing/core"
-	"github.com/hallgren/eventsourcing/core/suite"
+	"github.com/hallgren/eventsourcing/core/testsuite"
 	es "github.com/hallgren/eventsourcing/eventstore/esdb"
 )
 
@@ -32,5 +32,5 @@ func TestSuite(t *testing.T) {
 		return es, func() {
 		}, nil
 	}
-	suite.Test(t, f)
+	testsuite.Test(t, f)
 }

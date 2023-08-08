@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/hallgren/eventsourcing/core"
-	"github.com/hallgren/eventsourcing/core/suite"
+	"github.com/hallgren/eventsourcing/core/testsuite"
 	"github.com/hallgren/eventsourcing/eventstore/bbolt"
 )
 
@@ -18,5 +18,5 @@ func TestSuite(t *testing.T) {
 			os.Remove(dbFile)
 		}, nil
 	}
-	suite.Test(t, f)
+	testsuite.Test(t, f)
 }

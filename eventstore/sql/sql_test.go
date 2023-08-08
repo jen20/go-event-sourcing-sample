@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/hallgren/eventsourcing/core"
-	"github.com/hallgren/eventsourcing/core/suite"
+	"github.com/hallgren/eventsourcing/core/testsuite"
 	"github.com/hallgren/eventsourcing/eventstore/sql"
 	_ "github.com/proullon/ramsql/driver"
 )
@@ -38,5 +38,5 @@ func TestSuite(t *testing.T) {
 			es.Close()
 		}, nil
 	}
-	suite.Test(t, f)
+	testsuite.Test(t, f)
 }
