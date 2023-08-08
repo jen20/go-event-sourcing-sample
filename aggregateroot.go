@@ -64,13 +64,6 @@ func (ar *AggregateRoot) BuildFromHistory(a aggregate, events []Event) {
 	}
 }
 
-func (ar *AggregateRoot) setInternals(id string, version, globalVersion Version) {
-	ar.aggregateID = id
-	ar.aggregateVersion = version
-	ar.aggregateGlobalVersion = globalVersion
-	ar.aggregateEvents = []Event{}
-}
-
 func (ar *AggregateRoot) nextVersion() core.Version {
 	return core.Version(ar.Version()) + 1
 }
