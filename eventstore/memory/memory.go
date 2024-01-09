@@ -103,9 +103,6 @@ func (e *Memory) Get(ctx context.Context, id string, aggregateType string, after
 			events = append(events, e)
 		}
 	}
-	if len(events) == 0 {
-		return nil, core.ErrNoEvents
-	}
 	return &iterator{events: events}, nil
 }
 

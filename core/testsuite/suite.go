@@ -281,15 +281,11 @@ func getErrWhenNoEvents(es core.EventStore) error {
 	aggregateID := AggregateID()
 	iterator, err := es.Get(context.Background(), aggregateID, aggregateType, 0)
 	if err != nil {
-		if err != core.ErrNoEvents {
-			return err
-		}
-		return nil
+		return err
 	}
 	defer iterator.Close()
-	_, err = iterator.Value()
-	if !errors.Is(err, core.ErrNoMoreEvents) {
-		return fmt.Errorf("expect error when no events are saved for aggregate")
+	if iterator.Next() {
+		return fmt.Errorf("expect no event when no events are saved")
 	}
 	return nil
 }

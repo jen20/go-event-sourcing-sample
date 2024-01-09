@@ -144,11 +144,8 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, a aggregate)
 	aggregateType := aggregateType(a)
 	// fetch events after the current version of the aggregate that could be fetched from the snapshot store
 	eventIterator, err := r.eventStore.Get(ctx, id, aggregateType, core.Version(root.aggregateVersion))
-	if err != nil && !errors.Is(err, core.ErrNoEvents) {
+	if err != nil {
 		return err
-	} else if errors.Is(err, core.ErrNoEvents) && root.Version() == 0 {
-		// no events and not based on a snapshot
-		return ErrAggregateNotFound
 	}
 	defer eventIterator.Close()
 
@@ -182,7 +179,7 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, a aggregate)
 		}
 	}
 	if a.Root().Version() == 0 {
-		return fmt.Errorf("TODO: replace with custom error")
+		return ErrAggregateNotFound
 	}
 	return nil
 }

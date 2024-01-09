@@ -11,18 +11,18 @@ type iterator struct {
 	rows *sql.Rows
 }
 
-// Next return the next event
-func (i *iterator) Next() (core.Event, error) {
+// Next return true if there are more data
+func (i *iterator) Next() bool {
+	return i.rows.Next()
+}
+
+// Value return the an event
+func (i *iterator) Value() (core.Event, error) {
 	var globalVersion core.Version
 	var version core.Version
 	var id, reason, typ, timestamp string
 	var data, metadata []byte
-	if !i.rows.Next() {
-		if err := i.rows.Err(); err != nil {
-			return core.Event{}, err
-		}
-		return core.Event{}, core.ErrNoMoreEvents
-	}
+
 	if err := i.rows.Scan(&globalVersion, &id, &version, &reason, &typ, &timestamp, &data, &metadata); err != nil {
 		return core.Event{}, err
 	}

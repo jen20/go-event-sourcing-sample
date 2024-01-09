@@ -12,4 +12,4 @@ require (
 	github.com/ziutek/mymysql v1.5.4 // indirect
 )
 
-//replace github.com/hallgren/eventsourcing/core => ../../core
+replace github.com/hallgren/eventsourcing/core => ../../core
