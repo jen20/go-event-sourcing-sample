@@ -85,7 +85,7 @@ func (es *ESDB) Get(ctx context.Context, id string, aggregateType string, afterV
 	if err != nil {
 		if err, ok := esdb.FromError(err); !ok {
 			if err.Code() == esdb.ErrorCodeResourceNotFound {
-				return nil, core.ErrNoEvents
+				return core.NopIterator{}, nil
 			}
 		}
 		return nil, err

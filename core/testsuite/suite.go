@@ -123,9 +123,6 @@ func saveAndGetEvents(es core.EventStore) error {
 	}
 	for iterator.Next() {
 		event, err := iterator.Value()
-		if errors.Is(err, core.ErrNoMoreEvents) {
-			break
-		}
 		if err != nil {
 			return err
 		}

@@ -17,22 +17,20 @@ type Memory struct {
 type iterator struct {
 	events   []core.Event
 	position int
+	event    core.Event
 }
 
 func (i *iterator) Next() bool {
 	if len(i.events) <= i.position {
 		return false
 	}
+	i.event = i.events[i.position]
+	i.position++
 	return true
 }
 
 func (i *iterator) Value() (core.Event, error) {
-	if len(i.events) <= i.position {
-		return core.Event{}, core.ErrNoMoreEvents
-	}
-	event := i.events[i.position]
-	i.position++
-	return event, nil
+	return i.event, nil
 }
 
 func (i *iterator) Close() {
