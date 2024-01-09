@@ -84,11 +84,8 @@ func (s *SQL) Get(ctx context.Context, id string, aggregateType string, afterVer
 	rows, err := s.db.QueryContext(ctx, selectStm, id, aggregateType, afterVersion)
 	if err != nil {
 		return nil, err
-	} else if ctx.Err() != nil {
-		return nil, ctx.Err()
 	}
-	i := iterator{rows: rows}
-	return &i, nil
+	return &iterator{rows: rows}, nil
 }
 
 // GlobalEvents return count events in order globally from the start posistion

@@ -149,10 +149,9 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, a aggregate)
 	} else if errors.Is(err, core.ErrNoEvents) && root.Version() == 0 {
 		// no events and not based on a snapshot
 		return ErrAggregateNotFound
-	} else if ctx.Err() != nil {
-		return ctx.Err()
 	}
 	defer eventIterator.Close()
+
 	for {
 		select {
 		case <-ctx.Done():

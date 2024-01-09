@@ -89,8 +89,6 @@ func (es *ESDB) Get(ctx context.Context, id string, aggregateType string, afterV
 			}
 		}
 		return nil, err
-	} else if ctx.Err() != nil {
-		return nil, ctx.Err()
 	}
 	return &iterator{stream: stream}, nil
 }
