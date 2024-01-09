@@ -16,7 +16,8 @@ var ErrConcurrency = errors.New("concurrency error")
 
 // Iterator is the interface an event store Get needs to return
 type Iterator interface {
-	Next() (Event, error)
+	Next() bool
+	Value() (Event, error)
 	Close()
 }
 

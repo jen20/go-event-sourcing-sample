@@ -152,19 +152,14 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, a aggregate)
 	}
 	defer eventIterator.Close()
 
-	for {
+	for eventIterator.Next() {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			event, err := eventIterator.Next()
-			if err != nil && !errors.Is(err, core.ErrNoMoreEvents) {
+			event, err := eventIterator.Value()
+			if err != nil {
 				return err
-			} else if errors.Is(err, core.ErrNoMoreEvents) && root.Version() == 0 {
-				// no events and no snapshot (some eventstore will not return the error ErrNoEvent on Get())
-				return ErrAggregateNotFound
-			} else if errors.Is(err, core.ErrNoMoreEvents) {
-				return nil
 			}
 			// apply the event to the aggregate
 			f, found := r.register.EventRegistered(event)
@@ -186,6 +181,10 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, a aggregate)
 			root.BuildFromHistory(a, []Event{e})
 		}
 	}
+	if a.Root().Version() == 0 {
+		return fmt.Errorf("TODO: replace with custom error")
+	}
+	return nil
 }
 
 // Get fetches the aggregates event and build up the aggregate.

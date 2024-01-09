@@ -19,7 +19,14 @@ type iterator struct {
 	position int
 }
 
-func (i *iterator) Next() (core.Event, error) {
+func (i *iterator) Next() bool {
+	if len(i.events) <= i.position {
+		return false
+	}
+	return true
+}
+
+func (i *iterator) Value() (core.Event, error) {
 	if len(i.events) <= i.position {
 		return core.Event{}, core.ErrNoMoreEvents
 	}
