@@ -937,10 +937,8 @@ github.com/goombaio/namegenerator v0.0.0-20181006234301-989e774b106e/go.mod h1:A
 github.com/grpc-ecosystem/grpc-gateway v1.16.0/go.mod h1:BDjrQk3hbvj6Nolgz8mAMFbcEtjT1g+wF4CSlocrBnw=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.7.0/go.mod h1:hgWBS7lorOAVIJEQMi4ZsPv9hVvWI6+ch50m39Pf2Ks=
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.3/go.mod h1:o//XUCC/F+yRGJoPO/VU0GSB0f8Nhgmxx0VIRUvaC0w=
-github.com/hallgren/eventsourcing/core v0.1.0 h1:0KDxNioGb8BGpEh442Fm0Z994bsp3/tjieyKx0gZ3TE=
-github.com/hallgren/eventsourcing/core v0.1.0/go.mod h1:rgo2kFwNVCb0bzUub5nOPlUYNlFkp1uUQBEQx5fM3Lk=
-github.com/hallgren/eventsourcing/core v0.2.0 h1:ysWxMLE8oO9m/Ic4uXkfZDUolHsp3d9lkDSQeCfDYS8=
-github.com/hallgren/eventsourcing/core v0.2.0/go.mod h1:rgo2kFwNVCb0bzUub5nOPlUYNlFkp1uUQBEQx5fM3Lk=
+github.com/hallgren/eventsourcing/core v0.3.0 h1:v6AC8+SEzZ0DAFfSRmyT+sFawBv3olHJFEWXm79FpjM=
+github.com/hallgren/eventsourcing/core v0.3.0/go.mod h1:rgo2kFwNVCb0bzUub5nOPlUYNlFkp1uUQBEQx5fM3Lk=
 github.com/hashicorp/golang-lru v0.5.0/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/hashicorp/golang-lru v0.5.1/go.mod h1:/m3WP610KZHVQ1SGc6re/UDhFvYD7pJ4Ao+sR/qLZy8=
 github.com/hpcloud/tail v1.0.0/go.mod h1:ab1qPbhIpdTxEkNHXyeSf5vhxWSCs/tWer42PpOxQnU=
