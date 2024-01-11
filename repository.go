@@ -75,7 +75,6 @@ func (r *Repository) Subscribers() EventSubscribers {
 
 // Save an aggregates events
 func (r *Repository) Save(a aggregate) error {
-	// TODO: check that the aggregate is registered before saving it?
 	if !r.register.AggregateRegistered(a) {
 		return ErrAggregateNotRegistered
 	}
