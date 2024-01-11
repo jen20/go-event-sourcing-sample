@@ -1,16 +1,16 @@
 package core
 
-// NopIterator returns no data
-type NopIterator struct{}
+// ZeroIterator returns no data
+type ZeroIterator struct{}
 
-func (ni NopIterator) Next() bool {
+func (ni ZeroIterator) Next() bool {
 	return false
 }
 
-func (ni NopIterator) Value() (Event, error) {
+func (ni ZeroIterator) Value() (Event, error) {
 	return Event{}, nil
 }
 
-func (ni NopIterator) Close() {
+func (ni ZeroIterator) Close() {
 	return
 }
