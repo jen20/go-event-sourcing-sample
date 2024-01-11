@@ -14,6 +14,7 @@ type iterator struct {
 	bucketName      string
 	firstEventIndex uint64
 	cursor          *bbolt.Cursor
+	value           []byte
 }
 
 // Close closes the iterator
@@ -21,27 +22,32 @@ func (i *iterator) Close() {
 	i.tx.Rollback()
 }
 
-// Next return the next event
-func (i *iterator) Next() (core.Event, error) {
-	var k, obj []byte
+func (i *iterator) Next() bool {
+	var value []byte
 	if i.cursor == nil {
 		bucket := i.tx.Bucket([]byte(i.bucketName))
 		if bucket == nil {
-			return core.Event{}, core.ErrNoMoreEvents
+			return false
 		}
 		i.cursor = bucket.Cursor()
-		k, obj = i.cursor.Seek(itob(i.firstEventIndex))
-		if k == nil {
-			return core.Event{}, core.ErrNoMoreEvents
+		_, value = i.cursor.Seek(itob(i.firstEventIndex))
+		if value == nil {
+			return false
 		}
 	} else {
-		k, obj = i.cursor.Next()
+		_, value = i.cursor.Next()
 	}
-	if k == nil {
-		return core.Event{}, core.ErrNoMoreEvents
+	if value == nil {
+		return false
 	}
+	i.value = value
+	return true
+}
+
+// Next return the next event
+func (i *iterator) Value() (core.Event, error) {
 	bEvent := boltEvent{}
-	err := json.Unmarshal(obj, &bEvent)
+	err := json.Unmarshal(i.value, &bEvent)
 	if err != nil {
 		return core.Event{}, errors.New(fmt.Sprintf("could not deserialize event, %v", err))
 	}

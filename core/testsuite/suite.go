@@ -121,11 +121,8 @@ func saveAndGetEvents(es core.EventStore) error {
 	if err != nil {
 		return err
 	}
-	for {
-		event, err := iterator.Next()
-		if errors.Is(err, core.ErrNoMoreEvents) {
-			break
-		}
+	for iterator.Next() {
+		event, err := iterator.Value()
 		if err != nil {
 			return err
 		}
@@ -150,8 +147,8 @@ func saveAndGetEvents(es core.EventStore) error {
 	if err != nil {
 		return err
 	}
-	for {
-		event, err := iterator.Next()
+	for iterator.Next() {
+		event, err := iterator.Value()
 		if err != nil {
 			break
 		}
@@ -194,8 +191,8 @@ func getEventsAfterVersion(es core.EventStore) error {
 		return err
 	}
 
-	for {
-		event, err := iterator.Next()
+	for iterator.Next() {
+		event, err := iterator.Value()
 		if err != nil {
 			break
 		}
@@ -256,8 +253,8 @@ func saveAndGetEventsConcurrently(es core.EventStore) error {
 				return
 			}
 			events := make([]core.Event, 0)
-			for {
-				event, err := iterator.Next()
+			for iterator.Next() {
+				event, err := iterator.Value()
 				if err != nil {
 					break
 				}
@@ -281,15 +278,11 @@ func getErrWhenNoEvents(es core.EventStore) error {
 	aggregateID := AggregateID()
 	iterator, err := es.Get(context.Background(), aggregateID, aggregateType, 0)
 	if err != nil {
-		if err != core.ErrNoEvents {
-			return err
-		}
-		return nil
+		return err
 	}
 	defer iterator.Close()
-	_, err = iterator.Next()
-	if !errors.Is(err, core.ErrNoMoreEvents) {
-		return fmt.Errorf("expect error when no events are saved for aggregate")
+	if iterator.Next() {
+		return fmt.Errorf("expect no event when no events are saved")
 	}
 	return nil
 }

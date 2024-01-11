@@ -17,15 +17,20 @@ type Memory struct {
 type iterator struct {
 	events   []core.Event
 	position int
+	event    core.Event
 }
 
-func (i *iterator) Next() (core.Event, error) {
+func (i *iterator) Next() bool {
 	if len(i.events) <= i.position {
-		return core.Event{}, core.ErrNoMoreEvents
+		return false
 	}
-	event := i.events[i.position]
+	i.event = i.events[i.position]
 	i.position++
-	return event, nil
+	return true
+}
+
+func (i *iterator) Value() (core.Event, error) {
+	return i.event, nil
 }
 
 func (i *iterator) Close() {
@@ -95,9 +100,6 @@ func (e *Memory) Get(ctx context.Context, id string, aggregateType string, after
 		if e.Version > afterVersion {
 			events = append(events, e)
 		}
-	}
-	if len(events) == 0 {
-		return nil, core.ErrNoEvents
 	}
 	return &iterator{events: events}, nil
 }

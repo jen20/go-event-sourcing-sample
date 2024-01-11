@@ -184,10 +184,10 @@ The only thing an event store handles are events, and it must implement the foll
 
 ```go
 // saves events to the under laying data store.
-Save(events []eventsourcing.Event) error
+Save(events []core.Event) error
 
 // fetches events based on identifier and type but also after a specific version. The version is used to load event that happened after a snapshot was taken.
-Get(id string, aggregateType string, afterVersion eventsourcing.Version) (eventsourcing.Iterator, error)
+Get(id string, aggregateType string, afterVersion core.Version) (core.Iterator, error)
 ```
 
 Currently, there are three implementations.

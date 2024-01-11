@@ -75,7 +75,6 @@ func (r *Repository) Subscribers() EventSubscribers {
 
 // Save an aggregates events
 func (r *Repository) Save(a aggregate) error {
-	// TODO: check that the aggregate is registered before saving it?
 	if !r.register.AggregateRegistered(a) {
 		return ErrAggregateNotRegistered
 	}
@@ -144,27 +143,19 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, a aggregate)
 	aggregateType := aggregateType(a)
 	// fetch events after the current version of the aggregate that could be fetched from the snapshot store
 	eventIterator, err := r.eventStore.Get(ctx, id, aggregateType, core.Version(root.aggregateVersion))
-	if err != nil && !errors.Is(err, core.ErrNoEvents) {
+	if err != nil {
 		return err
-	} else if errors.Is(err, core.ErrNoEvents) && root.Version() == 0 {
-		// no events and not based on a snapshot
-		return ErrAggregateNotFound
 	}
 	defer eventIterator.Close()
 
-	for {
+	for eventIterator.Next() {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			event, err := eventIterator.Next()
-			if err != nil && !errors.Is(err, core.ErrNoMoreEvents) {
+			event, err := eventIterator.Value()
+			if err != nil {
 				return err
-			} else if errors.Is(err, core.ErrNoMoreEvents) && root.Version() == 0 {
-				// no events and no snapshot (some eventstore will not return the error ErrNoEvent on Get())
-				return ErrAggregateNotFound
-			} else if errors.Is(err, core.ErrNoMoreEvents) {
-				return nil
 			}
 			// apply the event to the aggregate
 			f, found := r.register.EventRegistered(event)
@@ -186,6 +177,10 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, a aggregate)
 			root.BuildFromHistory(a, []Event{e})
 		}
 	}
+	if a.Root().Version() == 0 {
+		return ErrAggregateNotFound
+	}
+	return nil
 }
 
 // Get fetches the aggregates event and build up the aggregate.
