@@ -30,17 +30,28 @@ func NewSnapshotRepository(snapshotStore core.SnapshotStore, eventRepo *EventRep
 }
 
 func (s *SnapshotRepository) GetWithContext(ctx context.Context, id string, a aggregate) error {
+	err := s.GetSnapshot(ctx, id, a)
+	if err != nil {
+		return err
+	}
+
+	// Append events that could have been saved after the snapshot
+	return s.eventRepository.GetWithContext(ctx, id, a)
+}
+
+// GetSnapshot return aggregate that is based on the snapshot data
+// Beware that it could be more events that has happened after the snapshot was taken
+func (s *SnapshotRepository) GetSnapshot(ctx context.Context, id string, a aggregate) error {
 	if reflect.ValueOf(a).Kind() != reflect.Ptr {
 		return errors.New("aggregate needs to be a pointer")
 	}
 
 	aggregateType := aggregateType(a)
 
-	snapshot, err := s.snapshotStore.Get(ctx, id, aggregateType)
+	snapshot, err := s.snapshotStore.Get(context.Background(), id, aggregateType)
 	if err != nil && !errors.Is(err, core.ErrSnapshotNotFound) {
 		return err
 	}
-
 	// Snapshot found
 	if err == nil {
 		err = s.Deserializer(snapshot.State, a)
@@ -54,9 +65,7 @@ func (s *SnapshotRepository) GetWithContext(ctx context.Context, id string, a ag
 		root.aggregateVersion = Version(snapshot.Version)
 		root.aggregateID = snapshot.ID
 	}
-
-	// Append events that could have been saved after the snapshot
-	return s.eventRepository.GetWithContext(ctx, id, a)
+	return nil
 }
 
 // Save will save aggregate event and snapshot
