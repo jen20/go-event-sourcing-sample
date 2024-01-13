@@ -12,6 +12,12 @@ import (
 // ErrUnsavedEvents aggregate events must be saved before creating snapshot
 var ErrUnsavedEvents = errors.New("aggregate holds unsaved events")
 
+// SnapshotAggregate interface is used to serialize a aggregate that has none exposrted properties
+type SnapshotAggregate interface {
+	SerializeSnapshot(MarshalFunc) ([]byte, error)
+	DeserializeSnapshot(UnmarshalFunc, []byte) error
+}
+
 type SnapshotRepository struct {
 	eventRepository *EventRepository
 	snapshotStore   core.SnapshotStore
@@ -58,9 +64,18 @@ func (s *SnapshotRepository) GetSnapshot(ctx context.Context, id string, a aggre
 	}
 	// Snapshot found
 	if err == nil {
-		err = s.Deserializer(snapshot.State, a)
-		if err != nil {
-			return err
+		// Does the aggregate have specific snapshot handeling
+		sa, ok := a.(SnapshotAggregate)
+		if ok {
+			err = sa.DeserializeSnapshot(s.Deserializer, snapshot.State)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = s.Deserializer(snapshot.State, a)
+			if err != nil {
+				return err
+			}
 		}
 
 		// set the internal aggregate properties
@@ -90,9 +105,20 @@ func (s *SnapshotRepository) SaveSnapshot(a aggregate) error {
 		return ErrUnsavedEvents
 	}
 
-	state, err := s.Serializer(a)
-	if err != nil {
-		return err
+	state := []byte{}
+	var err error
+	// Does the aggregate have specific snapshot handeling
+	sa, ok := a.(SnapshotAggregate)
+	if ok {
+		state, err = sa.SerializeSnapshot(s.Serializer)
+		if err != nil {
+			return err
+		}
+	} else {
+		state, err = s.Serializer(a)
+		if err != nil {
+			return err
+		}
 	}
 
 	snapshot := core.Snapshot{
