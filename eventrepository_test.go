@@ -10,7 +10,7 @@ import (
 )
 
 func TestSaveAndGetAggregate(t *testing.T) {
-	repo := eventsourcing.NewRepository(memory.Create())
+	repo := eventsourcing.NewEventRepository(memory.Create())
 	repo.Register(&Person{})
 
 	person, err := CreatePerson("kalle")
@@ -45,7 +45,7 @@ func TestSaveAndGetAggregate(t *testing.T) {
 }
 
 func TestGetWithContext(t *testing.T) {
-	repo := eventsourcing.NewRepository(memory.Create())
+	repo := eventsourcing.NewEventRepository(memory.Create())
 	repo.Register(&Person{})
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -74,7 +74,7 @@ func TestGetWithContext(t *testing.T) {
 }
 
 func TestGetWithContextCancel(t *testing.T) {
-	repo := eventsourcing.NewRepository(memory.Create())
+	repo := eventsourcing.NewEventRepository(memory.Create())
 	repo.Register(&Person{})
 
 	person, err := CreatePerson("kalle")
@@ -98,7 +98,7 @@ func TestGetWithContextCancel(t *testing.T) {
 }
 
 func TestGetNoneExistingAggregate(t *testing.T) {
-	repo := eventsourcing.NewRepository(memory.Create())
+	repo := eventsourcing.NewEventRepository(memory.Create())
 	repo.Register(&Person{})
 
 	p := Person{}
@@ -113,7 +113,7 @@ func TestSubscriptionAllEvent(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
-	repo := eventsourcing.NewRepository(memory.Create())
+	repo := eventsourcing.NewEventRepository(memory.Create())
 	repo.Register(&Person{})
 
 	s := repo.Subscribers().All(f)
@@ -141,7 +141,7 @@ func TestSubscriptionSpecificEvent(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
-	repo := eventsourcing.NewRepository(memory.Create())
+	repo := eventsourcing.NewEventRepository(memory.Create())
 	repo.Register(&Person{})
 
 	s := repo.Subscribers().Event(f, &Born{}, &AgedOneYear{})
@@ -169,7 +169,7 @@ func TestSubscriptionAggregate(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
-	repo := eventsourcing.NewRepository(memory.Create())
+	repo := eventsourcing.NewEventRepository(memory.Create())
 	repo.Register(&Person{})
 
 	s := repo.Subscribers().Aggregate(f, &Person{})
@@ -197,7 +197,7 @@ func TestSubscriptionSpecificAggregate(t *testing.T) {
 	f := func(e eventsourcing.Event) {
 		counter++
 	}
-	repo := eventsourcing.NewRepository(memory.Create())
+	repo := eventsourcing.NewEventRepository(memory.Create())
 	repo.Register(&Person{})
 
 	person, err := CreatePerson("kalle")
@@ -221,7 +221,7 @@ func TestSubscriptionSpecificAggregate(t *testing.T) {
 }
 
 func TestEventChainDoesNotHang(t *testing.T) {
-	repo := eventsourcing.NewRepository(memory.Create())
+	repo := eventsourcing.NewEventRepository(memory.Create())
 	repo.Register(&Person{})
 
 	// eventChan can hold 5 events before it get full and blocks.
@@ -282,7 +282,7 @@ func TestEventChainDoesNotHang(t *testing.T) {
 }
 
 func TestSaveWhenAggregateNotRegistered(t *testing.T) {
-	repo := eventsourcing.NewRepository(memory.Create())
+	repo := eventsourcing.NewEventRepository(memory.Create())
 
 	person, err := CreatePerson("kalle")
 	if err != nil {
@@ -295,7 +295,7 @@ func TestSaveWhenAggregateNotRegistered(t *testing.T) {
 }
 
 func TestSaveWhenEventNotRegistered(t *testing.T) {
-	repo := eventsourcing.NewRepository(memory.Create())
+	repo := eventsourcing.NewEventRepository(memory.Create())
 	repo.Register(&PersonNoRegisterEvents{})
 
 	person, err := CreatePersonNoRegisteredEvents("kalle")

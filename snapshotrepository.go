@@ -11,14 +11,14 @@ import (
 )
 
 type SnapshotRepository struct {
-	eventRepository *Repository
+	eventRepository *EventRepository
 	snapshotStore   core.SnapshotStore
 	Serializer      MarshalFunc
 	Deserializer    UnmarshalFunc
 }
 
 // NewSnapshotRepository factory function
-func NewSnapshotRepository(snapshotStore core.SnapshotStore, eventRepo *Repository) *SnapshotRepository {
+func NewSnapshotRepository(snapshotStore core.SnapshotStore, eventRepo *EventRepository) *SnapshotRepository {
 	return &SnapshotRepository{
 		snapshotStore:   snapshotStore,
 		eventRepository: eventRepo,

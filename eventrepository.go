@@ -42,8 +42,8 @@ var (
 type MarshalFunc func(v interface{}) ([]byte, error)
 type UnmarshalFunc func(data []byte, v interface{}) error
 
-// Repository is the returned instance from the factory function
-type Repository struct {
+// EventRepository is the returned instance from the factory function
+type EventRepository struct {
 	eventStream *EventStream
 	eventStore  core.EventStore
 	// register that convert the Data []byte to correct type
@@ -54,8 +54,8 @@ type Repository struct {
 }
 
 // NewRepository factory function
-func NewRepository(eventStore core.EventStore) *Repository {
-	return &Repository{
+func NewEventRepository(eventStore core.EventStore) *EventRepository {
+	return &EventRepository{
 		eventStore:   eventStore,
 		eventStream:  NewEventStream(),
 		Serializer:   json.Marshal,
@@ -64,17 +64,17 @@ func NewRepository(eventStore core.EventStore) *Repository {
 	}
 }
 
-func (r *Repository) Register(a aggregate) {
+func (r *EventRepository) Register(a aggregate) {
 	r.register.Register(a)
 }
 
 // Subscribers returns an interface with all event subscribers
-func (r *Repository) Subscribers() EventSubscribers {
+func (r *EventRepository) Subscribers() EventSubscribers {
 	return r.eventStream
 }
 
 // Save an aggregates events
-func (r *Repository) Save(a aggregate) error {
+func (r *EventRepository) Save(a aggregate) error {
 	if !r.register.AggregateRegistered(a) {
 		return ErrAggregateNotRegistered
 	}
@@ -134,7 +134,7 @@ func (r *Repository) Save(a aggregate) error {
 
 // GetWithContext fetches the aggregates event and build up the aggregate based on it's current version.
 // The event fetching can be canceled from the outside.
-func (r *Repository) GetWithContext(ctx context.Context, id string, a aggregate) error {
+func (r *EventRepository) GetWithContext(ctx context.Context, id string, a aggregate) error {
 	if reflect.ValueOf(a).Kind() != reflect.Ptr {
 		return errors.New("aggregate needs to be a pointer")
 	}
@@ -186,6 +186,6 @@ func (r *Repository) GetWithContext(ctx context.Context, id string, a aggregate)
 // Get fetches the aggregates event and build up the aggregate.
 // If the aggregate is based on a snapshot it fetches event after the
 // version of the aggregate.
-func (r *Repository) Get(id string, a aggregate) error {
+func (r *EventRepository) Get(id string, a aggregate) error {
 	return r.GetWithContext(context.Background(), id, a)
 }

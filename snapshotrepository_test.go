@@ -10,7 +10,7 @@ import (
 )
 
 func TestSaveAndGetSnapshot(t *testing.T) {
-	eventrepo := eventsourcing.NewRepository(memory.Create())
+	eventrepo := eventsourcing.NewEventRepository(memory.Create())
 	eventrepo.Register(&Person{})
 
 	snapshotrepo := eventsourcing.NewSnapshotRepository(snap.Create(), eventrepo)
@@ -37,7 +37,7 @@ func TestSaveAndGetSnapshot(t *testing.T) {
 }
 
 func TestSaveSnapshotWithUnsavedEvents(t *testing.T) {
-	eventrepo := eventsourcing.NewRepository(memory.Create())
+	eventrepo := eventsourcing.NewEventRepository(memory.Create())
 	eventrepo.Register(&Person{})
 
 	snapshotrepo := eventsourcing.NewSnapshotRepository(snap.Create(), eventrepo)
