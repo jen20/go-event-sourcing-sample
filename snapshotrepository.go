@@ -46,9 +46,7 @@ func (s *SnapshotRepository) GetSnapshot(ctx context.Context, id string, a aggre
 		return errors.New("aggregate needs to be a pointer")
 	}
 
-	aggregateType := aggregateType(a)
-
-	snapshot, err := s.snapshotStore.Get(context.Background(), id, aggregateType)
+	snapshot, err := s.snapshotStore.Get(ctx, id, aggregateType(a))
 	if err != nil && !errors.Is(err, core.ErrSnapshotNotFound) {
 		return err
 	}
