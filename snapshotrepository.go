@@ -66,7 +66,7 @@ func (s *SnapshotRepository) GetSnapshot(ctx context.Context, id string, a aggre
 	return nil
 }
 
-// Save will save aggregate event and snapshot
+// Save will save aggregate events and snapshot
 func (s *SnapshotRepository) Save(a aggregate) error {
 	// make sure events are stored
 	err := s.eventRepository.Save(a)
