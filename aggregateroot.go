@@ -23,6 +23,9 @@ const (
 // ErrAggregateAlreadyExists returned if the aggregateID is set more than one time
 var ErrAggregateAlreadyExists = errors.New("its not possible to set ID on already existing aggregate")
 
+// ErrAggregateNeedsToBeAPointer return if aggregate is sent in as value object
+var ErrAggregateNeedsToBeAPointer = errors.New("aggregate needs to be a pointer")
+
 // TrackChange is used internally by behaviour methods to apply a state change to
 // the current instance and also track it in order that it can be persisted later.
 func (ar *AggregateRoot) TrackChange(a aggregate, data interface{}) {

@@ -136,7 +136,7 @@ func (r *EventRepository) Save(a aggregate) error {
 // The event fetching can be canceled from the outside.
 func (r *EventRepository) GetWithContext(ctx context.Context, id string, a aggregate) error {
 	if reflect.ValueOf(a).Kind() != reflect.Ptr {
-		return errors.New("aggregate needs to be a pointer")
+		return ErrAggregateNeedsToBeAPointer
 	}
 
 	root := a.Root()

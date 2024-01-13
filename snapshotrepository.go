@@ -49,7 +49,7 @@ func (s *SnapshotRepository) GetWithContext(ctx context.Context, id string, a ag
 // Beware that it could be more events that has happened after the snapshot was taken
 func (s *SnapshotRepository) GetSnapshot(ctx context.Context, id string, a aggregate) error {
 	if reflect.ValueOf(a).Kind() != reflect.Ptr {
-		return errors.New("aggregate needs to be a pointer")
+		return ErrAggregateNeedsToBeAPointer
 	}
 
 	snapshot, err := s.snapshotStore.Get(ctx, id, aggregateType(a))
