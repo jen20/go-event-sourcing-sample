@@ -37,20 +37,23 @@ func (s *SnapshotRepository) GetWithContext(ctx context.Context, id string, a ag
 	aggregateType := aggregateType(a)
 
 	snapshot, err := s.snapshotStore.Get(ctx, id, aggregateType)
-	if err != nil {
+	if err != nil && !errors.Is(err, core.ErrSnapshotNotFound) {
 		return err
 	}
 
-	err = s.Deserializer(snapshot.State, a)
-	if err != nil {
-		return err
-	}
+	// Snapshot found
+	if err == nil {
+		err = s.Deserializer(snapshot.State, a)
+		if err != nil {
+			return err
+		}
 
-	// set the internal aggregate properties
-	root := a.Root()
-	root.aggregateGlobalVersion = Version(snapshot.GlobalVersion)
-	root.aggregateVersion = Version(snapshot.Version)
-	root.aggregateID = snapshot.ID
+		// set the internal aggregate properties
+		root := a.Root()
+		root.aggregateGlobalVersion = Version(snapshot.GlobalVersion)
+		root.aggregateVersion = Version(snapshot.Version)
+		root.aggregateID = snapshot.ID
+	}
 
 	// Append events that could have been saved after the snapshot
 	return s.eventRepository.GetWithContext(ctx, id, a)

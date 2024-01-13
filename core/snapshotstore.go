@@ -1,6 +1,12 @@
 package core
 
-import "context"
+import (
+	"context"
+	"errors"
+)
+
+// ErrSnapshotNotFound returned when no snapshot is found in the snapshot store
+var ErrSnapshotNotFound = errors.New("snapshot not found")
 
 // Snapshot holds current state of an aggregate
 type Snapshot struct {
