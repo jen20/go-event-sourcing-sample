@@ -29,6 +29,12 @@ func NewSnapshotRepository(snapshotStore core.SnapshotStore, eventRepo *EventRep
 	}
 }
 
+// EventRepository return the underlaying event repository. If the user wants to operate on the event repository
+// and not use snapshot
+func (s *SnapshotRepository) EventRepository() *EventRepository {
+	return s.eventRepository
+}
+
 func (s *SnapshotRepository) GetWithContext(ctx context.Context, id string, a aggregate) error {
 	err := s.GetSnapshot(ctx, id, a)
 	if err != nil {
