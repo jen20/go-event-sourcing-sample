@@ -4,11 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"reflect"
 
 	"github.com/hallgren/eventsourcing/core"
 )
+
+// ErrUnsavedEvents aggregate events must be saved before creating snapshot
+var ErrUnsavedEvents = errors.New("aggregate holds unsaved events")
 
 type SnapshotRepository struct {
 	eventRepository *EventRepository
@@ -34,15 +36,21 @@ func (s *SnapshotRepository) GetWithContext(ctx context.Context, id string, a ag
 
 	aggregateType := aggregateType(a)
 
-	snapshotData, err := s.snapshotStore.Get(ctx, id, aggregateType)
+	snapshot, err := s.snapshotStore.Get(ctx, id, aggregateType)
 	if err != nil {
 		return err
 	}
 
-	err = s.Deserializer(snapshotData, a)
+	err = s.Deserializer(snapshot.State, a)
 	if err != nil {
 		return err
 	}
+
+	// set the internal aggregate properties
+	root := a.Root()
+	root.aggregateGlobalVersion = Version(snapshot.GlobalVersion)
+	root.aggregateVersion = Version(snapshot.Version)
+	root.aggregateID = snapshot.ID
 
 	// Append events that could have been saved after the snapshot
 	return s.eventRepository.GetWithContext(ctx, id, a)
@@ -63,12 +71,20 @@ func (s *SnapshotRepository) Save(a aggregate) error {
 func (s *SnapshotRepository) SaveSnapshot(a aggregate) error {
 	root := a.Root()
 	if len(root.Events()) > 0 {
-		return fmt.Errorf("not ok to store snapshot with unsaved events")
+		return ErrUnsavedEvents
 	}
 
-	snapshot, err := s.Serializer(a)
+	state, err := s.Serializer(a)
 	if err != nil {
 		return err
+	}
+
+	snapshot := core.Snapshot{
+		ID:            root.ID(),
+		Type:          aggregateType(a),
+		Version:       core.Version(root.Version()),
+		GlobalVersion: core.Version(root.GlobalVersion()),
+		State:         state,
 	}
 
 	err = s.snapshotStore.Save(root.ID(), aggregateType(a), snapshot)

@@ -34,6 +34,10 @@ func TestSaveAndGetSnapshot(t *testing.T) {
 	if person.Version() != twin.Version() {
 		t.Fatalf("Wrong version org %q copy %q", person.Version(), twin.Version())
 	}
+
+	if person.ID() != twin.ID() {
+		t.Fatalf("Wrong id org %q copy %q", person.ID(), twin.ID())
+	}
 }
 
 func TestSaveSnapshotWithUnsavedEvents(t *testing.T) {
@@ -48,6 +52,6 @@ func TestSaveSnapshotWithUnsavedEvents(t *testing.T) {
 	}
 	err = snapshotrepo.SaveSnapshot(person)
 	if err == nil {
-		t.Fatalf("could save snapshot with unsaved events")
+		t.Fatalf("should not be able to save snapshot with unsaved events")
 	}
 }
