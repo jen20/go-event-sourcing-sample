@@ -14,15 +14,15 @@ var ErrUnsavedEvents = errors.New("aggregate holds unsaved events")
 
 // SnapshotAggregate interface is used to serialize a aggregate that has none exposrted properties
 type SnapshotAggregate interface {
-	SerializeSnapshot(MarshalFunc) ([]byte, error)
-	DeserializeSnapshot(UnmarshalFunc, []byte) error
+	SerializeSnapshot(SerializeFunc) ([]byte, error)
+	DeserializeSnapshot(DeserializeFunc, []byte) error
 }
 
 type SnapshotRepository struct {
 	eventRepository *EventRepository
 	snapshotStore   core.SnapshotStore
-	Serializer      MarshalFunc
-	Deserializer    UnmarshalFunc
+	Serializer      SerializeFunc
+	Deserializer    DeserializeFunc
 }
 
 // NewSnapshotRepository factory function

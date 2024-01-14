@@ -100,7 +100,7 @@ type snapshotInternal struct {
 	Exported   string
 }
 
-func (s *snapshot) SerializeSnapshot(m eventsourcing.MarshalFunc) ([]byte, error) {
+func (s *snapshot) SerializeSnapshot(m eventsourcing.SerializeFunc) ([]byte, error) {
 	snap := snapshotInternal{
 		UnExported: s.unexported,
 		Exported:   s.Exported,
@@ -108,7 +108,7 @@ func (s *snapshot) SerializeSnapshot(m eventsourcing.MarshalFunc) ([]byte, error
 	return m(snap)
 }
 
-func (s *snapshot) DeserializeSnapshot(m eventsourcing.UnmarshalFunc, b []byte) error {
+func (s *snapshot) DeserializeSnapshot(m eventsourcing.DeserializeFunc, b []byte) error {
 	snap := snapshotInternal{}
 	err := m(b, &snap)
 	if err != nil {

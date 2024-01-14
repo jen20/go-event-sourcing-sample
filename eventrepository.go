@@ -39,8 +39,8 @@ var (
 	ErrConcurrency = errors.New("concurrency error")
 )
 
-type MarshalFunc func(v interface{}) ([]byte, error)
-type UnmarshalFunc func(data []byte, v interface{}) error
+type SerializeFunc func(v interface{}) ([]byte, error)
+type DeserializeFunc func(data []byte, v interface{}) error
 
 // EventRepository is the returned instance from the factory function
 type EventRepository struct {
@@ -49,8 +49,8 @@ type EventRepository struct {
 	// register that convert the Data []byte to correct type
 	register *register
 	// serializer / deserializer
-	Serializer   MarshalFunc
-	Deserializer UnmarshalFunc
+	Serializer   SerializeFunc
+	Deserializer DeserializeFunc
 }
 
 // NewRepository factory function
