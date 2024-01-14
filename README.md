@@ -119,6 +119,7 @@ type Event struct {
 ```
 
 To access properties on the event you can use the corresponding methods exposing them, e.g `AggregateID()`. This prevent external parties to modify the event from the outside.
+
 ### Aggregate ID
 
 The identifier on the aggregate is default set by a random generated string via the crypt/rand pkg. It is possible to change the default behaivior in two ways.
@@ -143,9 +144,9 @@ f := func() string {
 eventsourcing.SetIDFunc(f)
 ```
 
-## Repository
+## Event Repository
 
-The repository is used to save and retrieve aggregates. The main functions are:
+The event repository is used to save and retrieve aggregate events. The main functions are:
 
 ```go
 // saves the events on the aggregate
@@ -159,7 +160,7 @@ GetWithContext(ctx context.Context, id string, a aggregate) error
 Get(id string, a aggregate) error
 ```
 
-The repository constructor input values is an event store, this handles the reading and writing of events and builds the aggregate based on the events.
+The event repository constructor input values is an event store, this handles the reading and writing of events and builds the aggregate based on the events.
 
 ```go
 repo := NewRepository(eventStore EventStore) *Repository
@@ -207,9 +208,22 @@ Submodules needs to be fetched separately via go get.
 
 The memory based event store is part of the main module and does not need to be fetched separately.
 
+### Custom made event store
+
+If you want to store your events in another database beside the already implemented event stores: `sql`, `bbolt`, `esdb` or `memory`, you can implement a custom made event store. It has to implement the following  interface to support the eventsourcing.Repository.
+
+```go
+type EventStore interface {
+    Save(events []core.Event) error
+    Get(id string, aggregateType string, afterVersion core.Version) (core.Iterator, error)
+}
+```
+
+The event store needs to import the `github.com/hallgren/eventsourcing/core` module that expose the `core.Event`, `core.Version` and `core.Iterator` types.
+
 ## Serializer
 
-To store events they have to be serialised into `[]byte`. Default the `encoding/json` is used but it could be replaced on the repoository by setting the `repo.Serializer` and `repo.Deserializer` function properties.
+To store events they have to be serialised into `[]byte`. Default the `encoding/json` is used but it could be replaced on the repository by setting the `repo.Serializer` and `repo.Deserializer` function properties.
 
 ### Event Subscription
 
@@ -254,15 +268,95 @@ s := repo.Subscribers().All(func(e eventsourcing.Event) {
 s.Close()
 ```
 
-## Custom made event store
+## Snapshot
 
-If you want to store your events in another database beside the already implemented event stores: `sql`, `bbolt`, `esdb` or `memory`, you can implement a custom made event store. It has to implement the following  interface to support the eventsourcing.Repository.
+If an aggregate has alot of events it can take some time fetching it's event and building the aggregate. This can be optimised with the help of a snapshot. The snapshot is the state of the aggregate on a specific version. Instead of iterating all aggregate events only the events after the version is iterated and used to build the aggregate. The use of snapshots is optional and is exposed via the snapshot repository.
+
+### Snapshot Repository
+
+The snapshot repository is used to fetch and save aggregates based snapshots and events (if there is events after the snapshot version). 
+
+The snapshot repository is a layer on top of the event repository.
 
 ```go
-type EventStore interface {
-    Save(events []core.Event) error
-    Get(id string, aggregateType string, afterVersion core.Version) (core.Iterator, error)
+NewSnapshotRepository(snapshotStore core.SnapshotStore, eventRepo *EventRepository) *SnapshotRepository
+```
+
+```go
+// fetch the aggregate baesd on it's snapshot and the events after the version of the snapshot
+GetWithContext(ctx context.Context, id string, a aggregate) error
+
+// only fetch the aggregate snapshot and not any events.
+GetSnapshot(ctx context.Context, id string, a aggregate) error
+
+// Store the aggregate events and after the snapshot
+Save(a aggregate) error
+
+// Store only the aggregate snapshot. Will return an error if there are events that are not stored on the aggregate
+SaveSnapshot(a aggregate) error
+
+// expose the underlaying event repository.
+EventRepository() *EventRepository
+
+// register the aggregate in the underlaying event repository
+Register(a aggregate)
+```
+
+### Snapshot Store
+
+Like the event store's the snapshot repository is built on the same design. The snapshot store has to implement the following methods.
+
+```go
+type SnapshotStore interface {
+	Save(id, aggregateType string, snapshot Snapshot) error
+	Get(ctx context.Context, id, aggregateType string) (Snapshot, error)
 }
 ```
 
-The event store needs to import the `github.com/hallgren/eventsourcing/core` module that expose the `core.Event`, `core.Version` and `core.Iterator` types.
+Currently there is only one snapshot store and its only storing snapshots in memory.
+
+### Unexported aggregate properties
+
+As unexported properties on a struct is not possible to serialize there is the same limitation on aggregates.
+To fix this there are optional callback methods that can be added to the aggregate struct.
+
+```go
+type SnapshotAggregate interface {
+	SerializeSnapshot(SerializeFunc) ([]byte, error)
+	DeserializeSnapshot(DeserializeFunc, []byte) error
+}
+```
+
+Exampel:
+
+```go
+// aggregate
+type Person struct {
+    eventsourcing.AggregateRoot
+	unexported string
+}
+
+// snapshot struct
+type PersonSnapshot struct {
+	UnExported string
+}
+
+// callback that maps the aggregate to the snapshot struct with the exported property
+func (s *snapshot) SerializeSnapshot(m eventsourcing.SerializeFunc) ([]byte, error) {
+	snap := snapshotInternal{
+		UnExported: s.unexported,
+	}
+	return m(snap)
+}
+
+// callback to map the snapshot back to the aggregate
+func (s *snapshot) DeserializeSnapshot(m eventsourcing.DeserializeFunc, b []byte) error {
+	snap := snapshotInternal{}
+	err := m(b, &snap)
+	if err != nil {
+		return err
+	}
+	s.unexported = snap.UnExported
+	return nil
+}
+```
