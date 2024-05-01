@@ -314,6 +314,31 @@ func TestSaveWhenEventNotRegistered(t *testing.T) {
 	}
 }
 
+func TestMultipleSave(t *testing.T) {
+	repo := eventsourcing.NewEventRepository(memory.Create())
+	repo.Register(&Person{})
+
+	person, err := CreatePerson("kalle")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = repo.Save(person)
+	if err != nil {
+		t.Fatalf("could not save aggregate, err: %v", err)
+	}
+
+	version := person.Version()
+
+	err = repo.Save(person)
+	if err != nil {
+		t.Fatalf("save should be a nop, err: %v", err)
+	}
+
+	if version != person.Version() {
+		t.Fatalf("the nop save should not change the aggregate version exp:%d, actual:%d", version, person.Version())
+	}
+}
+
 // Person aggregate
 type PersonNoRegisterEvents struct {
 	eventsourcing.AggregateRoot

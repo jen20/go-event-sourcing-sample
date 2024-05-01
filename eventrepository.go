@@ -87,16 +87,19 @@ func (er *EventRepository) Subscribers() EventSubscribers {
 
 // Save an aggregates events
 func (er *EventRepository) Save(a aggregate) error {
+	var esEvents = make([]core.Event, 0)
+
 	if !er.register.AggregateRegistered(a) {
 		return ErrAggregateNotRegistered
 	}
-
 	root := a.Root()
+
+	// return as quick as possible when no events to process
+	if len(root.aggregateEvents) == 0 {
+		return nil
+	}
+
 	// use under laying event slice to set GlobalVersion
-
-	var esEvents = make([]core.Event, 0)
-
-	// serialize the data and meta data into []byte
 	for _, event := range root.aggregateEvents {
 		data, err := er.encoder.Serialize(event.Data())
 		if err != nil {
