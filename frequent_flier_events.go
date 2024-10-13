@@ -4,12 +4,12 @@ package main
 type Status int
 
 const (
-	StatusRed    Status = iota
-	StatusSilver Status = iota
-	StatusGold   Status = iota
+	StatusRed Status = iota
+	StatusSilver
+	StatusGold
 )
 
-// go:generate stringer -type=Status
+//go:generate stringer -type=Status
 
 type FrequentFlierAccountCreated struct {
 	AccountId         string
